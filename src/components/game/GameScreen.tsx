@@ -5,8 +5,9 @@ import { MainMenu } from './MainMenu';
 import { DeckBuilder } from './DeckBuilder';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
+import { CardGallery } from './CardGallery';
 
-type Screen = 'menu' | 'deck-builder' | 'battle';
+type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -42,6 +43,7 @@ export function GameScreen() {
           progress={progress}
           onBattle={() => setScreen('battle')}
           onDeckBuilder={() => setScreen('deck-builder')}
+          onCollection={() => setScreen('collection')}
           onOpenChest={handleOpenChest}
           onReset={handleReset}
         />
@@ -55,6 +57,13 @@ export function GameScreen() {
             updateDeck(deck);
           }}
           onStartBattle={() => setScreen('battle')}
+        />
+      )}
+
+      {screen === 'collection' && (
+        <CardGallery
+          ownedCardIds={progress.ownedCardIds}
+          onBack={() => setScreen('menu')}
         />
       )}
 

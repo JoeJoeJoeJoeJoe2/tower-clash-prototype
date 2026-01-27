@@ -1,16 +1,17 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Package, Settings, Trophy, RotateCcw } from 'lucide-react';
+import { Swords, Package, Trophy, RotateCcw, LayoutGrid } from 'lucide-react';
 
 interface MainMenuProps {
   progress: PlayerProgress;
   onBattle: () => void;
   onDeckBuilder: () => void;
+  onCollection: () => void;
   onOpenChest: () => void;
   onReset: () => void;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onOpenChest, onReset }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOpenChest, onReset }: MainMenuProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 gap-8">
       {/* Title */}
@@ -74,6 +75,16 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onOpenChest, onRes
         >
           <span className="text-xl">🃏</span>
           Edit Deck
+        </Button>
+
+        <Button
+          onClick={onCollection}
+          variant="outline"
+          size="lg"
+          className="py-6 gap-2"
+        >
+          <LayoutGrid className="w-5 h-5" />
+          Collection
         </Button>
       </div>
 
