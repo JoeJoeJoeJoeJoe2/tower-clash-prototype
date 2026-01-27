@@ -310,13 +310,27 @@ export const allCards: CardDefinition[] = [
 // Starting cards for new players
 export const starterCardIds = ['knight', 'archers', 'goblins', 'skeletons', 'bomber', 'minions', 'giant', 'wizard'];
 
-export function createDeck(cardIds: string[]): CardDefinition[] {
-  return cardIds.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
+// Fisher-Yates shuffle for randomizing deck order at battle start
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+export function createDeck(cardIds: string[], shuffle = true): CardDefinition[] {
+  const cards = cardIds.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
+  // Shuffle the deck at battle start for random initial order
+  return shuffle ? shuffleArray(cards) : cards;
 }
 
 export function drawHand(deck: CardDefinition[]): { hand: CardDefinition[], remainingDeck: CardDefinition[] } {
+  // Hand is first 4 cards, remaining deck is cards 5-8 (cards not in hand yet)
+  // When a card is played, it goes to the BACK of the queue (handled in playCard)
   const hand = deck.slice(0, 4);
-  const remainingDeck = [...deck.slice(4), ...deck.slice(0, 4)];
+  const remainingDeck = deck.slice(4); // Only cards NOT in hand - cycling handled by playCard
   return { hand, remainingDeck };
 }
 
