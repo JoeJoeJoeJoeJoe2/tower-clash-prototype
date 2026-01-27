@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GameState, Tower, Unit, CardDefinition, Position } from '@/types/game';
-import { createDeck, drawHand, allCards } from '@/data/cards';
+import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone } from '@/types/game';
+import { createDeck, drawHand } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 
 export const ARENA_WIDTH = 400;
 export const ARENA_HEIGHT = 600;
-const ELIXIR_REGEN_RATE = 0.35; // Slower elixir - more strategic
+const BASE_ELIXIR_REGEN_RATE = 0.35;
+const SUDDEN_DEATH_ELIXIR_MULTIPLIER = 2;
 const GAME_DURATION = 180;
+const SUDDEN_DEATH_TIME = 60;
 
 export interface Projectile {
   id: string;
@@ -117,14 +119,54 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
   return { playerTowers, enemyTowers };
 }
 
+function createInitialPlacementZones(): { playerZones: PlacementZone[], enemyZones: PlacementZone[] } {
+  // Player's default zone is their half of the arena
+  const playerZones: PlacementZone[] = [
+    {
+      id: 'player-default',
+      minX: 0,
+      maxX: ARENA_WIDTH,
+      minY: ARENA_HEIGHT / 2,
+      maxY: ARENA_HEIGHT,
+      isActive: true,
+      reason: 'default'
+    }
+  ];
+
+  // Enemy's default zone is their half
+  const enemyZones: PlacementZone[] = [
+    {
+      id: 'enemy-default',
+      minX: 0,
+      maxX: ARENA_WIDTH,
+      minY: 0,
+      maxY: ARENA_HEIGHT / 2,
+      isActive: true,
+      reason: 'default'
+    }
+  ];
+
+  return { playerZones, enemyZones };
+}
+
 function getDistance(a: Position, b: Position): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
+function isPositionInZones(position: Position, zones: PlacementZone[]): boolean {
+  return zones.some(zone => 
+    zone.isActive &&
+    position.x >= zone.minX &&
+    position.x <= zone.maxX &&
+    position.y >= zone.minY &&
+    position.y <= zone.maxY
+  );
+}
+
 function createInitialState(playerDeckIds: string[]): GameState {
   const { playerTowers, enemyTowers } = createInitialTowers();
+  const { playerZones, enemyZones } = createInitialPlacementZones();
   const playerDeck = createDeck(playerDeckIds);
-  // Give AI a balanced deck
   const enemyDeckIds = ['knight', 'archers', 'giant', 'wizard', 'valkyrie', 'musketeer', 'goblins', 'bomber'];
   const enemyDeck = createDeck(enemyDeckIds);
   const { hand: playerHand, remainingDeck: playerRemainingDeck } = drawHand(playerDeck);
@@ -143,7 +185,10 @@ function createInitialState(playerDeckIds: string[]): GameState {
     enemyHand,
     timeRemaining: GAME_DURATION,
     gameStatus: 'playing',
-    selectedCardIndex: null
+    selectedCardIndex: null,
+    isSuddenDeath: false,
+    playerPlacementZones: playerZones,
+    enemyPlacementZones: enemyZones
   };
 }
 
@@ -206,7 +251,9 @@ export function useGameState(playerDeckIds: string[]) {
     setGameState(prev => {
       const card = prev.playerHand[cardIndex];
       if (!card || prev.playerElixir < card.elixirCost) return prev;
-      if (position.y < ARENA_HEIGHT / 2) return prev;
+      
+      // Check if position is in valid placement zones
+      if (!isPositionInZones(position, prev.playerPlacementZones)) return prev;
 
       const newUnit = spawnUnit(card, position, 'player');
       addSpawnEffect(position, 'player', card.emoji);
@@ -275,27 +322,133 @@ export function useGameState(playerDeckIds: string[]) {
           playerTowers: prev.playerTowers.map(t => ({ ...t })),
           enemyTowers: prev.enemyTowers.map(t => ({ ...t })),
           playerUnits: prev.playerUnits.map(u => ({ ...u })),
-          enemyUnits: prev.enemyUnits.map(u => ({ ...u }))
+          enemyUnits: prev.enemyUnits.map(u => ({ ...u })),
+          playerPlacementZones: [...prev.playerPlacementZones],
+          enemyPlacementZones: [...prev.enemyPlacementZones]
         };
 
+        // Check for sudden death
+        const wasSuddenDeath = prev.isSuddenDeath;
+        state.isSuddenDeath = state.timeRemaining <= SUDDEN_DEATH_TIME;
+        
+        // Calculate elixir regen rate
+        const elixirRate = state.isSuddenDeath 
+          ? BASE_ELIXIR_REGEN_RATE * SUDDEN_DEATH_ELIXIR_MULTIPLIER 
+          : BASE_ELIXIR_REGEN_RATE;
+
         // Elixir regeneration
-        state.playerElixir = Math.min(10, state.playerElixir + ELIXIR_REGEN_RATE * delta);
-        state.enemyElixir = Math.min(10, state.enemyElixir + ELIXIR_REGEN_RATE * delta);
+        state.playerElixir = Math.min(10, state.playerElixir + elixirRate * delta);
+        state.enemyElixir = Math.min(10, state.enemyElixir + elixirRate * delta);
         state.timeRemaining = Math.max(0, state.timeRemaining - delta);
 
-        // Smart AI decision making
+        // Update placement zones based on destroyed towers
+        const updatePlacementZonesForPlayer = () => {
+          const zones: PlacementZone[] = [
+            {
+              id: 'player-default',
+              minX: 0,
+              maxX: ARENA_WIDTH,
+              minY: ARENA_HEIGHT / 2,
+              maxY: ARENA_HEIGHT,
+              isActive: true,
+              reason: 'default'
+            }
+          ];
+          
+          // Check enemy princess towers
+          const enemyLeftPrincess = state.enemyTowers.find(t => t.id === 'enemy-princess-left');
+          const enemyRightPrincess = state.enemyTowers.find(t => t.id === 'enemy-princess-right');
+          
+          if (enemyLeftPrincess && enemyLeftPrincess.health <= 0) {
+            zones.push({
+              id: 'enemy-left-destroyed',
+              minX: 0,
+              maxX: ARENA_WIDTH / 2 - 20,
+              minY: ARENA_HEIGHT / 2 - 100,
+              maxY: ARENA_HEIGHT / 2,
+              isActive: true,
+              reason: 'tower-destroyed'
+            });
+          }
+          
+          if (enemyRightPrincess && enemyRightPrincess.health <= 0) {
+            zones.push({
+              id: 'enemy-right-destroyed',
+              minX: ARENA_WIDTH / 2 + 20,
+              maxX: ARENA_WIDTH,
+              minY: ARENA_HEIGHT / 2 - 100,
+              maxY: ARENA_HEIGHT / 2,
+              isActive: true,
+              reason: 'tower-destroyed'
+            });
+          }
+          
+          return zones;
+        };
+
+        const updatePlacementZonesForEnemy = () => {
+          const zones: PlacementZone[] = [
+            {
+              id: 'enemy-default',
+              minX: 0,
+              maxX: ARENA_WIDTH,
+              minY: 0,
+              maxY: ARENA_HEIGHT / 2,
+              isActive: true,
+              reason: 'default'
+            }
+          ];
+          
+          const playerLeftPrincess = state.playerTowers.find(t => t.id === 'player-princess-left');
+          const playerRightPrincess = state.playerTowers.find(t => t.id === 'player-princess-right');
+          
+          if (playerLeftPrincess && playerLeftPrincess.health <= 0) {
+            zones.push({
+              id: 'player-left-destroyed',
+              minX: 0,
+              maxX: ARENA_WIDTH / 2 - 20,
+              minY: ARENA_HEIGHT / 2,
+              maxY: ARENA_HEIGHT / 2 + 100,
+              isActive: true,
+              reason: 'tower-destroyed'
+            });
+          }
+          
+          if (playerRightPrincess && playerRightPrincess.health <= 0) {
+            zones.push({
+              id: 'player-right-destroyed',
+              minX: ARENA_WIDTH / 2 + 20,
+              maxX: ARENA_WIDTH,
+              minY: ARENA_HEIGHT / 2,
+              maxY: ARENA_HEIGHT / 2 + 100,
+              isActive: true,
+              reason: 'tower-destroyed'
+            });
+          }
+          
+          return zones;
+        };
+
+        state.playerPlacementZones = updatePlacementZonesForPlayer();
+        state.enemyPlacementZones = updatePlacementZonesForEnemy();
+
+        // AI decision making with adjusted timing for sudden death
+        const aiMinDelay = state.isSuddenDeath ? 1200 : 2000;
         const aiDecision = makeAIDecision(state, aiLastPlayTime.current);
         if (aiDecision.shouldPlay && aiDecision.card && aiDecision.position !== undefined && aiDecision.cardIndex !== undefined) {
-          const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
-          addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
-          state.enemyUnits = [...state.enemyUnits, newUnit];
-          state.enemyElixir -= aiDecision.card.elixirCost;
-          aiLastPlayTime.current = performance.now();
+          // Validate AI placement against their zones
+          if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
+            const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
+            addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
+            state.enemyUnits = [...state.enemyUnits, newUnit];
+            state.enemyElixir -= aiDecision.card.elixirCost;
+            aiLastPlayTime.current = performance.now();
 
-          const newHand = [...state.enemyHand];
-          newHand[aiDecision.cardIndex] = state.enemyDeck[0];
-          state.enemyHand = newHand;
-          state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
+            const newHand = [...state.enemyHand];
+            newHand[aiDecision.cardIndex] = state.enemyDeck[0];
+            state.enemyHand = newHand;
+            state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
+          }
         }
 
         const now = performance.now();

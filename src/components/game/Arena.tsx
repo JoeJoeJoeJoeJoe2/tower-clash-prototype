@@ -1,4 +1,4 @@
-import { GameState, Position } from '@/types/game';
+import { GameState, Position, PlacementZone } from '@/types/game';
 import { Projectile, SpawnEffect, DamageNumber } from '@/hooks/useGameState';
 import { Tower } from './Tower';
 import { Unit } from './Unit';
@@ -38,6 +38,33 @@ function DamageNumberComponent({ dmg }: { dmg: DamageNumber }) {
   );
 }
 
+function PlacementZoneOverlay({ zone, isBonus }: { zone: PlacementZone; isBonus: boolean }) {
+  return (
+    <div
+      className={cn(
+        "absolute pointer-events-none transition-all duration-300",
+        isBonus 
+          ? "bg-emerald-500/20 border-2 border-emerald-400/50 border-dashed" 
+          : "bg-blue-500/15"
+      )}
+      style={{
+        left: zone.minX,
+        top: zone.minY,
+        width: zone.maxX - zone.minX,
+        height: zone.maxY - zone.minY,
+      }}
+    >
+      {isBonus && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-emerald-400/70 text-xs font-bold bg-emerald-900/50 px-2 py-1 rounded">
+            NEW ZONE
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Arena({ 
   gameState, 
   projectiles, 
@@ -56,7 +83,12 @@ export function Arena({
 
   return (
     <div
-      className="arena-field relative rounded-xl overflow-hidden border-4 border-muted shadow-xl"
+      className={cn(
+        "arena-field relative rounded-xl overflow-hidden border-4 shadow-xl transition-all duration-500",
+        gameState.isSuddenDeath 
+          ? "border-orange-500/80 shadow-orange-500/30" 
+          : "border-muted"
+      )}
       style={{ width: arenaWidth, height: arenaHeight }}
       onClick={handleClick}
     >
@@ -69,12 +101,24 @@ export function Arena({
         }}
       />
       
+      {/* Sudden death overlay effect */}
+      {gameState.isSuddenDeath && (
+        <div 
+          className="absolute inset-0 pointer-events-none animate-pulse"
+          style={{
+            background: 'radial-gradient(circle at center, transparent 40%, rgba(249,115,22,0.15) 100%)',
+          }}
+        />
+      )}
+      
       {/* Enemy side shading */}
       <div 
         className="absolute inset-x-0 top-0"
         style={{ 
           height: arenaHeight / 2,
-          background: 'linear-gradient(to bottom, rgba(239,68,68,0.1), transparent)'
+          background: gameState.isSuddenDeath
+            ? 'linear-gradient(to bottom, rgba(249,115,22,0.15), transparent)'
+            : 'linear-gradient(to bottom, rgba(239,68,68,0.1), transparent)'
         }}
       />
       
@@ -83,16 +127,22 @@ export function Arena({
         className="absolute inset-x-0 bottom-0"
         style={{ 
           height: arenaHeight / 2,
-          background: 'linear-gradient(to top, rgba(59,130,246,0.1), transparent)'
+          background: gameState.isSuddenDeath
+            ? 'linear-gradient(to top, rgba(249,115,22,0.15), transparent)'
+            : 'linear-gradient(to top, rgba(59,130,246,0.1), transparent)'
         }}
       />
       
       {/* River line */}
       <div 
-        className="absolute left-0 right-0 h-4"
+        className={cn(
+          "absolute left-0 right-0 h-4 transition-colors duration-500",
+        )}
         style={{ 
           top: arenaHeight / 2 - 8,
-          background: 'linear-gradient(to bottom, transparent, #3b82f660, #60a5fa80, #3b82f660, transparent)'
+          background: gameState.isSuddenDeath
+            ? 'linear-gradient(to bottom, transparent, #f9731680, #fb923c80, #f9731680, transparent)'
+            : 'linear-gradient(to bottom, transparent, #3b82f660, #60a5fa80, #3b82f660, transparent)'
         }}
       />
       
@@ -118,22 +168,57 @@ export function Arena({
         }}
       />
 
-      {/* Placement zone indicator */}
+      {/* Placement zones when card selected */}
       {gameState.selectedCardIndex !== null && (
-        <div 
-          className={cn('placement-zone active')}
-          style={{ 
-            top: arenaHeight / 2,
-            height: arenaHeight / 2
-          }}
-        />
+        <>
+          {gameState.playerPlacementZones.map(zone => (
+            <PlacementZoneOverlay 
+              key={zone.id} 
+              zone={zone} 
+              isBonus={zone.reason === 'tower-destroyed'}
+            />
+          ))}
+        </>
       )}
 
-      {/* Towers */}
-      {gameState.playerTowers.map(tower => (
+      {/* Destroyed tower markers */}
+      {gameState.enemyTowers.filter(t => t.health <= 0).map(tower => (
+        <div
+          key={`destroyed-${tower.id}`}
+          className="absolute pointer-events-none"
+          style={{
+            left: tower.position.x,
+            top: tower.position.y,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div className="w-12 h-12 rounded-full bg-gray-800/50 border-2 border-gray-600/50 flex items-center justify-center">
+            <span className="text-2xl opacity-50">💥</span>
+          </div>
+        </div>
+      ))}
+      
+      {gameState.playerTowers.filter(t => t.health <= 0).map(tower => (
+        <div
+          key={`destroyed-${tower.id}`}
+          className="absolute pointer-events-none"
+          style={{
+            left: tower.position.x,
+            top: tower.position.y,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div className="w-12 h-12 rounded-full bg-gray-800/50 border-2 border-gray-600/50 flex items-center justify-center">
+            <span className="text-2xl opacity-50">💥</span>
+          </div>
+        </div>
+      ))}
+
+      {/* Towers (only alive ones) */}
+      {gameState.playerTowers.filter(t => t.health > 0).map(tower => (
         <Tower key={tower.id} tower={tower} />
       ))}
-      {gameState.enemyTowers.map(tower => (
+      {gameState.enemyTowers.filter(t => t.health > 0).map(tower => (
         <Tower key={tower.id} tower={tower} />
       ))}
 
@@ -162,7 +247,12 @@ export function Arena({
 
       {/* Center decoration */}
       <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        <div className="w-4 h-4 rounded-full bg-white/20 border border-white/30" />
+        <div className={cn(
+          "w-4 h-4 rounded-full border transition-colors duration-500",
+          gameState.isSuddenDeath 
+            ? "bg-orange-500/30 border-orange-400/50" 
+            : "bg-white/20 border-white/30"
+        )} />
       </div>
     </div>
   );
