@@ -18,6 +18,7 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect }: HandProps) 
           isSelected={selectedIndex === index}
           canAfford={elixir >= card.elixirCost}
           onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
+          size="medium"
         />
       ))}
     </div>

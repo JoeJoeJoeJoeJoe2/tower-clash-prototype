@@ -1,12 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GameState, Tower, Unit, CardDefinition, Position } from '@/types/game';
-import { createDeck, drawHand } from '@/data/cards';
+import { createDeck, drawHand, allCards } from '@/data/cards';
 
 const ARENA_WIDTH = 400;
 const ARENA_HEIGHT = 600;
-const ELIXIR_REGEN_RATE = 0.03; // per tick
-const TICK_RATE = 50; // ms
-const GAME_DURATION = 180; // 3 minutes
+const ELIXIR_REGEN_RATE = 0.018; // Slowed from 0.03
+const GAME_DURATION = 180;
 
 function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } {
   const playerTowers: Tower[] = [
@@ -19,7 +18,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 400,
       attackDamage: 15,
       attackRange: 100,
-      attackCooldown: 1000,
+      attackCooldown: 1200,
       lastAttackTime: 0
     },
     {
@@ -31,7 +30,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 200,
       attackDamage: 10,
       attackRange: 120,
-      attackCooldown: 800,
+      attackCooldown: 1000,
       lastAttackTime: 0
     },
     {
@@ -43,7 +42,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 200,
       attackDamage: 10,
       attackRange: 120,
-      attackCooldown: 800,
+      attackCooldown: 1000,
       lastAttackTime: 0
     }
   ];
@@ -58,7 +57,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 400,
       attackDamage: 15,
       attackRange: 100,
-      attackCooldown: 1000,
+      attackCooldown: 1200,
       lastAttackTime: 0
     },
     {
@@ -70,7 +69,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 200,
       attackDamage: 10,
       attackRange: 120,
-      attackCooldown: 800,
+      attackCooldown: 1000,
       lastAttackTime: 0
     },
     {
@@ -82,7 +81,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       maxHealth: 200,
       attackDamage: 10,
       attackRange: 120,
-      attackCooldown: 800,
+      attackCooldown: 1000,
       lastAttackTime: 0
     }
   ];
@@ -94,10 +93,10 @@ function getDistance(a: Position, b: Position): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-function createInitialState(): GameState {
+function createInitialState(playerDeckIds: string[]): GameState {
   const { playerTowers, enemyTowers } = createInitialTowers();
-  const playerDeck = createDeck();
-  const enemyDeck = createDeck();
+  const playerDeck = createDeck(playerDeckIds);
+  const enemyDeck = createDeck(allCards.slice(0, 8).map(c => c.id));
   const { hand: playerHand, remainingDeck: playerRemainingDeck } = drawHand(playerDeck);
   const { hand: enemyHand, remainingDeck: enemyRemainingDeck } = drawHand(enemyDeck);
 
@@ -118,14 +117,14 @@ function createInitialState(): GameState {
   };
 }
 
-export function useGameState() {
-  const [gameState, setGameState] = useState<GameState>(createInitialState);
+export function useGameState(playerDeckIds: string[]) {
+  const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds));
   const gameLoopRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(Date.now());
   const unitIdCounter = useRef(0);
 
-  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy') => {
-    const unit: Unit = {
+  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): Unit => {
+    return {
       id: `unit-${unitIdCounter.current++}`,
       cardId: card.id,
       owner,
@@ -137,26 +136,24 @@ export function useGameState() {
       moveSpeed: card.moveSpeed,
       range: card.range,
       lastAttackTime: 0,
-      targetId: null
+      targetId: null,
+      state: 'idle',
+      animationFrame: 0,
+      direction: owner === 'player' ? 'up' : 'down'
     };
-    return unit;
   }, []);
 
   const playCard = useCallback((cardIndex: number, position: Position) => {
     setGameState(prev => {
       const card = prev.playerHand[cardIndex];
       if (!card || prev.playerElixir < card.elixirCost) return prev;
-      
-      // Check if position is in player's half
       if (position.y < ARENA_HEIGHT / 2) return prev;
 
       const newUnit = spawnUnit(card, position, 'player');
       
-      // Cycle hand
       const newHand = [...prev.playerHand];
       const nextCard = prev.playerDeck[0];
       newHand[cardIndex] = nextCard;
-      
       const newDeck = [...prev.playerDeck.slice(1), card];
 
       return {
@@ -177,14 +174,13 @@ export function useGameState() {
     }));
   }, []);
 
-  // AI logic
+  // Slower AI logic
   const runAI = useCallback((state: GameState, now: number): GameState => {
-    if (state.enemyElixir < 3) return state;
+    if (state.enemyElixir < 4) return state; // Wait for more elixir
     
-    // Random chance to play a card
-    if (Math.random() > 0.02) return state;
+    // Much lower chance to play (was 0.02, now 0.008)
+    if (Math.random() > 0.008) return state;
     
-    // Find affordable cards
     const affordableCards = state.enemyHand
       .map((card, idx) => ({ card, idx }))
       .filter(({ card }) => card.elixirCost <= state.enemyElixir);
@@ -193,16 +189,15 @@ export function useGameState() {
     
     const { card, idx } = affordableCards[Math.floor(Math.random() * affordableCards.length)];
     
-    // Place in enemy's half (top half)
     const position: Position = {
       x: 50 + Math.random() * (ARENA_WIDTH - 100),
       y: 150 + Math.random() * 100
     };
 
-    const newUnit = {
+    const newUnit: Unit = {
       id: `unit-${unitIdCounter.current++}`,
       cardId: card.id,
-      owner: 'enemy' as const,
+      owner: 'enemy',
       position,
       health: card.health,
       maxHealth: card.health,
@@ -211,7 +206,10 @@ export function useGameState() {
       moveSpeed: card.moveSpeed,
       range: card.range,
       lastAttackTime: 0,
-      targetId: null
+      targetId: null,
+      state: 'idle',
+      animationFrame: 0,
+      direction: 'down'
     };
 
     const newHand = [...state.enemyHand];
@@ -228,7 +226,6 @@ export function useGameState() {
     };
   }, []);
 
-  // Game loop
   useEffect(() => {
     const tick = () => {
       const now = Date.now();
@@ -240,29 +237,16 @@ export function useGameState() {
 
         let state = { ...prev };
 
-        // Regenerate elixir
         state.playerElixir = Math.min(10, state.playerElixir + ELIXIR_REGEN_RATE);
         state.enemyElixir = Math.min(10, state.enemyElixir + ELIXIR_REGEN_RATE);
-
-        // Update timer
         state.timeRemaining = Math.max(0, state.timeRemaining - delta);
 
-        // Run AI
         state = runAI(state, now);
-
-        // Move units and handle combat
-        const allTargets = [
-          ...state.playerTowers.filter(t => t.health > 0),
-          ...state.enemyTowers.filter(t => t.health > 0),
-          ...state.playerUnits,
-          ...state.enemyUnits
-        ];
 
         // Update player units
         state.playerUnits = state.playerUnits.map(unit => {
           if (unit.health <= 0) return unit;
 
-          // Find closest enemy target (units first, then towers)
           const enemies = [
             ...state.enemyUnits.filter(u => u.health > 0),
             ...state.enemyTowers.filter(t => t.health > 0)
@@ -279,27 +263,33 @@ export function useGameState() {
             }
           }
 
+          const newUnit = { ...unit };
+
           if (closestEnemy) {
             if (closestDist <= unit.range) {
-              // Attack
+              newUnit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
-                unit.lastAttackTime = now;
-                // Damage will be applied separately
+                newUnit.lastAttackTime = now;
+                newUnit.animationFrame = (unit.animationFrame + 1) % 4;
               }
             } else {
-              // Move toward enemy
+              newUnit.state = 'moving';
               const dx = closestEnemy.position.x - unit.position.x;
               const dy = closestEnemy.position.y - unit.position.y;
               const len = Math.sqrt(dx * dx + dy * dy);
               
-              unit.position = {
+              newUnit.position = {
                 x: unit.position.x + (dx / len) * unit.moveSpeed,
                 y: unit.position.y + (dy / len) * unit.moveSpeed
               };
+              newUnit.direction = dy < 0 ? 'up' : 'down';
+              newUnit.animationFrame = (unit.animationFrame + 1) % 8;
             }
+          } else {
+            newUnit.state = 'idle';
           }
 
-          return unit;
+          return newUnit;
         });
 
         // Update enemy units
@@ -322,36 +312,40 @@ export function useGameState() {
             }
           }
 
+          const newUnit = { ...unit };
+
           if (closestEnemy) {
             if (closestDist <= unit.range) {
+              newUnit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
-                unit.lastAttackTime = now;
+                newUnit.lastAttackTime = now;
+                newUnit.animationFrame = (unit.animationFrame + 1) % 4;
               }
             } else {
+              newUnit.state = 'moving';
               const dx = closestEnemy.position.x - unit.position.x;
               const dy = closestEnemy.position.y - unit.position.y;
               const len = Math.sqrt(dx * dx + dy * dy);
               
-              unit.position = {
+              newUnit.position = {
                 x: unit.position.x + (dx / len) * unit.moveSpeed,
                 y: unit.position.y + (dy / len) * unit.moveSpeed
               };
+              newUnit.direction = dy < 0 ? 'up' : 'down';
+              newUnit.animationFrame = (unit.animationFrame + 1) % 8;
             }
+          } else {
+            newUnit.state = 'idle';
           }
 
-          return unit;
+          return newUnit;
         });
 
-        // Apply damage from units to enemies
+        // Apply damage
         state.playerUnits.forEach(unit => {
-          if (unit.health <= 0) return;
+          if (unit.health <= 0 || unit.state !== 'attacking') return;
           if (now - unit.lastAttackTime < 50) {
-            // Just attacked
-            const enemies = [
-              ...state.enemyUnits,
-              ...state.enemyTowers
-            ];
-            
+            const enemies = [...state.enemyUnits, ...state.enemyTowers];
             for (const enemy of enemies) {
               if (enemy.health > 0 && getDistance(unit.position, enemy.position) <= unit.range) {
                 enemy.health -= unit.damage;
@@ -362,13 +356,9 @@ export function useGameState() {
         });
 
         state.enemyUnits.forEach(unit => {
-          if (unit.health <= 0) return;
+          if (unit.health <= 0 || unit.state !== 'attacking') return;
           if (now - unit.lastAttackTime < 50) {
-            const enemies = [
-              ...state.playerUnits,
-              ...state.playerTowers
-            ];
-            
+            const enemies = [...state.playerUnits, ...state.playerTowers];
             for (const enemy of enemies) {
               if (enemy.health > 0 && getDistance(unit.position, enemy.position) <= unit.range) {
                 enemy.health -= unit.damage;
@@ -448,8 +438,8 @@ export function useGameState() {
   }, [runAI]);
 
   const resetGame = useCallback(() => {
-    setGameState(createInitialState());
-  }, []);
+    setGameState(createInitialState(playerDeckIds));
+  }, [playerDeckIds]);
 
   return {
     gameState,
