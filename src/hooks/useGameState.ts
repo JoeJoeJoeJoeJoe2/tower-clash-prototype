@@ -163,6 +163,98 @@ function isPositionInZones(position: Position, zones: PlacementZone[]): boolean 
   );
 }
 
+// River and bridge constants
+const RIVER_Y = ARENA_HEIGHT / 2;
+const RIVER_HALF_WIDTH = 8; // River extends 8 pixels above and below center
+const LEFT_BRIDGE = { minX: 40, maxX: 104 };
+const RIGHT_BRIDGE = { minX: ARENA_WIDTH - 104, maxX: ARENA_WIDTH - 40 };
+
+function isOnBridge(x: number): boolean {
+  return (x >= LEFT_BRIDGE.minX && x <= LEFT_BRIDGE.maxX) ||
+         (x >= RIGHT_BRIDGE.minX && x <= RIGHT_BRIDGE.maxX);
+}
+
+function isInRiver(y: number): boolean {
+  return y >= RIVER_Y - RIVER_HALF_WIDTH && y <= RIVER_Y + RIVER_HALF_WIDTH;
+}
+
+function wouldCrossRiver(fromY: number, toY: number): boolean {
+  // Check if movement would cross the river center line
+  return (fromY < RIVER_Y && toY >= RIVER_Y) || (fromY > RIVER_Y && toY <= RIVER_Y);
+}
+
+function getClosestBridgeX(x: number): number {
+  const leftBridgeCenter = (LEFT_BRIDGE.minX + LEFT_BRIDGE.maxX) / 2;
+  const rightBridgeCenter = (RIGHT_BRIDGE.minX + RIGHT_BRIDGE.maxX) / 2;
+  
+  const distToLeft = Math.abs(x - leftBridgeCenter);
+  const distToRight = Math.abs(x - rightBridgeCenter);
+  
+  return distToLeft < distToRight ? leftBridgeCenter : rightBridgeCenter;
+}
+
+function calculateMovement(
+  unit: Unit,
+  target: Position,
+  delta: number
+): { newX: number; newY: number; direction: 'up' | 'down' } {
+  const currentX = unit.position.x;
+  const currentY = unit.position.y;
+  const speed = unit.moveSpeed * delta * 50;
+  
+  // Check if we're on opposite sides of the river from target
+  const unitOnPlayerSide = currentY > RIVER_Y;
+  const targetOnPlayerSide = target.y > RIVER_Y;
+  const needsToCrossRiver = unitOnPlayerSide !== targetOnPlayerSide;
+  
+  // If we're on a bridge or don't need to cross, move directly
+  if (!needsToCrossRiver || isOnBridge(currentX)) {
+    const dx = target.x - currentX;
+    const dy = target.y - currentY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    
+    if (len < 0.1) return { newX: currentX, newY: currentY, direction: unit.direction };
+    
+    let newX = currentX + (dx / len) * speed;
+    let newY = currentY + (dy / len) * speed;
+    
+    // If on bridge, allow crossing
+    if (isOnBridge(currentX)) {
+      return { newX, newY, direction: dy < 0 ? 'up' : 'down' };
+    }
+    
+    // If would cross river but not on bridge, stop at river edge
+    if (wouldCrossRiver(currentY, newY) && !isOnBridge(newX)) {
+      newY = unitOnPlayerSide ? RIVER_Y + RIVER_HALF_WIDTH + 1 : RIVER_Y - RIVER_HALF_WIDTH - 1;
+    }
+    
+    return { newX, newY, direction: dy < 0 ? 'up' : 'down' };
+  }
+  
+  // Need to cross river but not on bridge - navigate to nearest bridge first
+  const bridgeX = getClosestBridgeX(currentX);
+  const bridgeY = unitOnPlayerSide ? RIVER_Y + RIVER_HALF_WIDTH : RIVER_Y - RIVER_HALF_WIDTH;
+  
+  // Move towards bridge
+  const dx = bridgeX - currentX;
+  const dy = bridgeY - currentY;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  
+  if (len < 0.1) {
+    // At bridge entrance, move towards river
+    return { 
+      newX: currentX, 
+      newY: currentY + (unitOnPlayerSide ? -speed : speed),
+      direction: unitOnPlayerSide ? 'up' : 'down'
+    };
+  }
+  
+  const newX = currentX + (dx / len) * speed;
+  const newY = currentY + (dy / len) * speed;
+  
+  return { newX, newY, direction: dy < 0 ? 'up' : 'down' };
+}
+
 function createInitialState(playerDeckIds: string[]): GameState {
   const { playerTowers, enemyTowers } = createInitialTowers();
   const { playerZones, enemyZones } = createInitialPlacementZones();
@@ -485,15 +577,9 @@ export function useGameState(playerDeckIds: string[]) {
               }
             } else {
               unit.state = 'moving';
-              const dx = closestEnemy.position.x - unit.position.x;
-              const dy = closestEnemy.position.y - unit.position.y;
-              const len = Math.sqrt(dx * dx + dy * dy);
-              
-              unit.position = {
-                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 50,
-                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 50
-              };
-              unit.direction = dy < 0 ? 'up' : 'down';
+              const movement = calculateMovement(unit, closestEnemy.position, delta);
+              unit.position = { x: movement.newX, y: movement.newY };
+              unit.direction = movement.direction;
             }
             unit.animationFrame = (unit.animationFrame + 1) % 60;
           } else {
@@ -534,15 +620,9 @@ export function useGameState(playerDeckIds: string[]) {
               }
             } else {
               unit.state = 'moving';
-              const dx = closestEnemy.position.x - unit.position.x;
-              const dy = closestEnemy.position.y - unit.position.y;
-              const len = Math.sqrt(dx * dx + dy * dy);
-              
-              unit.position = {
-                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 50,
-                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 50
-              };
-              unit.direction = dy < 0 ? 'up' : 'down';
+              const movement = calculateMovement(unit, closestEnemy.position, delta);
+              unit.position = { x: movement.newX, y: movement.newY };
+              unit.direction = movement.direction;
             }
             unit.animationFrame = (unit.animationFrame + 1) % 60;
           } else {
