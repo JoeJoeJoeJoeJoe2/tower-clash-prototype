@@ -18,7 +18,7 @@ function formatTime(seconds: number): string {
 }
 
 export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
-  const { gameState, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck);
+  const { gameState, projectiles, spawnEffects, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
@@ -105,12 +105,14 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
           </div>
         </div>
         
-        <div className="w-10" /> {/* Spacer for balance */}
+        <div className="w-10" />
       </div>
 
       {/* Arena */}
       <Arena
         gameState={gameState}
+        projectiles={projectiles}
+        spawnEffects={spawnEffects}
         arenaWidth={ARENA_WIDTH}
         arenaHeight={ARENA_HEIGHT}
         onArenaClick={handleArenaClick}
