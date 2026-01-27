@@ -18,9 +18,13 @@ export function useProgression() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure deck has 8 cards
-        if (parsed.currentDeck?.length !== 8) {
-          parsed.currentDeck = starterCardIds.slice(0, 8);
+        // Ensure we have at least 8 owned cards (add starters if needed)
+        if (!parsed.ownedCardIds || parsed.ownedCardIds.length < 8) {
+          parsed.ownedCardIds = [...starterCardIds];
+        }
+        // Ensure deck has 8 cards from owned cards
+        if (!parsed.currentDeck || parsed.currentDeck.length !== 8) {
+          parsed.currentDeck = parsed.ownedCardIds.slice(0, 8);
         }
         return parsed;
       }
