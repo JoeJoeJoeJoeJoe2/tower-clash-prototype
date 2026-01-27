@@ -24,10 +24,12 @@ export interface CardDefinition {
   emoji: string;
   health: number;
   damage: number;
-  attackSpeed: number; // attacks per second
-  moveSpeed: number; // pixels per tick
+  attackSpeed: number;
+  moveSpeed: number;
   range: number;
   description: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  color: string;
 }
 
 export interface Unit {
@@ -43,6 +45,9 @@ export interface Unit {
   range: number;
   lastAttackTime: number;
   targetId: string | null;
+  state: 'idle' | 'moving' | 'attacking';
+  animationFrame: number;
+  direction: 'up' | 'down';
 }
 
 export interface GameState {
@@ -59,4 +64,16 @@ export interface GameState {
   timeRemaining: number;
   gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
   selectedCardIndex: number | null;
+}
+
+export interface PlayerProgress {
+  ownedCardIds: string[];
+  currentDeck: string[];
+  wins: number;
+  losses: number;
+  chestsAvailable: number;
+}
+
+export interface ChestReward {
+  cards: { cardId: string; isNew: boolean }[];
 }

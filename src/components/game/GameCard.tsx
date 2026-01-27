@@ -3,30 +3,103 @@ import { cn } from '@/lib/utils';
 
 interface GameCardProps {
   card: CardDefinition;
-  isSelected: boolean;
-  canAfford: boolean;
-  onClick: () => void;
+  isSelected?: boolean;
+  canAfford?: boolean;
+  onClick?: () => void;
+  size?: 'small' | 'medium' | 'large';
+  showDetails?: boolean;
 }
 
-export function GameCard({ card, isSelected, canAfford, onClick }: GameCardProps) {
+const rarityStyles = {
+  common: 'from-slate-500 to-slate-700 border-slate-400',
+  rare: 'from-blue-500 to-blue-700 border-blue-400',
+  epic: 'from-purple-500 to-purple-700 border-purple-400',
+  legendary: 'from-amber-500 to-orange-600 border-amber-400'
+};
+
+const rarityGlow = {
+  common: '',
+  rare: 'shadow-blue-500/30',
+  epic: 'shadow-purple-500/40',
+  legendary: 'shadow-amber-500/50 animate-pulse'
+};
+
+export function GameCard({ 
+  card, 
+  isSelected = false, 
+  canAfford = true, 
+  onClick,
+  size = 'medium',
+  showDetails = false
+}: GameCardProps) {
+  const sizeClasses = {
+    small: 'w-14 h-18',
+    medium: 'w-16 h-22',
+    large: 'w-24 h-32'
+  };
+
   return (
     <div
       className={cn(
-        'game-card relative w-16 h-20 flex flex-col items-center justify-center',
-        !canAfford && 'disabled',
-        isSelected && 'selected'
+        'game-card relative flex flex-col items-center justify-between p-1 border-2 transition-all duration-200',
+        sizeClasses[size],
+        `bg-gradient-to-b ${rarityStyles[card.rarity]}`,
+        !canAfford && 'disabled grayscale-[50%]',
+        isSelected && 'selected ring-2 ring-primary scale-110 -translate-y-2',
+        rarityGlow[card.rarity],
+        onClick && 'cursor-pointer hover:scale-105 hover:-translate-y-1'
       )}
-      onClick={() => canAfford && onClick()}
+      onClick={() => canAfford && onClick?.()}
     >
-      <div className="card-cost text-white">
+      {/* Elixir cost */}
+      <div className="card-cost text-white font-bold text-xs">
         {card.elixirCost}
       </div>
       
-      <span className="text-2xl mt-1">{card.emoji}</span>
+      {/* Card art area */}
+      <div 
+        className="w-full flex-1 flex items-center justify-center rounded-md my-1"
+        style={{ 
+          background: `linear-gradient(135deg, ${card.color}40, ${card.color}20)`,
+        }}
+      >
+        <span className={cn(
+          'transition-transform duration-200',
+          size === 'small' ? 'text-xl' : size === 'medium' ? 'text-2xl' : 'text-4xl',
+          isSelected && 'animate-bounce'
+        )}>
+          {card.emoji}
+        </span>
+      </div>
       
-      <span className="text-[10px] font-bold text-foreground mt-1 text-center leading-tight">
-        {card.name}
-      </span>
+      {/* Card name */}
+      <div className="w-full text-center">
+        <span className={cn(
+          'font-bold text-white drop-shadow-md leading-tight',
+          size === 'small' ? 'text-[8px]' : size === 'medium' ? 'text-[9px]' : 'text-xs'
+        )}>
+          {card.name}
+        </span>
+      </div>
+
+      {/* Rarity indicator */}
+      <div className={cn(
+        'absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full',
+        card.rarity === 'common' && 'bg-slate-400',
+        card.rarity === 'rare' && 'bg-blue-400',
+        card.rarity === 'epic' && 'bg-purple-400',
+        card.rarity === 'legendary' && 'bg-amber-400'
+      )} />
+
+      {showDetails && (
+        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-card/95 backdrop-blur p-2 rounded-lg border border-border min-w-32 z-10 text-center">
+          <p className="text-[10px] text-muted-foreground">{card.description}</p>
+          <div className="flex justify-center gap-3 mt-1 text-[9px]">
+            <span>❤️ {card.health}</span>
+            <span>⚔️ {card.damage}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
