@@ -33,8 +33,8 @@ export function GameCard({
   showDetails = false
 }: GameCardProps) {
   const sizeClasses = {
-    small: 'w-14 h-18',
-    medium: 'w-16 h-22',
+    small: 'w-14 h-[72px]',
+    medium: 'w-16 h-[88px]',
     large: 'w-24 h-32'
   };
 
