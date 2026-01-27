@@ -1,17 +1,29 @@
 import { Tower as TowerType } from '@/types/game';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 interface TowerProps {
   tower: TowerType;
 }
 
 export function Tower({ tower }: TowerProps) {
+  const [isAttacking, setIsAttacking] = useState(false);
   const healthPercent = (tower.health / tower.maxHealth) * 100;
   const isDestroyed = tower.health <= 0;
   
   const healthClass = healthPercent > 60 ? 'health-full' : healthPercent > 30 ? 'health-mid' : 'health-low';
 
-  const size = tower.type === 'king' ? 'w-14 h-14' : 'w-10 h-10';
+  // Detect attacks
+  useEffect(() => {
+    const now = performance.now();
+    if (now - tower.lastAttackTime < 200) {
+      setIsAttacking(true);
+      const timer = setTimeout(() => setIsAttacking(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [tower.lastAttackTime]);
+
+  const size = tower.type === 'king' ? 'w-16 h-16' : 'w-12 h-12';
 
   return (
     <div
@@ -21,23 +33,56 @@ export function Tower({ tower }: TowerProps) {
       )}
       style={{
         left: tower.position.x,
-        top: tower.position.y
+        top: tower.position.y,
+        zIndex: 50
       }}
     >
+      {/* Attack range indicator when attacking */}
+      {isAttacking && !isDestroyed && (
+        <div 
+          className="absolute rounded-full border-2 border-white/20 animate-ping"
+          style={{
+            width: tower.attackRange * 2,
+            height: tower.attackRange * 2,
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+        />
+      )}
+      
       <div
         className={cn(
-          'tower-base flex items-center justify-center text-lg',
+          'tower-base flex items-center justify-center relative',
           size,
           tower.owner === 'player' ? 'tower-friendly' : 'tower-enemy',
-          tower.type === 'king' && 'tower-king'
+          tower.type === 'king' && 'tower-king',
+          isAttacking && 'scale-110'
         )}
+        style={{
+          transition: 'transform 0.1s ease-out'
+        }}
       >
-        {tower.type === 'king' ? '🏰' : '🗼'}
+        <span className={cn(
+          'text-2xl',
+          tower.type === 'king' && 'text-3xl'
+        )}>
+          {tower.type === 'king' ? '🏰' : '🗼'}
+        </span>
+        
+        {/* Muzzle flash when attacking */}
+        {isAttacking && !isDestroyed && (
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+            <span className="text-lg animate-bounce">
+              {tower.type === 'king' ? '🔥' : '🏹'}
+            </span>
+          </div>
+        )}
       </div>
       
       {!isDestroyed && (
-        <div className="w-full mt-1">
-          <div className="health-bar-container">
+        <div className="w-full mt-1 px-1">
+          <div className="health-bar-container h-2">
             <div
               className={cn('health-bar-fill', healthClass)}
               style={{ width: `${healthPercent}%` }}
@@ -47,7 +92,7 @@ export function Tower({ tower }: TowerProps) {
       )}
 
       {isDestroyed && (
-        <span className="text-xs text-destructive font-bold mt-1">💥</span>
+        <div className="text-xl mt-1">💥</div>
       )}
     </div>
   );
