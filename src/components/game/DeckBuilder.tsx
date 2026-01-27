@@ -53,19 +53,19 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
           <span className="text-xs text-muted-foreground">Avg: ⚡{avgElixir}</span>
         </div>
         
-        <div className="grid grid-cols-4 gap-2 min-h-[180px]">
+        <div className="grid grid-cols-4 gap-2 min-h-[200px]">
           {[...Array(8)].map((_, idx) => {
             const card = deckCards[idx];
             return (
               <div 
                 key={idx}
                 className={cn(
-                  'aspect-[3/4] rounded-lg border-2 border-dashed border-muted flex items-center justify-center',
-                  !card && 'bg-muted/20'
+                  'rounded-lg border-2 border-dashed border-muted flex flex-col items-center justify-center p-1',
+                  !card && 'bg-muted/20 aspect-[3/4]'
                 )}
               >
                 {card ? (
-                  <div className="relative">
+                  <div className="relative flex flex-col items-center">
                     <GameCard 
                       card={card} 
                       size="small"
@@ -73,10 +73,17 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
                     />
                     <button
                       onClick={() => toggleCard(card.id)}
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center hover:scale-110 transition-transform"
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
+                    {/* Card stats below */}
+                    <div className="mt-1 text-center w-full">
+                      <div className="text-[8px] text-muted-foreground flex justify-center gap-1">
+                        <span>❤️{card.health}</span>
+                        <span>⚔️{card.damage}</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <span className="text-muted-foreground text-2xl">+</span>
