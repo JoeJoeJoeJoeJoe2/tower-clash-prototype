@@ -3,7 +3,7 @@ import { Arena } from './Arena';
 import { Hand } from './Hand';
 import { ElixirBar } from './ElixirBar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GameUIProps {
@@ -89,7 +89,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
     <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 pb-56 gap-4">
       {/* Header */}
       <div className="flex items-center gap-4 w-full max-w-md shrink-0">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={() => onGameEnd('loss')} title="Forfeit match">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
@@ -123,7 +123,9 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
           </div>
         </div>
         
-        <div className="w-10" />
+        <Button variant="ghost" size="icon" onClick={() => onGameEnd('loss')} className="text-destructive" title="Surrender">
+          <X className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Sudden death banner */}
