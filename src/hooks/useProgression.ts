@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PlayerProgress, ChestReward } from '@/types/game';
+import { PlayerProgress, ChestReward, DeckSlot } from '@/types/game';
 import { allCards, starterCardIds } from '@/data/cards';
 
 const STORAGE_KEY = 'clash-game-progress';
 
+const defaultDeckSlots: DeckSlot[] = [
+  { id: 'A', name: 'Deck A', cardIds: starterCardIds.slice(0, 8) },
+  { id: 'B', name: 'Deck B', cardIds: [] },
+  { id: 'C', name: 'Deck C', cardIds: [] }
+];
+
 const initialProgress: PlayerProgress = {
   ownedCardIds: [...starterCardIds],
   currentDeck: starterCardIds.slice(0, 8),
+  deckSlots: defaultDeckSlots,
+  activeDeckId: 'A',
   wins: 0,
   losses: 0,
   chestsAvailable: 0
@@ -24,12 +32,27 @@ export function useProgression() {
         const mergedOwned = [...new Set([...starterCardIds, ...existingOwned])];
         parsed.ownedCardIds = mergedOwned;
         
-        // Ensure deck has 8 valid cards from owned cards
-        const validDeck = (parsed.currentDeck || []).filter((id: string) => mergedOwned.includes(id));
-        if (validDeck.length !== 8) {
-          parsed.currentDeck = starterCardIds.slice(0, 8);
+        // Migration: add deck slots if missing
+        if (!parsed.deckSlots) {
+          parsed.deckSlots = defaultDeckSlots.map((slot, idx) => ({
+            ...slot,
+            cardIds: idx === 0 ? (parsed.currentDeck || starterCardIds.slice(0, 8)) : []
+          }));
+          parsed.activeDeckId = 'A';
+        }
+        
+        // Ensure currentDeck syncs with active deck slot
+        const activeSlot = parsed.deckSlots.find((s: DeckSlot) => s.id === parsed.activeDeckId);
+        if (activeSlot && activeSlot.cardIds.length === 8) {
+          parsed.currentDeck = activeSlot.cardIds;
         } else {
-          parsed.currentDeck = validDeck;
+          // Fallback to starter deck if active slot is invalid
+          const validDeck = (parsed.currentDeck || []).filter((id: string) => mergedOwned.includes(id));
+          if (validDeck.length !== 8) {
+            parsed.currentDeck = starterCardIds.slice(0, 8);
+          } else {
+            parsed.currentDeck = validDeck;
+          }
         }
         
         return parsed;
@@ -50,10 +73,42 @@ export function useProgression() {
 
   const updateDeck = useCallback((newDeck: string[]) => {
     if (newDeck.length !== 8) return;
-    setProgress(prev => ({
-      ...prev,
-      currentDeck: newDeck
-    }));
+    setProgress(prev => {
+      const updatedSlots = prev.deckSlots.map(slot =>
+        slot.id === prev.activeDeckId ? { ...slot, cardIds: newDeck } : slot
+      );
+      return {
+        ...prev,
+        currentDeck: newDeck,
+        deckSlots: updatedSlots
+      };
+    });
+  }, []);
+
+  const setActiveDeck = useCallback((deckId: 'A' | 'B' | 'C') => {
+    setProgress(prev => {
+      const slot = prev.deckSlots.find(s => s.id === deckId);
+      const newCurrentDeck = slot && slot.cardIds.length === 8 ? slot.cardIds : prev.currentDeck;
+      return {
+        ...prev,
+        activeDeckId: deckId,
+        currentDeck: newCurrentDeck
+      };
+    });
+  }, []);
+
+  const updateDeckSlot = useCallback((deckId: 'A' | 'B' | 'C', cardIds: string[]) => {
+    setProgress(prev => {
+      const updatedSlots = prev.deckSlots.map(slot =>
+        slot.id === deckId ? { ...slot, cardIds } : slot
+      );
+      const isActiveDeck = prev.activeDeckId === deckId;
+      return {
+        ...prev,
+        deckSlots: updatedSlots,
+        currentDeck: isActiveDeck && cardIds.length === 8 ? cardIds : prev.currentDeck
+      };
+    });
   }, []);
 
   const recordWin = useCallback(() => {
@@ -118,6 +173,8 @@ export function useProgression() {
   return {
     progress,
     updateDeck,
+    setActiveDeck,
+    updateDeckSlot,
     recordWin,
     recordLoss,
     openChest,
