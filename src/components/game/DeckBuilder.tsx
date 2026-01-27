@@ -108,7 +108,6 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
                   card={card} 
                   size="small"
                   isSelected={inDeck}
-                  onClick={() => toggleCard(card.id)}
                 />
                 {inDeck && (
                   <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
