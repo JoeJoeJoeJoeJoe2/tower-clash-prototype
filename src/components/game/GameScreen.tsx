@@ -12,7 +12,16 @@ type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle';
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [chestReward, setChestReward] = useState<ChestReward | null>(null);
-  const { progress, updateDeck, recordWin, recordLoss, openChest, resetProgress } = useProgression();
+  const { 
+    progress, 
+    updateDeck, 
+    updateDeckSlot,
+    setActiveDeck,
+    recordWin, 
+    recordLoss, 
+    openChest, 
+    resetProgress 
+  } = useProgression();
 
   const handleGameEnd = (result: 'win' | 'loss' | 'draw') => {
     if (result === 'win') {
@@ -52,11 +61,14 @@ export function GameScreen() {
       {screen === 'deck-builder' && (
         <DeckBuilder
           ownedCardIds={progress.ownedCardIds}
-          currentDeck={progress.currentDeck}
-          onSaveDeck={(deck) => {
-            updateDeck(deck);
+          deckSlots={progress.deckSlots}
+          activeDeckId={progress.activeDeckId}
+          onSaveDeck={(deckId, cardIds) => {
+            updateDeckSlot(deckId, cardIds);
           }}
+          onSetActiveDeck={setActiveDeck}
           onStartBattle={() => setScreen('battle')}
+          onBack={() => setScreen('menu')}
         />
       )}
 

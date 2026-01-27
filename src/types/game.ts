@@ -79,9 +79,17 @@ export interface GameState {
   enemyPlacementZones: PlacementZone[];
 }
 
+export interface DeckSlot {
+  id: 'A' | 'B' | 'C';
+  name: string;
+  cardIds: string[];
+}
+
 export interface PlayerProgress {
   ownedCardIds: string[];
   currentDeck: string[];
+  deckSlots: DeckSlot[];
+  activeDeckId: 'A' | 'B' | 'C';
   wins: number;
   losses: number;
   chestsAvailable: number;

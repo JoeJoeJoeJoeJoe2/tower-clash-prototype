@@ -1,21 +1,40 @@
-import { useState } from 'react';
-import { CardDefinition } from '@/types/game';
+import { useState, useEffect } from 'react';
+import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Swords, Check, X, Info } from 'lucide-react';
+import { Swords, Check, X, Info, ArrowLeft } from 'lucide-react';
 
 interface DeckBuilderProps {
   ownedCardIds: string[];
-  currentDeck: string[];
-  onSaveDeck: (deck: string[]) => void;
+  deckSlots: DeckSlot[];
+  activeDeckId: 'A' | 'B' | 'C';
+  onSaveDeck: (deckId: 'A' | 'B' | 'C', cardIds: string[]) => void;
+  onSetActiveDeck: (deckId: 'A' | 'B' | 'C') => void;
   onStartBattle: () => void;
+  onBack: () => void;
 }
 
-export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBattle }: DeckBuilderProps) {
-  const [selectedDeck, setSelectedDeck] = useState<string[]>(currentDeck);
+export function DeckBuilder({ 
+  ownedCardIds, 
+  deckSlots, 
+  activeDeckId,
+  onSaveDeck, 
+  onSetActiveDeck,
+  onStartBattle,
+  onBack
+}: DeckBuilderProps) {
+  const [editingDeckId, setEditingDeckId] = useState<'A' | 'B' | 'C'>(activeDeckId);
+  const currentSlot = deckSlots.find(s => s.id === editingDeckId)!;
+  const [selectedDeck, setSelectedDeck] = useState<string[]>(currentSlot?.cardIds || []);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
+
+  // Sync when switching deck tabs
+  useEffect(() => {
+    const slot = deckSlots.find(s => s.id === editingDeckId);
+    setSelectedDeck(slot?.cardIds || []);
+  }, [editingDeckId, deckSlots]);
 
   const ownedCards = allCards.filter(c => ownedCardIds.includes(c.id));
   const deckCards = selectedDeck.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
@@ -26,11 +45,19 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
     } else if (selectedDeck.length < 8) {
       setSelectedDeck(prev => [...prev, cardId]);
     }
+    // If deck is full and card not in deck, do nothing (block add)
   };
 
   const handleSave = () => {
     if (selectedDeck.length === 8) {
-      onSaveDeck(selectedDeck);
+      onSaveDeck(editingDeckId, selectedDeck);
+    }
+  };
+
+  const handleSetActive = () => {
+    if (selectedDeck.length === 8) {
+      onSaveDeck(editingDeckId, selectedDeck);
+      onSetActiveDeck(editingDeckId);
     }
   };
 
@@ -38,18 +65,63 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
     ? (deckCards.reduce((sum, c) => sum + c.elixirCost, 0) / deckCards.length).toFixed(1)
     : '0.0';
 
+  const isActiveDeck = activeDeckId === editingDeckId;
+  const canBattle = deckSlots.find(s => s.id === activeDeckId)?.cardIds.length === 8;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center p-4 gap-6">
+    <div className="min-h-screen bg-background flex flex-col items-center p-4 gap-4">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="game-title text-4xl text-primary mb-2">Battle Deck</h1>
-        <p className="text-muted-foreground text-sm">Select 8 cards for battle</p>
+      <div className="flex items-center gap-4 w-full max-w-md">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex-1 text-center">
+          <h1 className="game-title text-3xl text-primary">Battle Decks</h1>
+        </div>
+        <div className="w-10" />
+      </div>
+
+      {/* Deck Tabs */}
+      <div className="flex gap-2 w-full max-w-md">
+        {(['A', 'B', 'C'] as const).map(id => {
+          const slot = deckSlots.find(s => s.id === id);
+          const isComplete = slot && slot.cardIds.length === 8;
+          const isEditing = editingDeckId === id;
+          const isActive = activeDeckId === id;
+          
+          return (
+            <button
+              key={id}
+              onClick={() => setEditingDeckId(id)}
+              className={cn(
+                'flex-1 py-2 px-3 rounded-lg border-2 transition-all text-sm font-medium',
+                isEditing 
+                  ? 'border-primary bg-primary/20 text-primary' 
+                  : 'border-border bg-card/50 text-muted-foreground hover:bg-card',
+                isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+              )}
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span>Deck {id}</span>
+                <span className={cn(
+                  'text-[10px]',
+                  isComplete ? 'text-green-400' : 'text-muted-foreground'
+                )}>
+                  {isComplete ? '✓ Ready' : `${slot?.cardIds.length || 0}/8`}
+                </span>
+                {isActive && (
+                  <span className="text-[10px] text-primary font-bold">ACTIVE</span>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Current Deck */}
       <div className="bg-card/50 rounded-xl p-4 border border-border w-full max-w-md">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-medium">Your Deck ({selectedDeck.length}/8)</span>
+          <span className="text-sm font-medium">Deck {editingDeckId} ({selectedDeck.length}/8)</span>
           <span className="text-xs text-muted-foreground">Avg: ⚡{avgElixir}</span>
         </div>
         
@@ -77,7 +149,6 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
-                    {/* Card stats below */}
                     <div className="mt-1 text-center w-full">
                       <div className="text-[8px] text-muted-foreground flex justify-center gap-1">
                         <span>❤️{card.health}</span>
@@ -100,16 +171,21 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
           <span className="text-sm font-medium">Your Cards ({ownedCards.length})</span>
         </div>
         
-        <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1">
+        <div className="grid grid-cols-4 gap-2 max-h-[250px] overflow-y-auto p-1">
           {ownedCards.map(card => {
             const inDeck = selectedDeck.includes(card.id);
             return (
-              <div 
+              <button 
                 key={card.id}
-                className="relative cursor-pointer"
+                type="button"
+                className="relative cursor-pointer bg-transparent border-none p-0"
                 onMouseEnter={() => setSelectedCard(card)}
                 onMouseLeave={() => setSelectedCard(null)}
-                onDoubleClick={() => toggleCard(card.id)}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleCard(card.id);
+                }}
               >
                 <GameCard 
                   card={card} 
@@ -117,19 +193,22 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
                   isSelected={inDeck}
                 />
                 {inDeck && (
-                  <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                  <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Double-click to add/remove cards'}
+        </p>
       </div>
 
       {/* Card Info Tooltip */}
       {selectedCard && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
+        <div className="fixed bottom-36 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{selectedCard.emoji}</span>
             <div>
@@ -155,22 +234,34 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
       )}
 
       {/* Actions */}
-      <div className="flex gap-3 w-full max-w-md">
+      <div className="flex flex-col gap-2 w-full max-w-md">
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={handleSave}
+            disabled={selectedDeck.length !== 8}
+          >
+            Save Deck {editingDeckId}
+          </Button>
+          {!isActiveDeck && (
+            <Button 
+              variant="secondary"
+              className="flex-1"
+              onClick={handleSetActive}
+              disabled={selectedDeck.length !== 8}
+            >
+              Set as Active
+            </Button>
+          )}
+        </div>
         <Button 
-          variant="outline" 
-          className="flex-1"
-          onClick={handleSave}
-          disabled={selectedDeck.length !== 8}
-        >
-          Save Deck
-        </Button>
-        <Button 
-          className="flex-1 gap-2"
+          className="w-full gap-2"
           onClick={onStartBattle}
-          disabled={selectedDeck.length !== 8}
+          disabled={!canBattle}
         >
           <Swords className="w-4 h-4" />
-          Battle!
+          Battle with Deck {activeDeckId}!
         </Button>
       </div>
 
