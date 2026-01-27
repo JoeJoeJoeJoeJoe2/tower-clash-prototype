@@ -1,18 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GameState, Tower, Unit, CardDefinition, Position } from '@/types/game';
 import { createDeck, drawHand, allCards } from '@/data/cards';
+import { makeAIDecision } from './useAI';
 
-const ARENA_WIDTH = 400;
-const ARENA_HEIGHT = 600;
-const ELIXIR_REGEN_RATE = 0.5; // Per second
+export const ARENA_WIDTH = 400;
+export const ARENA_HEIGHT = 600;
+const ELIXIR_REGEN_RATE = 0.35; // Slower elixir - more strategic
 const GAME_DURATION = 180;
-const TICK_RATE = 16; // ~60fps
 
 export interface Projectile {
   id: string;
   from: Position;
   to: Position;
-  progress: number; // 0-1
+  progress: number;
   damage: number;
   targetId: string;
   type: 'arrow' | 'fireball';
@@ -27,6 +27,14 @@ export interface SpawnEffect {
   progress: number;
 }
 
+export interface DamageNumber {
+  id: string;
+  position: Position;
+  damage: number;
+  progress: number;
+  isCritical: boolean;
+}
+
 function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } {
   const playerTowers: Tower[] = [
     {
@@ -34,11 +42,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'king',
       owner: 'player',
       position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
-      health: 400,
-      maxHealth: 400,
-      attackDamage: 15,
+      health: 450,
+      maxHealth: 450,
+      attackDamage: 18,
       attackRange: 100,
-      attackCooldown: 1500,
+      attackCooldown: 1200,
       lastAttackTime: 0
     },
     {
@@ -46,11 +54,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'player',
       position: { x: 80, y: ARENA_HEIGHT - 120 },
-      health: 200,
-      maxHealth: 200,
-      attackDamage: 10,
+      health: 220,
+      maxHealth: 220,
+      attackDamage: 12,
       attackRange: 130,
-      attackCooldown: 1200,
+      attackCooldown: 1000,
       lastAttackTime: 0
     },
     {
@@ -58,11 +66,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'player',
       position: { x: ARENA_WIDTH - 80, y: ARENA_HEIGHT - 120 },
-      health: 200,
-      maxHealth: 200,
-      attackDamage: 10,
+      health: 220,
+      maxHealth: 220,
+      attackDamage: 12,
       attackRange: 130,
-      attackCooldown: 1200,
+      attackCooldown: 1000,
       lastAttackTime: 0
     }
   ];
@@ -73,11 +81,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'king',
       owner: 'enemy',
       position: { x: ARENA_WIDTH / 2, y: 50 },
-      health: 400,
-      maxHealth: 400,
-      attackDamage: 15,
+      health: 450,
+      maxHealth: 450,
+      attackDamage: 18,
       attackRange: 100,
-      attackCooldown: 1500,
+      attackCooldown: 1200,
       lastAttackTime: 0
     },
     {
@@ -85,11 +93,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'enemy',
       position: { x: 80, y: 120 },
-      health: 200,
-      maxHealth: 200,
-      attackDamage: 10,
+      health: 220,
+      maxHealth: 220,
+      attackDamage: 12,
       attackRange: 130,
-      attackCooldown: 1200,
+      attackCooldown: 1000,
       lastAttackTime: 0
     },
     {
@@ -97,11 +105,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'enemy',
       position: { x: ARENA_WIDTH - 80, y: 120 },
-      health: 200,
-      maxHealth: 200,
-      attackDamage: 10,
+      health: 220,
+      maxHealth: 220,
+      attackDamage: 12,
       attackRange: 130,
-      attackCooldown: 1200,
+      attackCooldown: 1000,
       lastAttackTime: 0
     }
   ];
@@ -116,7 +124,9 @@ function getDistance(a: Position, b: Position): number {
 function createInitialState(playerDeckIds: string[]): GameState {
   const { playerTowers, enemyTowers } = createInitialTowers();
   const playerDeck = createDeck(playerDeckIds);
-  const enemyDeck = createDeck(allCards.slice(0, 8).map(c => c.id));
+  // Give AI a balanced deck
+  const enemyDeckIds = ['knight', 'archers', 'giant', 'wizard', 'valkyrie', 'musketeer', 'goblins', 'bomber'];
+  const enemyDeck = createDeck(enemyDeckIds);
   const { hand: playerHand, remainingDeck: playerRemainingDeck } = drawHand(playerDeck);
   const { hand: enemyHand, remainingDeck: enemyRemainingDeck } = drawHand(enemyDeck);
 
@@ -141,12 +151,25 @@ export function useGameState(playerDeckIds: string[]) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
+  const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);
   
-  const gameLoopRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(performance.now());
   const unitIdCounter = useRef(0);
   const projectileIdCounter = useRef(0);
   const spawnIdCounter = useRef(0);
+  const damageIdCounter = useRef(0);
+  const aiLastPlayTime = useRef(0);
+
+  const addDamageNumber = useCallback((position: Position, damage: number, isCritical = false) => {
+    const num: DamageNumber = {
+      id: `dmg-${damageIdCounter.current++}`,
+      position: { x: position.x + (Math.random() - 0.5) * 20, y: position.y },
+      damage,
+      progress: 0,
+      isCritical
+    };
+    setDamageNumbers(prev => [...prev, num]);
+  }, []);
 
   const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): Unit => {
     return {
@@ -217,33 +240,36 @@ export function useGameState(playerDeckIds: string[]) {
     
     const tick = (currentTime: number) => {
       const deltaMs = currentTime - lastTickRef.current;
-      
-      // Cap delta to prevent huge jumps
       const delta = Math.min(deltaMs, 100) / 1000;
       lastTickRef.current = currentTime;
 
       // Update projectiles
-      setProjectiles(prev => {
-        const updated = prev.map(p => ({
+      setProjectiles(prev => 
+        prev.map(p => ({
           ...p,
-          progress: p.progress + delta * 4 // Projectile speed
-        })).filter(p => p.progress < 1);
-        
-        return updated;
-      });
+          progress: p.progress + delta * 3.5
+        })).filter(p => p.progress < 1)
+      );
 
       // Update spawn effects
       setSpawnEffects(prev => 
         prev.map(e => ({
           ...e,
-          progress: e.progress + delta * 2
+          progress: e.progress + delta * 1.5
         })).filter(e => e.progress < 1)
+      );
+
+      // Update damage numbers
+      setDamageNumbers(prev =>
+        prev.map(d => ({
+          ...d,
+          progress: d.progress + delta * 2
+        })).filter(d => d.progress < 1)
       );
 
       setGameState(prev => {
         if (prev.gameStatus !== 'playing') return prev;
 
-        // Create mutable copies
         const state: GameState = {
           ...prev,
           playerTowers: prev.playerTowers.map(t => ({ ...t })),
@@ -257,29 +283,19 @@ export function useGameState(playerDeckIds: string[]) {
         state.enemyElixir = Math.min(10, state.enemyElixir + ELIXIR_REGEN_RATE * delta);
         state.timeRemaining = Math.max(0, state.timeRemaining - delta);
 
-        // AI plays cards less frequently
-        if (state.enemyElixir >= 4 && Math.random() < 0.008) {
-          const affordableCards = state.enemyHand
-            .map((card, idx) => ({ card, idx }))
-            .filter(({ card }) => card.elixirCost <= state.enemyElixir);
-          
-          if (affordableCards.length > 0) {
-            const { card, idx } = affordableCards[Math.floor(Math.random() * affordableCards.length)];
-            const position: Position = {
-              x: 50 + Math.random() * (ARENA_WIDTH - 100),
-              y: 150 + Math.random() * 100
-            };
+        // Smart AI decision making
+        const aiDecision = makeAIDecision(state, aiLastPlayTime.current);
+        if (aiDecision.shouldPlay && aiDecision.card && aiDecision.position !== undefined && aiDecision.cardIndex !== undefined) {
+          const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
+          addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
+          state.enemyUnits = [...state.enemyUnits, newUnit];
+          state.enemyElixir -= aiDecision.card.elixirCost;
+          aiLastPlayTime.current = performance.now();
 
-            const newUnit = spawnUnit(card, position, 'enemy');
-            addSpawnEffect(position, 'enemy', card.emoji);
-            state.enemyUnits = [...state.enemyUnits, newUnit];
-            state.enemyElixir -= card.elixirCost;
-
-            const newHand = [...state.enemyHand];
-            newHand[idx] = state.enemyDeck[0];
-            state.enemyHand = newHand;
-            state.enemyDeck = [...state.enemyDeck.slice(1), card];
-          }
+          const newHand = [...state.enemyHand];
+          newHand[aiDecision.cardIndex] = state.enemyDeck[0];
+          state.enemyHand = newHand;
+          state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
         }
 
         const now = performance.now();
@@ -310,7 +326,9 @@ export function useGameState(playerDeckIds: string[]) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
-                closestEnemy.health -= unit.damage;
+                const damage = unit.damage;
+                closestEnemy.health -= damage;
+                addDamageNumber(closestEnemy.position, damage, damage > 25);
               }
             } else {
               unit.state = 'moving';
@@ -319,8 +337,8 @@ export function useGameState(playerDeckIds: string[]) {
               const len = Math.sqrt(dx * dx + dy * dy);
               
               unit.position = {
-                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 60,
-                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 60
+                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 50,
+                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 50
               };
               unit.direction = dy < 0 ? 'up' : 'down';
             }
@@ -357,7 +375,9 @@ export function useGameState(playerDeckIds: string[]) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
-                closestEnemy.health -= unit.damage;
+                const damage = unit.damage;
+                closestEnemy.health -= damage;
+                addDamageNumber(closestEnemy.position, damage, damage > 25);
               }
             } else {
               unit.state = 'moving';
@@ -366,8 +386,8 @@ export function useGameState(playerDeckIds: string[]) {
               const len = Math.sqrt(dx * dx + dy * dy);
               
               unit.position = {
-                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 60,
-                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 60
+                x: unit.position.x + (dx / len) * unit.moveSpeed * delta * 50,
+                y: unit.position.y + (dy / len) * unit.moveSpeed * delta * 50
               };
               unit.direction = dy < 0 ? 'up' : 'down';
             }
@@ -426,20 +446,19 @@ export function useGameState(playerDeckIds: string[]) {
           }
         });
 
-        // Add new projectiles
         if (newProjectiles.length > 0) {
           setProjectiles(prev => [...prev, ...newProjectiles]);
         }
 
-        // Apply projectile damage when they hit
+        // Apply projectile damage
         setProjectiles(currentProjectiles => {
           currentProjectiles.forEach(proj => {
-            if (proj.progress >= 0.9 && proj.progress < 1) {
-              // Find target and apply damage
+            if (proj.progress >= 0.85 && proj.progress < 0.95) {
               const allUnits = [...state.playerUnits, ...state.enemyUnits];
               const target = allUnits.find(u => u.id === proj.targetId);
               if (target && target.health > 0) {
                 target.health -= proj.damage;
+                addDamageNumber(target.position, proj.damage);
               }
             }
           });
@@ -484,18 +503,21 @@ export function useGameState(playerDeckIds: string[]) {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [spawnUnit, addSpawnEffect]);
+  }, [spawnUnit, addSpawnEffect, addDamageNumber]);
 
   const resetGame = useCallback(() => {
     setGameState(createInitialState(playerDeckIds));
     setProjectiles([]);
     setSpawnEffects([]);
+    setDamageNumbers([]);
+    aiLastPlayTime.current = 0;
   }, [playerDeckIds]);
 
   return {
     gameState,
     projectiles,
     spawnEffects,
+    damageNumbers,
     playCard,
     selectCard,
     resetGame,

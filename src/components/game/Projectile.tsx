@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Projectile, SpawnEffect } from '@/hooks/useGameState';
 import { cn } from '@/lib/utils';
 
@@ -5,7 +6,7 @@ interface ProjectileProps {
   projectile: Projectile;
 }
 
-export function ProjectileComponent({ projectile }: ProjectileProps) {
+export const ProjectileComponent = memo(function ProjectileComponent({ projectile }: ProjectileProps) {
   const { from, to, progress, type, owner } = projectile;
   
   // Interpolate position
@@ -66,13 +67,13 @@ export function ProjectileComponent({ projectile }: ProjectileProps) {
       )}
     </div>
   );
-}
+});
 
 interface SpawnEffectProps {
   effect: SpawnEffect;
 }
 
-export function SpawnEffectComponent({ effect }: SpawnEffectProps) {
+export const SpawnEffectComponent = memo(function SpawnEffectComponent({ effect }: SpawnEffectProps) {
   const scale = 1 + effect.progress * 0.5;
   const opacity = 1 - effect.progress;
   
@@ -106,4 +107,4 @@ export function SpawnEffectComponent({ effect }: SpawnEffectProps) {
       </div>
     </div>
   );
-}
+});

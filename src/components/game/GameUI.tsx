@@ -18,7 +18,7 @@ function formatTime(seconds: number): string {
 }
 
 export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck);
+  const { gameState, projectiles, spawnEffects, damageNumbers, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
@@ -113,6 +113,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
         gameState={gameState}
         projectiles={projectiles}
         spawnEffects={spawnEffects}
+        damageNumbers={damageNumbers}
         arenaWidth={ARENA_WIDTH}
         arenaHeight={ARENA_HEIGHT}
         onArenaClick={handleArenaClick}
