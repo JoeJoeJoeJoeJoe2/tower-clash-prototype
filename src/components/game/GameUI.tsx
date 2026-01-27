@@ -86,7 +86,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 pb-48 gap-4">
+    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 pb-56 gap-4">
       {/* Header */}
       <div className="flex items-center gap-4 w-full max-w-md shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack}>
@@ -149,18 +149,23 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
       />
 
       {/* Controls */}
-      <div className="fixed left-1/2 -translate-x-1/2 bottom-0 w-full max-w-md px-4 z-50 pb-[env(safe-area-inset-bottom,16px)]">
-        <div className="bg-card/95 backdrop-blur-md border border-border rounded-t-xl p-3 flex flex-col items-center gap-3 shadow-lg">
-          <ElixirBar 
-            elixir={gameState.playerElixir} 
-            isSuddenDeath={gameState.isSuddenDeath}
-          />
-          
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-0 w-full max-w-md px-4 z-50">
+        <div 
+          className="bg-card/95 backdrop-blur-md border border-border rounded-t-xl p-3 flex flex-col items-center gap-3 shadow-lg"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          {/* Cards FIRST (most important to see) */}
           <Hand
             cards={gameState.playerHand}
             elixir={gameState.playerElixir}
             selectedIndex={gameState.selectedCardIndex}
             onCardSelect={handleCardSelect}
+          />
+          
+          {/* Then elixir bar */}
+          <ElixirBar 
+            elixir={gameState.playerElixir} 
+            isSuddenDeath={gameState.isSuddenDeath}
           />
 
           {gameState.selectedCardIndex !== null && (
