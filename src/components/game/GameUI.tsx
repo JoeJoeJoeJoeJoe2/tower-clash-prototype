@@ -86,7 +86,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 pb-56 gap-4">
+    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-2 pb-44 gap-2">
       {/* Header */}
       <div className="flex items-center gap-4 w-full max-w-md shrink-0">
         <Button variant="ghost" size="icon" onClick={() => onGameEnd('loss')} title="Forfeit match">
