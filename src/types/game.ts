@@ -50,6 +50,16 @@ export interface Unit {
   direction: 'up' | 'down';
 }
 
+export interface PlacementZone {
+  id: string;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  isActive: boolean;
+  reason: 'default' | 'tower-destroyed';
+}
+
 export interface GameState {
   playerElixir: number;
   enemyElixir: number;
@@ -64,6 +74,9 @@ export interface GameState {
   timeRemaining: number;
   gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
   selectedCardIndex: number | null;
+  isSuddenDeath: boolean;
+  playerPlacementZones: PlacementZone[];
+  enemyPlacementZones: PlacementZone[];
 }
 
 export interface PlayerProgress {
