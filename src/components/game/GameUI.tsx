@@ -162,6 +162,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
             elixir={gameState.playerElixir}
             selectedIndex={gameState.selectedCardIndex}
             onCardSelect={handleCardSelect}
+            nextCard={gameState.playerDeck[0]}
           />
           
           {/* Then elixir bar */}

@@ -59,7 +59,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 130,
+      attackRange: 180, // Extended range to hit units crossing the bridge
       attackCooldown: 1000,
       lastAttackTime: 0
     },
@@ -71,7 +71,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 130,
+      attackRange: 180, // Extended range to hit units crossing the bridge
       attackCooldown: 1000,
       lastAttackTime: 0
     }
@@ -98,7 +98,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 130,
+      attackRange: 180, // Extended range to hit units crossing the bridge
       attackCooldown: 1000,
       lastAttackTime: 0
     },
@@ -110,7 +110,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 130,
+      attackRange: 180, // Extended range to hit units crossing the bridge
       attackCooldown: 1000,
       lastAttackTime: 0
     }
