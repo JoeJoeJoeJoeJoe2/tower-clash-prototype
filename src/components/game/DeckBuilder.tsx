@@ -99,9 +99,10 @@ export function DeckBuilder({ ownedCardIds, currentDeck, onSaveDeck, onStartBatt
             return (
               <div 
                 key={card.id}
-                className="relative"
+                className="relative cursor-pointer"
                 onMouseEnter={() => setSelectedCard(card)}
                 onMouseLeave={() => setSelectedCard(null)}
+                onDoubleClick={() => toggleCard(card.id)}
               >
                 <GameCard 
                   card={card} 
