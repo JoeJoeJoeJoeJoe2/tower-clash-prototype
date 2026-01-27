@@ -86,9 +86,9 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 gap-4">
+    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 pb-64 gap-4">
       {/* Header */}
-      <div className="flex items-center gap-4 w-full max-w-md">
+      <div className="flex items-center gap-4 w-full max-w-md shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -149,29 +149,31 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
       />
 
       {/* Controls */}
-      <div className="flex flex-col items-center gap-3 w-full max-w-md">
-        <ElixirBar 
-          elixir={gameState.playerElixir} 
-          isSuddenDeath={gameState.isSuddenDeath}
-        />
-        
-        <Hand
-          cards={gameState.playerHand}
-          elixir={gameState.playerElixir}
-          selectedIndex={gameState.selectedCardIndex}
-          onCardSelect={handleCardSelect}
-        />
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-20 w-full max-w-md px-4 z-50">
+        <div className="bg-card/70 backdrop-blur border border-border rounded-xl p-3 flex flex-col items-center gap-3">
+          <ElixirBar 
+            elixir={gameState.playerElixir} 
+            isSuddenDeath={gameState.isSuddenDeath}
+          />
+          
+          <Hand
+            cards={gameState.playerHand}
+            elixir={gameState.playerElixir}
+            selectedIndex={gameState.selectedCardIndex}
+            onCardSelect={handleCardSelect}
+          />
 
-        {gameState.selectedCardIndex !== null && (
-          <p className={cn(
-            "text-sm animate-pulse",
-            hasBonusZones ? "text-emerald-400" : "text-muted-foreground"
-          )}>
-            {hasBonusZones 
-              ? "🎯 New placement zones unlocked! Tap to deploy." 
-              : "Tap on your side of the arena to deploy!"}
-          </p>
-        )}
+          {gameState.selectedCardIndex !== null && (
+            <p className={cn(
+              "text-sm animate-pulse",
+              hasBonusZones ? "text-emerald-400" : "text-muted-foreground"
+            )}>
+              {hasBonusZones 
+                ? "🎯 New placement zones unlocked! Tap to deploy." 
+                : "Tap on your side of the arena to deploy!"}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
