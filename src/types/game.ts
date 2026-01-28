@@ -167,7 +167,7 @@ export interface GameState {
 }
 
 export interface DeckSlot {
-  id: 'A' | 'B' | 'C';
+  id: string;
   name: string;
   cardIds: string[];
 }
@@ -176,7 +176,7 @@ export interface PlayerProgress {
   ownedCardIds: string[];
   currentDeck: string[];
   deckSlots: DeckSlot[];
-  activeDeckId: 'A' | 'B' | 'C';
+  activeDeckId: string;
   wins: number;
   losses: number;
   chestsAvailable: number;
