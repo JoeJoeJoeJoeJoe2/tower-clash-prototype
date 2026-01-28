@@ -175,28 +175,116 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
 
   return (
     <div className="h-screen w-screen relative flex flex-col items-center justify-center overflow-hidden">
-      {/* Arena Background - Dimmed */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-950">
-          {/* Decorative sparkles */}
-          <div className="absolute inset-0 opacity-30">
-            {[...Array(20)].map((_, i) => (
-              <div 
-                key={i} 
-                className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse"
-                style={{ 
-                  left: `${Math.random() * 100}%`, 
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`
-                }} 
-              />
-            ))}
+      {/* Arena Background - Actual arena preview */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center">
+        {/* Arena container */}
+        <div 
+          className="relative rounded-xl overflow-hidden border-4 border-muted/50"
+          style={{ width: 320, height: 420 }}
+        >
+          {/* Arena grass field */}
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-800 via-emerald-700 to-emerald-800" />
+          
+          {/* Grid pattern */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              backgroundSize: '40px 40px'
+            }}
+          />
+          
+          {/* Enemy side shading (red tint) */}
+          <div 
+            className="absolute inset-x-0 top-0"
+            style={{ 
+              height: 210,
+              background: 'linear-gradient(to bottom, rgba(239,68,68,0.15), transparent)'
+            }}
+          />
+          
+          {/* Player side shading (blue tint) */}
+          <div 
+            className="absolute inset-x-0 bottom-0"
+            style={{ 
+              height: 210,
+              background: 'linear-gradient(to top, rgba(59,130,246,0.15), transparent)'
+            }}
+          />
+          
+          {/* River */}
+          <div 
+            className="absolute left-0 right-0 h-4"
+            style={{ 
+              top: 202,
+              background: 'linear-gradient(to bottom, transparent, #3b82f660, #60a5fa80, #3b82f660, transparent)'
+            }}
+          />
+          
+          {/* Left Bridge */}
+          <div 
+            className="absolute w-16 h-6 rounded-sm border border-amber-900/50"
+            style={{ 
+              left: 40, 
+              top: 198,
+              background: 'linear-gradient(to bottom, #a16207, #78350f)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.4)'
+            }}
+          />
+          
+          {/* Right Bridge */}
+          <div 
+            className="absolute w-16 h-6 rounded-sm border border-amber-900/50"
+            style={{ 
+              right: 40, 
+              top: 198,
+              background: 'linear-gradient(to bottom, #a16207, #78350f)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.4)'
+            }}
+          />
+          
+          {/* Enemy Towers */}
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 24 }}>
+            <div className="w-16 h-16 rounded-lg bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400 flex items-center justify-center shadow-lg">
+              <span className="text-3xl">👑</span>
+            </div>
           </div>
-          {/* Arena floor glow */}
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-amber-600/30 to-transparent" />
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-cyan-600/20 to-transparent" />
+          <div className="absolute" style={{ left: 44, top: 74 }}>
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">👸</span>
+            </div>
+          </div>
+          <div className="absolute" style={{ right: 44, top: 74 }}>
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">👸</span>
+            </div>
+          </div>
+          
+          {/* Player Towers */}
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 24 }}>
+            <div className="w-16 h-16 rounded-lg bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 flex items-center justify-center shadow-lg">
+              <span className="text-3xl">👑</span>
+            </div>
+          </div>
+          <div className="absolute" style={{ left: 44, bottom: 74 }}>
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">👸</span>
+            </div>
+          </div>
+          <div className="absolute" style={{ right: 44, bottom: 74 }}>
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">👸</span>
+            </div>
+          </div>
+          
+          {/* Center decoration */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="w-4 h-4 rounded-full bg-white/20 border border-white/30" />
+          </div>
         </div>
-        <div className="absolute inset-0 bg-black/50" />
+        
+        {/* Dark overlay on arena */}
+        <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Searching Phase */}
