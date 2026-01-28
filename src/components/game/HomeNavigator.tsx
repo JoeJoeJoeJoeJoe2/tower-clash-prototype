@@ -107,22 +107,6 @@ export function HomeNavigator({
         </div>
       </div>
 
-      {/* Navigation dots */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-50">
-        {SCREENS.map((screen, index) => (
-          <button
-            key={screen}
-            onClick={() => navigateTo(index)}
-            className={cn(
-              "w-2 h-2 rounded-full transition-all duration-300",
-              currentIndex === index 
-                ? "bg-cyan-400 w-6" 
-                : "bg-gray-600 hover:bg-gray-500"
-            )}
-            aria-label={`Go to ${screen}`}
-          />
-        ))}
-      </div>
     </div>
   );
 }
