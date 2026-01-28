@@ -33,8 +33,8 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
       className={`
         absolute flex flex-col items-center transition-all duration-700 ease-out
         ${isPlayer 
-          ? 'bottom-16 left-8 sm:bottom-20 sm:left-12' 
-          : 'top-16 right-8 sm:top-20 sm:right-12'
+          ? 'bottom-24 left-4 sm:bottom-28 sm:left-8' 
+          : 'top-24 right-4 sm:top-28 sm:right-8'
         }
         ${isVisible 
           ? 'opacity-100 translate-x-0 translate-y-0' 
@@ -43,13 +43,21 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
             : 'opacity-0 translate-x-20 -translate-y-20'
         }
       `}
+      style={{
+        // Rotate banners to point toward middle
+        transform: isVisible 
+          ? `rotate(${isPlayer ? '90deg' : '-90deg'})` 
+          : isPlayer 
+            ? 'rotate(90deg) translateX(-80px) translateY(80px)' 
+            : 'rotate(-90deg) translateX(80px) translateY(-80px)',
+      }}
     >
       {/* Large Banner/Shield Container - Extended length */}
       <div 
-        className="relative w-32 h-56 sm:w-40 sm:h-64 flex flex-col items-center justify-center"
+        className="relative w-28 h-72 sm:w-36 sm:h-80 flex flex-col items-center justify-center"
         style={{
           background: `linear-gradient(180deg, ${bannerColor}dd 0%, ${bannerColor} 30%, ${bannerColor}aa 70%, ${bannerColor}66 100%)`,
-          clipPath: 'polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)',
+          clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
           boxShadow: `0 0 40px ${bannerColor}88, inset 0 0 30px rgba(255,255,255,0.1)`,
         }}
       >
@@ -57,7 +65,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         <div 
           className="absolute inset-3 opacity-40 pointer-events-none"
           style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
             background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%)',
           }}
         />
@@ -66,11 +74,16 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         
         {/* Side decorations */}
-        <div className="absolute top-4 left-2 w-1 h-20 bg-white/20 rounded-full" />
-        <div className="absolute top-4 right-2 w-1 h-20 bg-white/20 rounded-full" />
+        <div className="absolute top-4 left-2 w-1 h-24 bg-white/20 rounded-full" />
+        <div className="absolute top-4 right-2 w-1 h-24 bg-white/20 rounded-full" />
         
-        {/* Large emoji */}
-        <span className="text-5xl sm:text-6xl mb-6 drop-shadow-lg">{bannerEmoji}</span>
+        {/* Large emoji - counter-rotate to stay upright */}
+        <span 
+          className="text-5xl sm:text-6xl mb-8 drop-shadow-lg"
+          style={{ transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` }}
+        >
+          {bannerEmoji}
+        </span>
         
         {/* Level badge */}
         <div 
@@ -82,15 +95,21 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
               : 'bg-gradient-to-b from-red-400 to-red-600 border-red-300'
             }
           `}
-          style={{ bottom: '10%' }}
+          style={{ 
+            bottom: '8%',
+            transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` 
+          }}
         >
           <span className="text-white font-black text-lg sm:text-xl">{level}</span>
         </div>
       </div>
 
-      {/* Name and trophies */}
-      <div className="mt-4 text-center">
-        <p className="text-white font-bold text-lg sm:text-xl drop-shadow-lg">{name}</p>
+      {/* Name and trophies - counter-rotate to stay readable */}
+      <div 
+        className="mt-4 text-center"
+        style={{ transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` }}
+      >
+        <p className="text-white font-bold text-lg sm:text-xl drop-shadow-lg whitespace-nowrap">{name}</p>
         <div className="flex items-center justify-center gap-2 mt-1">
           <Trophy className="w-4 h-4 text-orange-400" />
           <span className="text-orange-300 font-bold text-base">{trophies}</span>
