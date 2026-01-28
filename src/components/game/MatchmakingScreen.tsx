@@ -17,6 +17,85 @@ const ENEMY_NAMES = [
 
 type MatchmakingPhase = 'searching' | 'found' | 'versus' | 'ready';
 
+interface BannerCardProps {
+  name: string;
+  bannerColor: string;
+  bannerEmoji: string;
+  trophies: number;
+  level: number;
+  isPlayer: boolean;
+  isVisible: boolean;
+}
+
+function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer, isVisible }: BannerCardProps) {
+  return (
+    <div 
+      className={`
+        flex flex-col items-center transition-all duration-700 ease-out
+        ${isVisible 
+          ? 'opacity-100 translate-x-0' 
+          : isPlayer 
+            ? 'opacity-0 -translate-x-full' 
+            : 'opacity-0 translate-x-full'
+        }
+      `}
+    >
+      {/* Large Banner/Shield Container */}
+      <div 
+        className="relative w-36 h-48 sm:w-44 sm:h-56 flex flex-col items-center justify-center"
+        style={{
+          background: `linear-gradient(180deg, ${bannerColor}dd 0%, ${bannerColor} 30%, ${bannerColor}aa 70%, ${bannerColor}66 100%)`,
+          clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
+          boxShadow: `0 0 40px ${bannerColor}88, inset 0 0 30px rgba(255,255,255,0.1)`,
+        }}
+      >
+        {/* Inner border effect */}
+        <div 
+          className="absolute inset-3 opacity-40 pointer-events-none"
+          style={{
+            clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%)',
+          }}
+        />
+        
+        {/* Decorative top bar */}
+        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        
+        {/* Side decorations */}
+        <div className="absolute top-4 left-2 w-1 h-16 bg-white/20 rounded-full" />
+        <div className="absolute top-4 right-2 w-1 h-16 bg-white/20 rounded-full" />
+        
+        {/* Large emoji */}
+        <span className="text-6xl sm:text-7xl mb-4 drop-shadow-lg">{bannerEmoji}</span>
+        
+        {/* Level badge */}
+        <div 
+          className={`
+            absolute w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center
+            border-2 shadow-xl
+            ${isPlayer 
+              ? 'bg-gradient-to-b from-blue-400 to-blue-600 border-blue-300' 
+              : 'bg-gradient-to-b from-red-400 to-red-600 border-red-300'
+            }
+          `}
+          style={{ bottom: '12%' }}
+        >
+          <span className="text-white font-black text-lg sm:text-xl">{level}</span>
+        </div>
+      </div>
+
+      {/* Name and trophies */}
+      <div className="mt-6 text-center">
+        <p className="text-white font-bold text-xl sm:text-2xl drop-shadow-lg">{name}</p>
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <Trophy className="w-5 h-5 text-orange-400" />
+          <span className="text-orange-300 font-bold text-lg">{trophies}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps) {
   const [phase, setPhase] = useState<MatchmakingPhase>('searching');
   const [showEnemy, setShowEnemy] = useState(false);
@@ -72,123 +151,98 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
   }, [phase, onReady]);
 
   return (
-    <div className="h-screen w-screen relative flex flex-col items-center justify-between py-8 overflow-hidden">
+    <div className="h-screen w-screen relative flex flex-col items-center justify-center overflow-hidden">
       {/* Arena Background - Dimmed */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-700 via-emerald-600 to-emerald-700">
-          <div className="absolute inset-0 opacity-20">
-            {[...Array(12)].map((_, i) => (
-              <div key={`h-${i}`} className="absolute w-full h-px bg-emerald-900" style={{ top: `${(i + 1) * 8}%` }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-950">
+          {/* Decorative sparkles */}
+          <div className="absolute inset-0 opacity-30">
+            {[...Array(20)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse"
+                style={{ 
+                  left: `${Math.random() * 100}%`, 
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`
+                }} 
+              />
             ))}
           </div>
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-6 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 opacity-60" />
-          <div className="absolute top-1/2 -translate-y-1/2 left-[20%] w-16 h-8 bg-amber-800/70 rounded" />
-          <div className="absolute top-1/2 -translate-y-1/2 right-[20%] w-16 h-8 bg-amber-800/70 rounded" />
-          <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-16 h-16 rounded-lg bg-red-700/50 border-2 border-red-500/30" />
-          <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-16 h-16 rounded-lg bg-blue-700/50 border-2 border-blue-500/30" />
+          {/* Arena floor glow */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-amber-600/30 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-cyan-600/20 to-transparent" />
         </div>
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Searching Phase */}
       {phase === 'searching' && (
-        <div className="flex-1 flex flex-col items-center justify-center z-10">
-          <div className="text-2xl font-bold text-white mb-4">Searching for opponent...</div>
-          <div className="flex gap-1">
-            <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-            <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-            <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+        <div className="flex flex-col items-center justify-center z-10">
+          <div className="text-2xl sm:text-3xl font-bold text-white mb-4">Searching for opponent...</div>
+          <div className="flex gap-2">
+            <div className="w-4 h-4 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+            <div className="w-4 h-4 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+            <div className="w-4 h-4 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
           </div>
         </div>
       )}
 
       {/* Found Phase */}
       {phase === 'found' && (
-        <div className="flex-1 flex flex-col items-center justify-center z-10">
-          <div className="text-2xl font-bold text-green-400 animate-pulse">Opponent Found!</div>
+        <div className="flex flex-col items-center justify-center z-10">
+          <div className="text-2xl sm:text-3xl font-bold text-green-400 animate-pulse">Opponent Found!</div>
         </div>
       )}
 
-      {/* Versus Phase - Show banners */}
+      {/* Versus Phase - Show banners side by side */}
       {(phase === 'versus' || phase === 'ready') && (
-        <>
-          {/* Enemy Profile - Top */}
-          <div className={`flex flex-col items-center z-10 transition-all duration-500 ${showEnemy ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
-            <div 
-              className="w-20 h-20 rounded-xl flex items-center justify-center border-4 shadow-2xl"
-              style={{ 
-                background: `linear-gradient(135deg, ${enemy.banner.color}ee, ${enemy.banner.color}88)`,
-                borderColor: enemy.banner.color,
-                boxShadow: `0 0 30px ${enemy.banner.color}66`
-              }}
-            >
-              <span className="text-4xl">{enemy.banner.emoji}</span>
-            </div>
-            <div className="relative -mt-3 z-10">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">{enemy.level}</span>
-              </div>
-            </div>
-            <div className="mt-2 text-center">
-              <p className="text-white font-bold text-xl">{enemy.name}</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Trophy className="w-4 h-4 text-orange-400" />
-                <span className="text-orange-300 font-semibold">{enemy.trophies}</span>
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center justify-center gap-4 sm:gap-8 z-10 w-full px-4">
+          {/* Player Banner - Slides from Left */}
+          <BannerCard
+            name={progress.playerName}
+            bannerColor={playerBanner?.color || '#3b82f6'}
+            bannerEmoji={playerBanner?.emoji || '⚔️'}
+            trophies={playerTrophies}
+            level={playerLevel}
+            isPlayer={true}
+            isVisible={showPlayer}
+          />
 
           {/* VS Badge - Center */}
-          <div className={`flex flex-col items-center transition-all duration-500 z-10 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+          <div className={`flex flex-col items-center transition-all duration-500 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
             <div 
-              className="text-6xl font-black"
+              className="text-5xl sm:text-7xl font-black"
               style={{
                 fontFamily: "'Luckiest Guy', cursive",
                 background: 'linear-gradient(180deg, #fff9c4 0%, #ffd54f 30%, #ff8f00 60%, #e65100 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                filter: 'drop-shadow(0 0 20px rgba(255,200,0,0.8))'
+                filter: 'drop-shadow(0 0 30px rgba(255,200,0,0.9)) drop-shadow(2px 2px 0 #b45309)'
               }}
             >
               VS
             </div>
             {countdown > 0 && phase === 'ready' && (
-              <div className="mt-4 text-4xl font-bold text-white animate-pulse">{countdown}</div>
+              <div className="mt-4 sm:mt-6 text-4xl sm:text-5xl font-bold text-white animate-pulse">{countdown}</div>
             )}
             {countdown === 0 && (
-              <div className="mt-4 text-2xl font-bold text-green-400 animate-bounce">GO!</div>
+              <div className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-bold text-green-400 animate-bounce">GO!</div>
             )}
           </div>
 
-          {/* Player Profile - Bottom */}
-          <div className={`flex flex-col items-center transition-all duration-500 z-10 ${showPlayer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <div className="mb-2 text-center">
-              <p className="text-white font-bold text-xl">{progress.playerName}</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Trophy className="w-4 h-4 text-orange-400" />
-                <span className="text-orange-300 font-semibold">{playerTrophies}</span>
-              </div>
-            </div>
-            <div className="relative mb-3 z-10">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">{playerLevel}</span>
-              </div>
-            </div>
-            <div 
-              className="w-20 h-20 rounded-xl flex items-center justify-center border-4 shadow-2xl"
-              style={{ 
-                background: playerBanner 
-                  ? `linear-gradient(135deg, ${playerBanner.color}ee, ${playerBanner.color}88)`
-                  : 'linear-gradient(135deg, #3b82f6ee, #3b82f688)',
-                borderColor: playerBanner?.color || '#3b82f6',
-                boxShadow: `0 0 30px ${playerBanner?.color || '#3b82f6'}66`
-              }}
-            >
-              <span className="text-4xl">{playerBanner?.emoji || '⚔️'}</span>
-            </div>
-          </div>
-        </>
+          {/* Enemy Banner - Slides from Right */}
+          <BannerCard
+            name={enemy.name}
+            bannerColor={enemy.banner.color}
+            bannerEmoji={enemy.banner.emoji}
+            trophies={enemy.trophies}
+            level={enemy.level}
+            isPlayer={false}
+            isVisible={showEnemy}
+          />
+        </div>
       )}
     </div>
   );
