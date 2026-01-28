@@ -3,8 +3,8 @@ import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone } from 
 import { createDeck, drawHand } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 
-export const ARENA_WIDTH = 400;
-export const ARENA_HEIGHT = 600;
+export const ARENA_WIDTH = 320;
+export const ARENA_HEIGHT = 420;
 const BASE_ELIXIR_REGEN_RATE = 0.35;
 const SUDDEN_DEATH_ELIXIR_MULTIPLIER = 2;
 const GAME_DURATION = 180;
@@ -43,37 +43,37 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'player-king',
       type: 'king',
       owner: 'player',
-      position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
+      position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 40 },
       health: 450,
       maxHealth: 450,
       attackDamage: 25,
-      attackRange: 100,
-      attackCooldown: 2000, // Slower cannon attack
+      attackRange: 80,
+      attackCooldown: 2000,
       lastAttackTime: 0,
-      isActivated: false // King tower starts inactive
+      isActivated: false
     },
     {
       id: 'player-princess-left',
       type: 'princess',
       owner: 'player',
-      position: { x: 80, y: ARENA_HEIGHT - 120 },
+      position: { x: 60, y: ARENA_HEIGHT - 90 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180,
-      attackCooldown: 1800, // Slower arrow attack
+      attackRange: 140,
+      attackCooldown: 1800,
       lastAttackTime: 0
     },
     {
       id: 'player-princess-right',
       type: 'princess',
       owner: 'player',
-      position: { x: ARENA_WIDTH - 80, y: ARENA_HEIGHT - 120 },
+      position: { x: ARENA_WIDTH - 60, y: ARENA_HEIGHT - 90 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180,
-      attackCooldown: 1800, // Slower arrow attack
+      attackRange: 140,
+      attackCooldown: 1800,
       lastAttackTime: 0
     }
   ];
@@ -83,37 +83,37 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'enemy-king',
       type: 'king',
       owner: 'enemy',
-      position: { x: ARENA_WIDTH / 2, y: 50 },
+      position: { x: ARENA_WIDTH / 2, y: 40 },
       health: 450,
       maxHealth: 450,
       attackDamage: 25,
-      attackRange: 100,
-      attackCooldown: 2000, // Slower cannon attack
+      attackRange: 80,
+      attackCooldown: 2000,
       lastAttackTime: 0,
-      isActivated: false // King tower starts inactive
+      isActivated: false
     },
     {
       id: 'enemy-princess-left',
       type: 'princess',
       owner: 'enemy',
-      position: { x: 80, y: 120 },
+      position: { x: 60, y: 90 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180,
-      attackCooldown: 1800, // Slower arrow attack
+      attackRange: 140,
+      attackCooldown: 1800,
       lastAttackTime: 0
     },
     {
       id: 'enemy-princess-right',
       type: 'princess',
       owner: 'enemy',
-      position: { x: ARENA_WIDTH - 80, y: 120 },
+      position: { x: ARENA_WIDTH - 60, y: 90 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180,
-      attackCooldown: 1800, // Slower arrow attack
+      attackRange: 140,
+      attackCooldown: 1800,
       lastAttackTime: 0
     }
   ];
@@ -168,8 +168,8 @@ function isPositionInZones(position: Position, zones: PlacementZone[]): boolean 
 // River and bridge constants
 const RIVER_Y = ARENA_HEIGHT / 2;
 const RIVER_HALF_WIDTH = 8; // River extends 8 pixels above and below center
-const LEFT_BRIDGE = { minX: 40, maxX: 104 };
-const RIGHT_BRIDGE = { minX: ARENA_WIDTH - 104, maxX: ARENA_WIDTH - 40 };
+const LEFT_BRIDGE = { minX: 30, maxX: 80 };
+const RIGHT_BRIDGE = { minX: ARENA_WIDTH - 80, maxX: ARENA_WIDTH - 30 };
 
 function isOnBridge(x: number): boolean {
   return (x >= LEFT_BRIDGE.minX && x <= LEFT_BRIDGE.maxX) ||
