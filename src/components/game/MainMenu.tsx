@@ -165,9 +165,6 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
           Battle
         </Button>
       </div>
-      <p className="text-center text-gray-500 text-xs pb-2">
-        {progress.wins}W - {progress.losses}L
-      </p>
 
       {/* Bottom Navigation */}
       <div className="bg-[#0a1525] border-t border-cyan-900/40 px-2 py-1.5 safe-area-inset-bottom">
