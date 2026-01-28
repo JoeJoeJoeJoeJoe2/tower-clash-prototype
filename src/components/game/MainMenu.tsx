@@ -63,8 +63,15 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
         </div>
       </div>
 
+      {/* Game Title */}
+      <div className="text-center pt-2">
+        <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-orange-500 drop-shadow-lg tracking-wide">
+          Cracked Royale
+        </h1>
+      </div>
+
       {/* Trophy Display */}
-      <div className="flex justify-center py-3">
+      <div className="flex justify-center py-2">
         <div className="flex items-center gap-2 bg-gradient-to-r from-orange-900/60 via-orange-800/70 to-orange-900/60 px-5 py-1.5 rounded-full border border-orange-500/40 shadow-lg">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
             <Trophy className="w-4 h-4 text-yellow-200" />
