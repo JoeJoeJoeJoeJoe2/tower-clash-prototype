@@ -159,8 +159,8 @@ export const allCards: CardDefinition[] = [
     type: 'tank',
     elixirCost: 5,
     emoji: '🗿',
-    health: 4091,
-    damage: 254,
+    health: 2800, // Reduced from 4091
+    damage: 180, // Reduced from 254
     attackSpeed: 0.67,
     moveSpeed: 28,
     range: 30,
