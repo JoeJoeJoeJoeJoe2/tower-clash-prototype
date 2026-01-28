@@ -64,7 +64,7 @@ export function PlayerProfile({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gradient-to-b from-[#1a3a5c] to-[#0a1f33] border-cyan-700/50 text-white max-w-sm p-0 overflow-hidden">
+      <DialogContent className="bg-gradient-to-b from-[#1a3a5c] to-[#0a1f33] border-cyan-700/50 text-white max-w-md w-full h-[90vh] max-h-[700px] p-0 overflow-hidden flex flex-col">
         {/* Banner Header */}
         <div 
           className="relative h-32 flex items-end justify-center pb-2"
@@ -98,8 +98,8 @@ export function PlayerProfile({
           </div>
         </div>
 
-        {/* Profile Content */}
-        <div className="px-4 pt-8 pb-4">
+        {/* Profile Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4">
           {/* Player Name */}
           <div className="flex items-center justify-center gap-2 mb-4">
             {isEditingName ? (
