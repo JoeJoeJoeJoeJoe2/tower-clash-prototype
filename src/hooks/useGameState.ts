@@ -347,12 +347,16 @@ export function useGameState(playerDeckIds: string[]) {
       // Check if position is in valid placement zones
       if (!isPositionInZones(position, prev.playerPlacementZones)) return prev;
 
+      // Check we have a next card available
+      const nextCard = prev.playerDeck[0];
+      if (!nextCard) return prev;
+
       const newUnit = spawnUnit(card, position, 'player');
       addSpawnEffect(position, 'player', card.emoji);
       
       const newHand = [...prev.playerHand];
-      const nextCard = prev.playerDeck[0];
       newHand[cardIndex] = nextCard;
+      // Played card goes to end of deck queue (FIFO cycling)
       const newDeck = [...prev.playerDeck.slice(1), card];
 
       return {
