@@ -8,11 +8,12 @@ interface MainMenuProps {
   onBattle: () => void;
   onDeckBuilder: () => void;
   onCollection: () => void;
+  onClan: () => void;
   onOpenChest: () => void;
   onReset: () => void;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOpenChest, onReset }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onOpenChest, onReset }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const xpProgress = ((progress.wins % 5) / 5) * 100;
   const trophies = progress.wins * 30;
@@ -173,7 +174,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
         <div className="flex justify-around max-w-md mx-auto">
           <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Cards" onClick={onDeckBuilder} />
           <NavButton icon={<Swords className="w-5 h-5" />} label="Battle" onClick={onBattle} active />
-          <NavButton icon={<Users className="w-5 h-5" />} label="Social" onClick={onCollection} />
+          <NavButton icon={<Users className="w-5 h-5" />} label="Clan" onClick={onClan} />
         </div>
       </div>
     </div>

@@ -98,6 +98,7 @@ export interface PlayerProgress {
   wins: number;
   losses: number;
   chestsAvailable: number;
+  lastFreeChestDate: string | null; // ISO date string for daily free chest
 }
 
 export interface ChestReward {
