@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
-import { MainMenu } from './MainMenu';
-import { DeckBuilder } from './DeckBuilder';
+import { HomeNavigator } from './HomeNavigator';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
-import { CardGallery } from './CardGallery';
-import { ClanScreen } from './ClanScreen';
 import { PlayerProfile } from './PlayerProfile';
 
-type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle' | 'clan';
+type Screen = 'home' | 'battle';
 
 export function GameScreen() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [screen, setScreen] = useState<Screen>('home');
   const [chestReward, setChestReward] = useState<ChestReward | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const { 
@@ -34,7 +31,7 @@ export function GameScreen() {
     } else if (result === 'loss') {
       recordLoss();
     }
-    setScreen('menu');
+    setScreen('home');
   };
 
   const handleOpenChest = () => {
@@ -52,45 +49,15 @@ export function GameScreen() {
 
   return (
     <>
-      {screen === 'menu' && (
-        <MainMenu
+      {screen === 'home' && (
+        <HomeNavigator
           progress={progress}
           onBattle={() => setScreen('battle')}
-          onDeckBuilder={() => setScreen('deck-builder')}
-          onCollection={() => setScreen('collection')}
-          onClan={() => setScreen('clan')}
           onOpenChest={handleOpenChest}
           onReset={handleReset}
           onOpenProfile={() => setShowProfile(true)}
-        />
-      )}
-
-      {screen === 'deck-builder' && (
-        <DeckBuilder
-          ownedCardIds={progress.ownedCardIds}
-          deckSlots={progress.deckSlots}
-          activeDeckId={progress.activeDeckId}
-          onSaveDeck={(deckId, cardIds) => {
-            updateDeckSlot(deckId, cardIds);
-          }}
+          onSaveDeck={(deckId, cardIds) => updateDeckSlot(deckId as 'A' | 'B' | 'C', cardIds)}
           onSetActiveDeck={setActiveDeck}
-          onStartBattle={() => setScreen('battle')}
-          onBack={() => setScreen('menu')}
-        />
-      )}
-
-      {screen === 'collection' && (
-        <CardGallery
-          ownedCardIds={progress.ownedCardIds}
-          onBack={() => setScreen('menu')}
-        />
-      )}
-
-      {screen === 'clan' && (
-        <ClanScreen
-          playerName="Player"
-          trophies={progress.wins * 30}
-          onBack={() => setScreen('menu')}
         />
       )}
 
@@ -98,7 +65,7 @@ export function GameScreen() {
         <GameUI
           playerDeck={progress.currentDeck}
           onGameEnd={handleGameEnd}
-          onBack={() => setScreen('menu')}
+          onBack={() => setScreen('home')}
         />
       )}
 
