@@ -5,7 +5,14 @@ import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Swords, Check, X, Info, ArrowLeft, Plus } from 'lucide-react';
+import { Swords, Check, X, Info, ArrowLeft, Plus, TrendingDown } from 'lucide-react';
+
+export interface CardBalanceInfo {
+  cardId: string;
+  nerfLevel: number;
+  winStreak: number;
+  lastNerfedStat: 'damage' | 'speed' | 'health' | 'attackSpeed' | null;
+}
 
 interface DeckBuilderProps {
   ownedCardIds: string[];
@@ -16,6 +23,7 @@ interface DeckBuilderProps {
   onAddDeck: () => void;
   onStartBattle: () => void;
   onBack: () => void;
+  cardBalanceInfo?: CardBalanceInfo[];
 }
 
 export function DeckBuilder({ 
@@ -26,7 +34,8 @@ export function DeckBuilder({
   onSetActiveDeck,
   onAddDeck,
   onStartBattle,
-  onBack
+  onBack,
+  cardBalanceInfo = []
 }: DeckBuilderProps) {
   const [editingDeckId, setEditingDeckId] = useState<string>(activeDeckId);
   const currentSlot = deckSlots.find(s => s.id === editingDeckId);
@@ -61,6 +70,11 @@ export function DeckBuilder({
 
   const ownedCards = allCards.filter(c => ownedCardIds.includes(c.id));
   const deckCards = selectedDeck.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
+
+  // Get balance info for a card
+  const getBalanceInfo = (cardId: string): CardBalanceInfo | undefined => {
+    return cardBalanceInfo.find(b => b.cardId === cardId);
+  };
 
   const toggleCard = (cardId: string) => {
     if (selectedDeck.includes(cardId)) {
@@ -198,6 +212,18 @@ export function DeckBuilder({
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
+                    {/* Nerf indicator on deck cards */}
+                    {(() => {
+                      const balance = getBalanceInfo(card.id);
+                      if (balance && balance.nerfLevel > 0) {
+                        return (
+                          <div className="absolute -top-1 -left-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center" title={`Nerfed ${balance.nerfLevel}x`}>
+                            <TrendingDown className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <div className="mt-1 text-center w-full">
                       <div className="text-[8px] text-muted-foreground flex justify-center gap-1">
                         <span>❤️{card.health}</span>
@@ -223,6 +249,9 @@ export function DeckBuilder({
         <div className="grid grid-cols-4 gap-2 p-1">
           {ownedCards.map(card => {
             const inDeck = selectedDeck.includes(card.id);
+            const balance = getBalanceInfo(card.id);
+            const isNerfed = balance && balance.nerfLevel > 0;
+            
             return (
               <button 
                 key={card.id}
@@ -241,9 +270,29 @@ export function DeckBuilder({
                   size="small"
                   isSelected={inDeck}
                 />
+                {/* Check mark for cards in deck */}
                 {inDeck && (
                   <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
                     <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                )}
+                {/* Nerf indicator */}
+                {isNerfed && (
+                  <div 
+                    className="absolute top-0 left-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-full px-1.5 py-0.5 flex items-center gap-0.5 z-10 shadow-lg"
+                    title={`Stats reduced by ${balance.nerfLevel * 10}% (${balance.lastNerfedStat || 'random stat'})`}
+                  >
+                    <TrendingDown className="w-2.5 h-2.5 text-white" />
+                    <span className="text-[8px] font-bold text-white">-{balance.nerfLevel * 10}%</span>
+                  </div>
+                )}
+                {/* Win streak indicator (close to nerf) */}
+                {balance && balance.winStreak > 0 && balance.winStreak < 3 && !isNerfed && (
+                  <div 
+                    className="absolute bottom-0 left-0 bg-yellow-500/90 rounded-full px-1 py-0.5 flex items-center gap-0.5 z-10"
+                    title={`${balance.winStreak}/3 wins to nerf`}
+                  >
+                    <span className="text-[7px] font-bold text-yellow-900">🔥{balance.winStreak}</span>
                   </div>
                 )}
               </button>
@@ -256,31 +305,71 @@ export function DeckBuilder({
       </div>
 
       {/* Card Info Tooltip */}
-      {selectedCard && (
-        <div className="fixed bottom-36 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{selectedCard.emoji}</span>
-            <div>
-              <h3 className="font-bold">{selectedCard.name}</h3>
-              <span className={cn(
-                'text-xs capitalize',
-                selectedCard.rarity === 'common' && 'text-slate-400',
-                selectedCard.rarity === 'rare' && 'text-blue-400',
-                selectedCard.rarity === 'epic' && 'text-purple-400',
-                selectedCard.rarity === 'legendary' && 'text-amber-400'
-              )}>
-                {selectedCard.rarity}
-              </span>
+      {selectedCard && (() => {
+        const balance = getBalanceInfo(selectedCard.id);
+        const isNerfed = balance && balance.nerfLevel > 0;
+        const nerfMultiplier = isNerfed ? (1 - balance.nerfLevel * 0.1) : 1;
+        
+        return (
+          <div className="fixed bottom-36 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">{selectedCard.emoji}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold">{selectedCard.name}</h3>
+                  {isNerfed && (
+                    <span className="bg-gradient-to-r from-orange-600 to-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <TrendingDown className="w-2.5 h-2.5" />
+                      -{balance.nerfLevel * 10}%
+                    </span>
+                  )}
+                </div>
+                <span className={cn(
+                  'text-xs capitalize',
+                  selectedCard.rarity === 'common' && 'text-slate-400',
+                  selectedCard.rarity === 'rare' && 'text-blue-400',
+                  selectedCard.rarity === 'epic' && 'text-purple-400',
+                  selectedCard.rarity === 'legendary' && 'text-amber-400'
+                )}>
+                  {selectedCard.rarity}
+                </span>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground mb-2">{selectedCard.description}</p>
+            
+            {/* Stats with nerf indication */}
+            <div className="flex gap-4 text-xs">
+              <span className={isNerfed ? 'text-orange-400' : ''}>
+                ❤️ {isNerfed ? Math.round(selectedCard.health * nerfMultiplier) : selectedCard.health}
+                {isNerfed && <span className="text-[9px] text-muted-foreground line-through ml-1">{selectedCard.health}</span>}
+              </span>
+              <span className={isNerfed ? 'text-orange-400' : ''}>
+                ⚔️ {isNerfed ? Math.round(selectedCard.damage * nerfMultiplier) : selectedCard.damage}
+                {isNerfed && <span className="text-[9px] text-muted-foreground line-through ml-1">{selectedCard.damage}</span>}
+              </span>
+              <span>⚡ {selectedCard.elixirCost}</span>
+            </div>
+            
+            {/* Nerf details */}
+            {isNerfed && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <p className="text-[10px] text-orange-400">
+                  ⚠️ This card was nerfed {balance.nerfLevel} time{balance.nerfLevel > 1 ? 's' : ''} for winning too many games
+                </p>
+              </div>
+            )}
+            
+            {/* Win streak warning */}
+            {balance && balance.winStreak > 0 && !isNerfed && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <p className="text-[10px] text-yellow-500">
+                  🔥 Win streak: {balance.winStreak}/3 - will be nerfed after {3 - balance.winStreak} more MVP wins
+                </p>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mb-2">{selectedCard.description}</p>
-          <div className="flex gap-4 text-xs">
-            <span>❤️ {selectedCard.health}</span>
-            <span>⚔️ {selectedCard.damage}</span>
-            <span>⚡ {selectedCard.elixirCost}</span>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex flex-col gap-2 w-full max-w-md">

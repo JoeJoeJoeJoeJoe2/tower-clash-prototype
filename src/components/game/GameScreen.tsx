@@ -30,11 +30,20 @@ export function GameScreen() {
   } = useProgression();
   
   const {
+    balanceState,
     trackDamage,
     processGameEnd,
     getBalancedCardStats,
     resetBalance
   } = useCardBalance();
+  
+  // Convert balance state to CardBalanceInfo array for DeckBuilder
+  const cardBalanceInfo = balanceState.performances.map(p => ({
+    cardId: p.cardId,
+    nerfLevel: p.nerfLevel,
+    winStreak: p.winStreak,
+    lastNerfedStat: p.lastNerfedStat
+  }));
 
   const handleGameEnd = (result: 'win' | 'loss' | 'draw') => {
     // Process card balance (track MVP and apply nerfs)
@@ -76,6 +85,7 @@ export function GameScreen() {
           onSaveDeck={(deckId, cardIds) => updateDeckSlot(deckId, cardIds)}
           onSetActiveDeck={setActiveDeck}
           onAddDeck={addDeckSlot}
+          cardBalanceInfo={cardBalanceInfo}
         />
       )}
 
