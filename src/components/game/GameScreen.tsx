@@ -19,6 +19,7 @@ export function GameScreen() {
     updateDeck, 
     updateDeckSlot,
     setActiveDeck,
+    addDeckSlot,
     recordWin, 
     recordLoss, 
     openChest, 
@@ -58,8 +59,9 @@ export function GameScreen() {
           onOpenChest={handleOpenChest}
           onReset={handleReset}
           onOpenProfile={() => setShowProfile(true)}
-          onSaveDeck={(deckId, cardIds) => updateDeckSlot(deckId as 'A' | 'B' | 'C', cardIds)}
+          onSaveDeck={(deckId, cardIds) => updateDeckSlot(deckId, cardIds)}
           onSetActiveDeck={setActiveDeck}
+          onAddDeck={addDeckSlot}
         />
       )}
 

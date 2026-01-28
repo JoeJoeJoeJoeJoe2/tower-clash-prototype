@@ -3,15 +3,17 @@ import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Swords, Check, X, Info, ArrowLeft } from 'lucide-react';
+import { Swords, Check, X, Info, ArrowLeft, Plus } from 'lucide-react';
 
 interface DeckBuilderProps {
   ownedCardIds: string[];
   deckSlots: DeckSlot[];
-  activeDeckId: 'A' | 'B' | 'C';
-  onSaveDeck: (deckId: 'A' | 'B' | 'C', cardIds: string[]) => void;
-  onSetActiveDeck: (deckId: 'A' | 'B' | 'C') => void;
+  activeDeckId: string;
+  onSaveDeck: (deckId: string, cardIds: string[]) => void;
+  onSetActiveDeck: (deckId: string) => void;
+  onAddDeck: () => void;
   onStartBattle: () => void;
   onBack: () => void;
 }
@@ -22,11 +24,12 @@ export function DeckBuilder({
   activeDeckId,
   onSaveDeck, 
   onSetActiveDeck,
+  onAddDeck,
   onStartBattle,
   onBack
 }: DeckBuilderProps) {
-  const [editingDeckId, setEditingDeckId] = useState<'A' | 'B' | 'C'>(activeDeckId);
-  const currentSlot = deckSlots.find(s => s.id === editingDeckId)!;
+  const [editingDeckId, setEditingDeckId] = useState<string>(activeDeckId);
+  const currentSlot = deckSlots.find(s => s.id === editingDeckId);
   const [selectedDeck, setSelectedDeck] = useState<string[]>(currentSlot?.cardIds || []);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
 
@@ -82,41 +85,51 @@ export function DeckBuilder({
       </div>
 
       {/* Deck Tabs */}
-      <div className="flex gap-2 w-full max-w-md">
-        {(['A', 'B', 'C'] as const).map(id => {
-          const slot = deckSlots.find(s => s.id === id);
-          const isComplete = slot && slot.cardIds.length === 8;
-          const isEditing = editingDeckId === id;
-          const isActive = activeDeckId === id;
-          
-          return (
-            <button
-              key={id}
-              onClick={() => setEditingDeckId(id)}
-              className={cn(
-                'flex-1 py-2 px-3 rounded-lg border-2 transition-all text-sm font-medium',
-                isEditing 
-                  ? 'border-primary bg-primary/20 text-primary' 
-                  : 'border-border bg-card/50 text-muted-foreground hover:bg-card',
-                isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-              )}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <span>Deck {id}</span>
-                <span className={cn(
-                  'text-[10px]',
-                  isComplete ? 'text-green-400' : 'text-muted-foreground'
-                )}>
-                  {isComplete ? '✓ Ready' : `${slot?.cardIds.length || 0}/8`}
-                </span>
-                {isActive && (
-                  <span className="text-[10px] text-primary font-bold">ACTIVE</span>
+      <ScrollArea className="w-full max-w-md">
+        <div className="flex gap-2 pb-2">
+          {deckSlots.map(slot => {
+            const isComplete = slot.cardIds.length === 8;
+            const isEditing = editingDeckId === slot.id;
+            const isActive = activeDeckId === slot.id;
+            
+            return (
+              <button
+                key={slot.id}
+                onClick={() => setEditingDeckId(slot.id)}
+                className={cn(
+                  'min-w-[80px] py-2 px-3 rounded-lg border-2 transition-all text-sm font-medium flex-shrink-0',
+                  isEditing 
+                    ? 'border-primary bg-primary/20 text-primary' 
+                    : 'border-border bg-card/50 text-muted-foreground hover:bg-card',
+                  isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                 )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span>{slot.name}</span>
+                  <span className={cn(
+                    'text-[10px]',
+                    isComplete ? 'text-green-400' : 'text-muted-foreground'
+                  )}>
+                    {isComplete ? '✓ Ready' : `${slot.cardIds.length}/8`}
+                  </span>
+                  {isActive && (
+                    <span className="text-[10px] text-primary font-bold">ACTIVE</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+          <button
+            onClick={onAddDeck}
+            className="min-w-[60px] py-2 px-3 rounded-lg border-2 border-dashed border-muted-foreground/50 bg-card/30 text-muted-foreground hover:bg-card hover:border-primary hover:text-primary transition-all flex-shrink-0"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Plus className="w-4 h-4" />
+              <span className="text-[10px]">Add</span>
+            </div>
+          </button>
+        </div>
+      </ScrollArea>
 
       {/* Current Deck */}
       <div className="bg-card/50 rounded-xl p-4 border border-border w-full max-w-md">
@@ -179,41 +192,43 @@ export function DeckBuilder({
       </div>
 
       {/* Card Collection */}
-      <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md flex-1">
+      <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md flex-1 min-h-0 flex flex-col">
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-medium">Your Cards ({ownedCards.length})</span>
         </div>
         
-        <div className="grid grid-cols-4 gap-2 max-h-[250px] overflow-y-auto p-1">
-          {ownedCards.map(card => {
-            const inDeck = selectedDeck.includes(card.id);
-            return (
-              <button 
-                key={card.id}
-                type="button"
-                className="relative cursor-pointer bg-transparent border-none p-0"
-                onMouseEnter={() => setSelectedCard(card)}
-                onMouseLeave={() => setSelectedCard(null)}
-                onDoubleClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleCard(card.id);
-                }}
-              >
-                <GameCard 
-                  card={card} 
-                  size="small"
-                  isSelected={inDeck}
-                />
-                {inDeck && (
-                  <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
-                    <Check className="w-3 h-3 text-primary-foreground" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <ScrollArea className="flex-1">
+          <div className="grid grid-cols-4 gap-2 p-1">
+            {ownedCards.map(card => {
+              const inDeck = selectedDeck.includes(card.id);
+              return (
+                <button 
+                  key={card.id}
+                  type="button"
+                  className="relative cursor-pointer bg-transparent border-none p-0"
+                  onMouseEnter={() => setSelectedCard(card)}
+                  onMouseLeave={() => setSelectedCard(null)}
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleCard(card.id);
+                  }}
+                >
+                  <GameCard 
+                    card={card} 
+                    size="small"
+                    isSelected={inDeck}
+                  />
+                  {inDeck && (
+                    <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </ScrollArea>
         <p className="text-xs text-muted-foreground text-center mt-2">
           {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Double-click to add/remove cards'}
         </p>

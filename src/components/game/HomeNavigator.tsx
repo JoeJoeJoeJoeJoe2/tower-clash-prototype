@@ -17,6 +17,7 @@ interface HomeNavigatorProps {
   onOpenProfile: () => void;
   onSaveDeck: (deckId: string, cardIds: string[]) => void;
   onSetActiveDeck: (deckId: string) => void;
+  onAddDeck: () => void;
 }
 
 export function HomeNavigator({
@@ -27,6 +28,7 @@ export function HomeNavigator({
   onOpenProfile,
   onSaveDeck,
   onSetActiveDeck,
+  onAddDeck,
 }: HomeNavigatorProps) {
   const [currentIndex, setCurrentIndex] = useState(1); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
@@ -78,6 +80,7 @@ export function HomeNavigator({
             activeDeckId={progress.activeDeckId}
             onSaveDeck={onSaveDeck}
             onSetActiveDeck={onSetActiveDeck}
+            onAddDeck={onAddDeck}
             onStartBattle={onBattle}
             onBack={() => goToScreen('battle')}
           />

@@ -128,7 +128,7 @@ export function useProgression() {
     });
   }, []);
 
-  const setActiveDeck = useCallback((deckId: 'A' | 'B' | 'C') => {
+  const setActiveDeck = useCallback((deckId: string) => {
     setProgress(prev => {
       const slot = prev.deckSlots.find(s => s.id === deckId);
       const newCurrentDeck = slot && slot.cardIds.length === 8 ? slot.cardIds : prev.currentDeck;
@@ -140,7 +140,7 @@ export function useProgression() {
     });
   }, []);
 
-  const updateDeckSlot = useCallback((deckId: 'A' | 'B' | 'C', cardIds: string[]) => {
+  const updateDeckSlot = useCallback((deckId: string, cardIds: string[]) => {
     setProgress(prev => {
       const updatedSlots = prev.deckSlots.map(slot =>
         slot.id === deckId ? { ...slot, cardIds } : slot
@@ -150,6 +150,21 @@ export function useProgression() {
         ...prev,
         deckSlots: updatedSlots,
         currentDeck: isActiveDeck && cardIds.length === 8 ? cardIds : prev.currentDeck
+      };
+    });
+  }, []);
+
+  const addDeckSlot = useCallback(() => {
+    setProgress(prev => {
+      const nextId = String(prev.deckSlots.length + 1);
+      const newSlot: DeckSlot = {
+        id: nextId,
+        name: `Deck ${nextId}`,
+        cardIds: []
+      };
+      return {
+        ...prev,
+        deckSlots: [...prev.deckSlots, newSlot]
       };
     });
   }, []);
@@ -244,6 +259,7 @@ export function useProgression() {
     updateDeck,
     setActiveDeck,
     updateDeckSlot,
+    addDeckSlot,
     recordWin,
     recordLoss,
     openChest,
