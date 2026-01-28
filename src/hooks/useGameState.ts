@@ -203,7 +203,7 @@ function calculateMovement(
 ): { newX: number; newY: number; direction: 'up' | 'down' } {
   const currentX = unit.position.x;
   const currentY = unit.position.y;
-  const speed = unit.moveSpeed * delta * 12; // Very slow movement
+  const speed = unit.moveSpeed * delta * 1.5; // Very slow smooth movement
   
   // Check if we're on opposite sides of the river from target
   const unitOnPlayerSide = currentY > RIVER_Y;
