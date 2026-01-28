@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Swords, Check, X, Info, ArrowLeft, Plus } from 'lucide-react';
 
@@ -32,6 +32,26 @@ export function DeckBuilder({
   const currentSlot = deckSlots.find(s => s.id === editingDeckId);
   const [selectedDeck, setSelectedDeck] = useState<string[]>(currentSlot?.cardIds || []);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard navigation for scrolling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!containerRef.current) return;
+      
+      const scrollAmount = 100;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        containerRef.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        containerRef.current.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sync when switching deck tabs
   useEffect(() => {
@@ -72,7 +92,10 @@ export function DeckBuilder({
   const canBattle = deckSlots.find(s => s.id === activeDeckId)?.cardIds.length === 8;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center p-4 gap-4">
+    <div 
+      ref={containerRef}
+      className="h-screen overflow-y-auto bg-background flex flex-col items-center p-4 gap-4 pb-8"
+    >
       {/* Header */}
       <div className="flex items-center gap-4 w-full max-w-md">
         <Button variant="ghost" size="icon" onClick={onBack}>
@@ -191,46 +214,44 @@ export function DeckBuilder({
         </div>
       </div>
 
-      {/* Card Collection */}
-      <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md flex-1 min-h-0 flex flex-col">
+      {/* Card Collection - Now fully visible, no internal scroll */}
+      <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md">
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-medium">Your Cards ({ownedCards.length})</span>
         </div>
         
-        <ScrollArea className="flex-1">
-          <div className="grid grid-cols-4 gap-2 p-1">
-            {ownedCards.map(card => {
-              const inDeck = selectedDeck.includes(card.id);
-              return (
-                <button 
-                  key={card.id}
-                  type="button"
-                  className="relative cursor-pointer bg-transparent border-none p-0"
-                  onMouseEnter={() => setSelectedCard(card)}
-                  onMouseLeave={() => setSelectedCard(null)}
-                  onDoubleClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleCard(card.id);
-                  }}
-                >
-                  <GameCard 
-                    card={card} 
-                    size="small"
-                    isSelected={inDeck}
-                  />
-                  {inDeck && (
-                    <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
-                      <Check className="w-3 h-3 text-primary-foreground" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </ScrollArea>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Double-click to add/remove cards'}
+        <div className="grid grid-cols-4 gap-2 p-1">
+          {ownedCards.map(card => {
+            const inDeck = selectedDeck.includes(card.id);
+            return (
+              <button 
+                key={card.id}
+                type="button"
+                className="relative cursor-pointer bg-transparent border-none p-0"
+                onMouseEnter={() => setSelectedCard(card)}
+                onMouseLeave={() => setSelectedCard(null)}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleCard(card.id);
+                }}
+              >
+                <GameCard 
+                  card={card} 
+                  size="small"
+                  isSelected={inDeck}
+                />
+                {inDeck && (
+                  <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-3">
+          {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Double-click to add/remove cards • Use ↑↓ arrows to scroll'}
         </p>
       </div>
 
