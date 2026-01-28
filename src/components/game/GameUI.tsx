@@ -163,6 +163,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
             selectedIndex={gameState.selectedCardIndex}
             onCardSelect={handleCardSelect}
             nextCard={gameState.playerDeck[0]}
+            cooldowns={gameState.playerCardCooldowns}
           />
           
           {/* Then elixir bar */}
