@@ -22,7 +22,7 @@ function formatTime(seconds: number): string {
 }
 
 export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalancedCardStats }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, onTrackDamage, getBalancedCardStats);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, onTrackDamage, getBalancedCardStats);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
@@ -34,11 +34,8 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
     selectCard(index === -1 ? null : index);
   };
 
-  const playerTowersDestroyed = 3 - gameState.enemyTowers.filter(t => t.health > 0).length;
-  const enemyTowersDestroyed = 3 - gameState.playerTowers.filter(t => t.health > 0).length;
-
-  // Check for new placement zones (bonus zones from destroyed towers)
-  const hasBonusZones = gameState.playerPlacementZones.some(z => z.reason === 'tower-destroyed');
+  const playerCrowns = 3 - gameState.enemyTowers.filter(t => t.health > 0).length;
+  const enemyCrowns = 3 - gameState.playerTowers.filter(t => t.health > 0).length;
 
   // Handle game end
   if (gameState.gameStatus !== 'playing') {
@@ -62,12 +59,24 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
             
             <div className="flex gap-8 text-center">
               <div>
-                <span className="text-muted-foreground text-sm">Towers Destroyed</span>
-                <p className="text-4xl font-bold text-primary">{playerTowersDestroyed}</p>
+                <span className="text-muted-foreground text-sm">Crowns Won</span>
+                <div className="flex justify-center gap-1 mt-1">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className={cn("text-2xl", i < playerCrowns ? "opacity-100" : "opacity-30")}>
+                      👑
+                    </span>
+                  ))}
+                </div>
               </div>
               <div>
-                <span className="text-muted-foreground text-sm">Towers Lost</span>
-                <p className="text-4xl font-bold text-destructive">{enemyTowersDestroyed}</p>
+                <span className="text-muted-foreground text-sm">Crowns Lost</span>
+                <div className="flex justify-center gap-1 mt-1">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className={cn("text-2xl", i < enemyCrowns ? "opacity-100" : "opacity-30")}>
+                      👑
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             
@@ -88,8 +97,11 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
     );
   }
 
+  // Check for new placement zones (bonus zones from destroyed towers)
+  const hasBonusZones = gameState.playerPlacementZones.some(z => z.reason === 'tower-destroyed');
+
   return (
-    <div className="h-[100dvh] bg-background flex flex-col items-center overflow-hidden"  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="h-[100dvh] bg-background flex flex-col items-center overflow-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header - compact */}
       <div className="flex items-center gap-2 w-full max-w-md px-2 py-1 shrink-0">
         <Button variant="ghost" size="sm" onClick={() => onGameEnd('loss')} title="Forfeit match" className="h-8 w-8 p-0">
@@ -97,11 +109,25 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
         </Button>
         
         <div className="flex-1 flex items-center justify-center gap-4">
+          {/* Player crowns */}
           <div className="flex flex-col items-center">
             <span className="text-[10px] text-muted-foreground">You</span>
-            <span className="text-lg font-bold text-primary">⭐ {playerTowersDestroyed}</span>
+            <div className="flex gap-0.5">
+              {[0, 1, 2].map(i => (
+                <span 
+                  key={i} 
+                  className={cn(
+                    "text-lg transition-all duration-300",
+                    i < playerCrowns ? "opacity-100 scale-100" : "opacity-30 scale-75"
+                  )}
+                >
+                  👑
+                </span>
+              ))}
+            </div>
           </div>
           
+          {/* Timer */}
           <div className="flex flex-col items-center">
             <div className={cn(
               "text-xl font-bold transition-all duration-300",
@@ -119,9 +145,22 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
             )}
           </div>
           
+          {/* Enemy crowns */}
           <div className="flex flex-col items-center">
             <span className="text-[10px] text-muted-foreground">Enemy</span>
-            <span className="text-lg font-bold text-secondary">⭐ {enemyTowersDestroyed}</span>
+            <div className="flex gap-0.5">
+              {[0, 1, 2].map(i => (
+                <span 
+                  key={i} 
+                  className={cn(
+                    "text-lg transition-all duration-300",
+                    i < enemyCrowns ? "opacity-100 scale-100" : "opacity-30 scale-75"
+                  )}
+                >
+                  👑
+                </span>
+              ))}
+            </div>
           </div>
         </div>
         
@@ -142,12 +181,13 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
       )}
 
       {/* Arena - fills available space */}
-      <div className="flex-1 flex items-center justify-center min-h-0 py-1">
+      <div className="flex-1 flex items-center justify-center min-h-0 py-1 relative">
         <Arena
           gameState={gameState}
           projectiles={projectiles}
           spawnEffects={spawnEffects}
           damageNumbers={damageNumbers}
+          crownAnimations={crownAnimations}
           arenaWidth={ARENA_WIDTH}
           arenaHeight={ARENA_HEIGHT}
           onArenaClick={handleArenaClick}
