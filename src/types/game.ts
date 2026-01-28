@@ -14,6 +14,7 @@ export interface Tower {
   attackRange: number;
   attackCooldown: number;
   lastAttackTime: number;
+  isActivated?: boolean; // King tower only attacks when activated (damaged)
 }
 
 export interface CardDefinition {

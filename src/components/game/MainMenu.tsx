@@ -2,6 +2,7 @@ import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Swords, Package, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
 import { allCards } from '@/data/cards';
+import { cn } from '@/lib/utils';
 
 interface MainMenuProps {
   progress: PlayerProgress;
@@ -124,19 +125,39 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
         </div>
       </div>
 
-      {/* Chest notification */}
-      {progress.chestsAvailable > 0 && (
-        <div className="px-4 mb-2">
-          <Button 
-            onClick={onOpenChest}
-            variant="outline"
-            className="w-full relative animate-pulse border-amber-500 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-          >
-            <Package className="w-5 h-5 mr-2" />
-            Open Chest ({progress.chestsAvailable} available)
-          </Button>
+      {/* Chest Slots - 4 slots below battle button area */}
+      <div className="px-4 mb-3">
+        <div className="grid grid-cols-4 gap-2">
+          {[0, 1, 2, 3].map((slotIndex) => {
+            const hasChest = slotIndex < progress.chestsAvailable;
+            return (
+              <button
+                key={slotIndex}
+                onClick={hasChest ? onOpenChest : undefined}
+                disabled={!hasChest}
+                className={cn(
+                  "aspect-square rounded-lg border-2 flex flex-col items-center justify-center transition-all",
+                  hasChest 
+                    ? "bg-gradient-to-b from-amber-700/80 to-amber-900/80 border-amber-500 cursor-pointer hover:scale-105 animate-pulse shadow-lg shadow-amber-500/30" 
+                    : "bg-gradient-to-b from-gray-800/50 to-gray-900/50 border-gray-700/50 cursor-not-allowed"
+                )}
+              >
+                {hasChest ? (
+                  <>
+                    <Package className="w-8 h-8 text-amber-400" />
+                    <span className="text-[10px] text-amber-300 mt-1 font-bold">OPEN</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 rounded border-2 border-dashed border-gray-600/50" />
+                    <span className="text-[10px] text-gray-600 mt-1">Empty</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Battle Button */}
       <div className="px-4 pb-3">

@@ -67,7 +67,7 @@ export function Tower({ tower }: TowerProps) {
           'text-2xl',
           tower.type === 'king' && 'text-3xl'
         )}>
-          {tower.type === 'king' ? '🏰' : '🗼'}
+          {tower.type === 'king' ? '👑' : '👸'}
         </span>
         
         {/* Muzzle flash when attacking */}
