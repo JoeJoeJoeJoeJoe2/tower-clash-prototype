@@ -326,7 +326,8 @@ export function useGameState(playerDeckIds: string[]) {
       targetId: null,
       state: 'idle',
       animationFrame: 0,
-      direction: owner === 'player' ? 'up' : 'down'
+      direction: owner === 'player' ? 'up' : 'down',
+      deployCooldown: card.deployCooldown // Unit has cooldown before it can act
     };
   }, []);
 
@@ -572,6 +573,13 @@ export function useGameState(playerDeckIds: string[]) {
         state.playerUnits = state.playerUnits.map(unit => {
           if (unit.health <= 0) return unit;
 
+          // Decrement deploy cooldown
+          if (unit.deployCooldown > 0) {
+            unit.deployCooldown = Math.max(0, unit.deployCooldown - delta);
+            unit.animationFrame = (unit.animationFrame + 1) % 60;
+            return unit; // Don't move or attack while deploying
+          }
+
           const enemies = [
             ...state.enemyUnits.filter(u => u.health > 0),
             ...state.enemyTowers.filter(t => t.health > 0)
@@ -614,6 +622,13 @@ export function useGameState(playerDeckIds: string[]) {
         // Update enemy units
         state.enemyUnits = state.enemyUnits.map(unit => {
           if (unit.health <= 0) return unit;
+
+          // Decrement deploy cooldown
+          if (unit.deployCooldown > 0) {
+            unit.deployCooldown = Math.max(0, unit.deployCooldown - delta);
+            unit.animationFrame = (unit.animationFrame + 1) % 60;
+            return unit; // Don't move or attack while deploying
+          }
 
           const enemies = [
             ...state.playerUnits.filter(u => u.health > 0),

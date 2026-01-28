@@ -122,7 +122,20 @@ export function DeckBuilder({
       <div className="bg-card/50 rounded-xl p-4 border border-border w-full max-w-md">
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-medium">Deck {editingDeckId} ({selectedDeck.length}/8)</span>
-          <span className="text-xs text-muted-foreground">Avg: ⚡{avgElixir}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Avg: ⚡{avgElixir}</span>
+            {selectedDeck.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setSelectedDeck([])}
+              >
+                <X className="w-3 h-3 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
         
         <div className="grid grid-cols-4 gap-2 min-h-[200px]">

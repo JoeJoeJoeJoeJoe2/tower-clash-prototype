@@ -49,6 +49,7 @@ export interface Unit {
   state: 'idle' | 'moving' | 'attacking';
   animationFrame: number;
   direction: 'up' | 'down';
+  deployCooldown: number; // Remaining deploy cooldown before unit can act
 }
 
 export interface PlacementZone {
