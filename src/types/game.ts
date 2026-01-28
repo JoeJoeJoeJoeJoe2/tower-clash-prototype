@@ -17,6 +17,15 @@ export interface Tower {
   isActivated?: boolean; // King tower only attacks when activated (damaged)
 }
 
+// Spell effect types
+export type SpellEffectType = 'damage' | 'freeze' | 'slow' | 'stun' | 'knockback' | 'heal';
+
+export interface SpellEffect {
+  type: SpellEffectType;
+  value: number; // damage amount, slow %, stun duration, etc.
+  duration?: number; // for duration-based effects (seconds)
+}
+
 export interface CardDefinition {
   id: string;
   name: string;
@@ -32,12 +41,24 @@ export interface CardDefinition {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   color: string;
   deployCooldown: number; // Cooldown in seconds before unit can act after spawn
+  
   // Combat properties for counterplay
   isFlying: boolean; // Air units - only targetable by air-targeting units
   targetType: 'ground' | 'air' | 'both' | 'buildings'; // What this unit can attack
   splashRadius?: number; // Optional - units with splash deal damage in this radius
   count?: number; // Number of units spawned (for swarm cards like Skeletons, Goblins)
   hitSpeed?: number; // Time between attacks in seconds (alternative to attackSpeed)
+  
+  // Spell-specific properties
+  spellRadius?: number; // Area of effect for spells
+  spellEffects?: SpellEffect[]; // Effects applied by the spell
+  spellDuration?: number; // Duration for lingering spells like Poison
+  
+  // Building-specific properties
+  buildingLifetime?: number; // Lifetime in seconds before building expires
+  spawnInterval?: number; // For spawner buildings - seconds between spawns
+  spawnCardId?: string; // Card ID of unit to spawn
+  spawnCount?: number; // Number of units to spawn each interval
 }
 
 export interface Unit {
@@ -57,11 +78,58 @@ export interface Unit {
   animationFrame: number;
   direction: 'up' | 'down';
   deployCooldown: number; // Remaining deploy cooldown before unit can act
+  
   // Combat properties
   isFlying: boolean;
   targetType: 'ground' | 'air' | 'both' | 'buildings';
   splashRadius?: number;
   count: number; // Number of units in this group
+  
+  // Status effects
+  statusEffects: StatusEffect[];
+}
+
+export interface StatusEffect {
+  type: SpellEffectType;
+  value: number;
+  remainingDuration: number;
+  sourceId: string; // ID of the spell/unit that applied this effect
+}
+
+export interface Building {
+  id: string;
+  cardId: string;
+  owner: 'player' | 'enemy';
+  position: Position;
+  health: number;
+  maxHealth: number;
+  damage: number;
+  attackSpeed: number;
+  range: number;
+  lastAttackTime: number;
+  targetType: 'ground' | 'air' | 'both';
+  
+  // Building-specific
+  lifetime: number; // Remaining lifetime in seconds
+  maxLifetime: number;
+  isSpawner: boolean;
+  spawnInterval?: number;
+  spawnCardId?: string;
+  spawnCount?: number;
+  lastSpawnTime: number;
+  splashRadius?: number;
+}
+
+export interface ActiveSpell {
+  id: string;
+  cardId: string;
+  owner: 'player' | 'enemy';
+  position: Position;
+  radius: number;
+  effects: SpellEffect[];
+  remainingDuration: number; // 0 for instant spells
+  damage: number;
+  hasAppliedInstant: boolean; // For instant damage spells
 }
 
 export interface PlacementZone {
@@ -81,6 +149,9 @@ export interface GameState {
   enemyTowers: Tower[];
   playerUnits: Unit[];
   enemyUnits: Unit[];
+  playerBuildings: Building[];
+  enemyBuildings: Building[];
+  activeSpells: ActiveSpell[];
   playerDeck: CardDefinition[];
   playerHand: CardDefinition[];
   enemyDeck: CardDefinition[];

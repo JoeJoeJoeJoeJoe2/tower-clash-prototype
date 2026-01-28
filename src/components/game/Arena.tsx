@@ -1,9 +1,10 @@
-import { GameState, Position, PlacementZone } from '@/types/game';
+import { GameState, Position, PlacementZone, Building as BuildingType, ActiveSpell } from '@/types/game';
 import { Projectile, SpawnEffect, DamageNumber } from '@/hooks/useGameState';
 import { Tower } from './Tower';
 import { Unit } from './Unit';
 import { ProjectileComponent, SpawnEffectComponent } from './Projectile';
 import { cn } from '@/lib/utils';
+import { getCardById } from '@/data/cards';
 
 interface ArenaProps {
   gameState: GameState;
@@ -34,6 +35,98 @@ function DamageNumberComponent({ dmg }: { dmg: DamageNumber }) {
       }}
     >
       -{dmg.damage}
+    </div>
+  );
+}
+
+function BuildingComponent({ building }: { building: BuildingType }) {
+  const card = getCardById(building.cardId);
+  const healthPercent = (building.health / building.maxHealth) * 100;
+  const lifetimePercent = (building.lifetime / building.maxLifetime) * 100;
+  
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        left: building.position.x,
+        top: building.position.y,
+        transform: 'translate(-50%, -50%)'
+      }}
+    >
+      {/* Building body */}
+      <div 
+        className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center text-lg border-2 shadow-lg",
+          building.owner === 'player' 
+            ? "bg-gradient-to-b from-blue-600 to-blue-800 border-blue-400" 
+            : "bg-gradient-to-b from-red-600 to-red-800 border-red-400"
+        )}
+      >
+        {card?.emoji || '🏰'}
+      </div>
+      
+      {/* Health bar */}
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div 
+          className={cn(
+            "h-full transition-all",
+            building.owner === 'player' ? "bg-blue-400" : "bg-red-400"
+          )}
+          style={{ width: `${healthPercent}%` }}
+        />
+      </div>
+      
+      {/* Lifetime indicator (circular) */}
+      <div 
+        className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white/50"
+        style={{
+          background: `conic-gradient(${building.owner === 'player' ? '#60a5fa' : '#f87171'} ${lifetimePercent}%, transparent ${lifetimePercent}%)`
+        }}
+      />
+    </div>
+  );
+}
+
+function SpellEffectComponent({ spell }: { spell: ActiveSpell }) {
+  const card = getCardById(spell.cardId);
+  const isFreeze = card?.id === 'freeze';
+  const isPoison = card?.id === 'poison';
+  const isRage = card?.id === 'rage';
+  
+  // Instant spells fade out quickly
+  const opacity = spell.remainingDuration > 0 
+    ? Math.min(1, spell.remainingDuration / 2) 
+    : 1 - (spell.hasAppliedInstant ? 0.8 : 0);
+  
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        left: spell.position.x,
+        top: spell.position.y,
+        transform: 'translate(-50%, -50%)',
+        opacity
+      }}
+    >
+      {/* Spell radius indicator */}
+      <div 
+        className={cn(
+          "rounded-full border-2 animate-pulse",
+          isFreeze ? "bg-cyan-400/30 border-cyan-300" :
+          isPoison ? "bg-green-500/30 border-green-400" :
+          isRage ? "bg-red-500/30 border-red-400" :
+          spell.owner === 'player' ? "bg-blue-500/30 border-blue-400" : "bg-red-500/30 border-red-400"
+        )}
+        style={{
+          width: spell.radius * 2,
+          height: spell.radius * 2,
+        }}
+      />
+      
+      {/* Spell emoji in center */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl">
+        {card?.emoji || '✨'}
+      </div>
     </div>
   );
 }
@@ -225,6 +318,19 @@ export function Arena({
       {/* Spawn Effects */}
       {spawnEffects.map(effect => (
         <SpawnEffectComponent key={effect.id} effect={effect} />
+      ))}
+
+      {/* Buildings */}
+      {gameState.playerBuildings.map(building => (
+        <BuildingComponent key={building.id} building={building} />
+      ))}
+      {gameState.enemyBuildings.map(building => (
+        <BuildingComponent key={building.id} building={building} />
+      ))}
+
+      {/* Active Spells (visual effects) */}
+      {gameState.activeSpells.map(spell => (
+        <SpellEffectComponent key={spell.id} spell={spell} />
       ))}
 
       {/* Units */}
