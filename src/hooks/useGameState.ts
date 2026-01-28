@@ -202,7 +202,7 @@ function calculateMovement(
 ): { newX: number; newY: number; direction: 'up' | 'down' } {
   const currentX = unit.position.x;
   const currentY = unit.position.y;
-  const speed = unit.moveSpeed * delta * 50;
+  const speed = unit.moveSpeed * delta * 25; // Reduced movement speed multiplier
   
   // Check if we're on opposite sides of the river from target
   const unitOnPlayerSide = currentY > RIVER_Y;
@@ -471,7 +471,8 @@ export function useGameState(playerDeckIds: string[]) {
     
     const tick = (currentTime: number) => {
       const deltaMs = currentTime - lastTickRef.current;
-      const delta = Math.min(deltaMs, 100) / 1000;
+      // Cap delta at 33ms (~30fps min) for smoother gameplay
+      const delta = Math.min(deltaMs, 33) / 1000;
       lastTickRef.current = currentTime;
 
       // Update projectiles
