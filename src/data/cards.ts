@@ -1,22 +1,28 @@
 import { CardDefinition } from '@/types/game';
 
 export const allCards: CardDefinition[] = [
-  // Common troops - starter cards (actual Clash Royale names)
+  // ==================== COMMON TROOPS ====================
+  // Low cost, basic stats, starter-friendly
+  
   {
     id: 'knight',
     name: 'Knight',
     type: 'mini-tank',
     elixirCost: 3,
     emoji: '⚔️',
-    health: 180,
-    damage: 18,
-    attackSpeed: 1.1,
-    moveSpeed: 0.5,
+    health: 1452,
+    damage: 167,
+    attackSpeed: 0.77, // 1.3s hit speed
+    moveSpeed: 60, // Medium
     range: 30,
+    hitSpeed: 1.3,
     description: 'A sturdy melee fighter with a big sword',
     rarity: 'common',
     color: '#d97706',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground', // Melee, can't hit air
+    count: 1
   },
   {
     id: 'archers',
@@ -24,15 +30,19 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🏹',
-    health: 85,
-    damage: 14,
-    attackSpeed: 1.0,
-    moveSpeed: 0.55,
-    range: 120,
+    health: 304, // Per archer
+    damage: 107,
+    attackSpeed: 0.83, // 1.2s hit speed
+    moveSpeed: 60, // Medium
+    range: 150,
+    hitSpeed: 1.2,
     description: 'A pair of sharpshooters',
     rarity: 'common',
     color: '#ec4899',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both', // Can shoot air
+    count: 2
   },
   {
     id: 'goblins',
@@ -40,15 +50,19 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 2,
     emoji: '👺',
-    health: 55,
-    damage: 12,
-    attackSpeed: 1.4,
-    moveSpeed: 0.7,
-    range: 25,
+    health: 202, // Per goblin
+    damage: 120,
+    attackSpeed: 0.91, // 1.1s hit speed
+    moveSpeed: 80, // Very Fast
+    range: 30,
+    hitSpeed: 1.1,
     description: 'Fast and cheap swarm',
     rarity: 'common',
     color: '#22c55e',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 3
   },
   {
     id: 'skeletons',
@@ -56,15 +70,19 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 1,
     emoji: '💀',
-    health: 32,
-    damage: 10,
-    attackSpeed: 1.6,
-    moveSpeed: 0.65,
-    range: 25,
+    health: 81, // Per skeleton - very fragile
+    damage: 81,
+    attackSpeed: 1.0, // 1.0s hit speed
+    moveSpeed: 70, // Fast
+    range: 30,
+    hitSpeed: 1.0,
     description: 'Three spooky scary skeletons',
     rarity: 'common',
     color: '#a1a1aa',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 3
   },
   {
     id: 'bomber',
@@ -72,15 +90,20 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 2,
     emoji: '💣',
-    health: 65,
-    damage: 16,
-    attackSpeed: 1.1,
-    moveSpeed: 0.5,
-    range: 90,
-    description: 'Throws explosive bombs',
+    health: 332,
+    damage: 233,
+    attackSpeed: 0.56, // 1.8s hit speed
+    moveSpeed: 60, // Medium
+    range: 100,
+    hitSpeed: 1.8,
+    description: 'Throws explosive bombs - splash damage',
     rarity: 'common',
     color: '#f97316',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground', // Can't hit air
+    splashRadius: 40,
+    count: 1
   },
   {
     id: 'minions',
@@ -88,32 +111,43 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🦇',
-    health: 50,
-    damage: 11,
-    attackSpeed: 1.3,
-    moveSpeed: 0.7,
+    health: 216, // Per minion - fragile flying
+    damage: 84,
+    attackSpeed: 1.0, // 1.0s hit speed
+    moveSpeed: 80, // Very Fast
     range: 35,
+    hitSpeed: 1.0,
     description: 'Flying blue creatures',
     rarity: 'common',
     color: '#3b82f6',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: true, // AIR UNIT
+    targetType: 'both',
+    count: 3
   },
-  // Rare troops
+
+  // ==================== RARE TROOPS ====================
+  // Medium cost, stronger stats, specialized roles
+  
   {
     id: 'giant',
     name: 'Giant',
     type: 'tank',
     elixirCost: 5,
     emoji: '🗿',
-    health: 380,
-    damage: 22,
-    attackSpeed: 0.6,
-    moveSpeed: 0.35,
-    range: 25,
-    description: 'Slow but incredibly tanky',
+    health: 4091,
+    damage: 254,
+    attackSpeed: 0.67, // 1.5s hit speed
+    moveSpeed: 45, // Slow
+    range: 30,
+    hitSpeed: 1.5,
+    description: 'Slow but incredibly tanky - targets buildings',
     rarity: 'rare',
     color: '#78716c',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'buildings', // Only attacks buildings/towers
+    count: 1
   },
   {
     id: 'wizard',
@@ -121,15 +155,20 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🔥',
-    health: 95,
-    damage: 30,
-    attackSpeed: 0.75,
-    moveSpeed: 0.5,
-    range: 100,
-    description: 'Powerful fireball magic',
+    health: 720,
+    damage: 281,
+    attackSpeed: 0.59, // 1.7s hit speed
+    moveSpeed: 60, // Medium
+    range: 130,
+    hitSpeed: 1.7,
+    description: 'Powerful fireball magic - splash damage',
     rarity: 'rare',
     color: '#ea580c',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both', // Hits air and ground
+    splashRadius: 50,
+    count: 1
   },
   {
     id: 'valkyrie',
@@ -137,15 +176,20 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 4,
     emoji: '🪓',
-    health: 200,
-    damage: 20,
-    attackSpeed: 0.9,
-    moveSpeed: 0.5,
+    health: 1908,
+    damage: 221,
+    attackSpeed: 0.67, // 1.5s hit speed
+    moveSpeed: 60, // Medium
     range: 35,
-    description: 'Spins and hits everything around',
+    hitSpeed: 1.5,
+    description: 'Spins and hits all ground units around her',
     rarity: 'rare',
     color: '#f472b6',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground', // Can't hit air
+    splashRadius: 60, // 360° splash around her
+    count: 1
   },
   {
     id: 'musketeer',
@@ -153,15 +197,19 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🎯',
-    health: 110,
-    damage: 24,
-    attackSpeed: 0.85,
-    moveSpeed: 0.5,
-    range: 140,
-    description: 'Long range shooter',
+    health: 720,
+    damage: 208,
+    attackSpeed: 0.91, // 1.1s hit speed
+    moveSpeed: 60, // Medium
+    range: 180,
+    hitSpeed: 1.1,
+    description: 'Long range shooter - high single target DPS',
     rarity: 'rare',
     color: '#0891b2',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both', // Can shoot air
+    count: 1
   },
   {
     id: 'baby-dragon',
@@ -169,15 +217,20 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🐉',
-    health: 130,
-    damage: 18,
-    attackSpeed: 1.0,
-    moveSpeed: 0.55,
-    range: 80,
-    description: 'Flying fire breather',
+    health: 1152,
+    damage: 160,
+    attackSpeed: 0.67, // 1.5s hit speed
+    moveSpeed: 70, // Fast
+    range: 100,
+    hitSpeed: 1.5,
+    description: 'Flying fire breather - splash damage',
     rarity: 'rare',
     color: '#7c3aed',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: true, // AIR UNIT
+    targetType: 'both',
+    splashRadius: 45,
+    count: 1
   },
   {
     id: 'hog-rider',
@@ -185,32 +238,43 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🐗',
-    health: 150,
-    damage: 22,
-    attackSpeed: 1.0,
-    moveSpeed: 0.75,
+    health: 1696,
+    damage: 264,
+    attackSpeed: 0.63, // 1.6s hit speed
+    moveSpeed: 100, // Very Fast
     range: 30,
-    description: 'Fast tower rusher',
+    hitSpeed: 1.6,
+    description: 'Fast tower rusher - targets buildings only',
     rarity: 'rare',
     color: '#b45309',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'buildings', // Only attacks buildings
+    count: 1
   },
-  // Epic troops
+
+  // ==================== EPIC TROOPS ====================
+  // Higher cost, powerful unique abilities
+  
   {
     id: 'prince',
     name: 'Prince',
     type: 'mini-tank',
     elixirCost: 5,
     emoji: '🏇',
-    health: 190,
-    damage: 35,
-    attackSpeed: 0.9,
-    moveSpeed: 0.6,
-    range: 30,
-    description: 'Charges into battle',
+    health: 1920,
+    damage: 392,
+    attackSpeed: 0.71, // 1.4s hit speed
+    moveSpeed: 75, // Fast (can charge faster)
+    range: 35,
+    hitSpeed: 1.4,
+    description: 'Charges into battle for double damage',
     rarity: 'epic',
     color: '#3b82f6',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 1
   },
   {
     id: 'witch',
@@ -218,15 +282,20 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🧙‍♀️',
-    health: 90,
-    damage: 26,
-    attackSpeed: 0.85,
-    moveSpeed: 0.45,
-    range: 110,
-    description: 'Summons skeletons to fight',
+    health: 880,
+    damage: 138,
+    attackSpeed: 0.71, // 1.4s hit speed
+    moveSpeed: 60, // Medium
+    range: 130,
+    hitSpeed: 1.4,
+    description: 'Summons skeletons to fight - splash damage',
     rarity: 'epic',
     color: '#a855f7',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both', // Can hit air
+    splashRadius: 35,
+    count: 1
   },
   {
     id: 'mini-pekka',
@@ -234,15 +303,19 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 4,
     emoji: '🤖',
-    health: 140,
-    damage: 38,
-    attackSpeed: 0.8,
-    moveSpeed: 0.55,
-    range: 28,
-    description: 'Pancakes! High damage dealer',
+    health: 1129,
+    damage: 598,
+    attackSpeed: 0.56, // 1.8s hit speed - slow but devastating
+    moveSpeed: 70, // Fast
+    range: 30,
+    hitSpeed: 1.8,
+    description: 'Pancakes! Devastating single-target damage',
     rarity: 'epic',
     color: '#6366f1',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 1
   },
   {
     id: 'balloon',
@@ -250,32 +323,43 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🎈',
-    health: 160,
-    damage: 45,
-    attackSpeed: 0.6,
-    moveSpeed: 0.4,
-    range: 25,
-    description: 'Death from above',
+    health: 1680,
+    damage: 798,
+    attackSpeed: 0.33, // 3.0s hit speed - very slow
+    moveSpeed: 50, // Slow flying
+    range: 35,
+    hitSpeed: 3.0,
+    description: 'Death from above - targets buildings only',
     rarity: 'epic',
     color: '#ef4444',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: true, // AIR UNIT
+    targetType: 'buildings', // Only attacks buildings
+    count: 1
   },
-  // Legendary troops
+
+  // ==================== LEGENDARY TROOPS ====================
+  // Premium cards with unique mechanics
+  
   {
     id: 'pekka',
     name: 'P.E.K.K.A',
     type: 'tank',
     elixirCost: 7,
     emoji: '🦾',
-    health: 520,
-    damage: 50,
-    attackSpeed: 0.55,
-    moveSpeed: 0.3,
-    range: 30,
-    description: 'The ultimate war machine',
+    health: 3760,
+    damage: 816,
+    attackSpeed: 0.56, // 1.8s hit speed
+    moveSpeed: 45, // Slow
+    range: 35,
+    hitSpeed: 1.8,
+    description: 'The ultimate war machine - massive damage',
     rarity: 'legendary',
     color: '#1e40af',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 1
   },
   {
     id: 'mega-knight',
@@ -283,15 +367,20 @@ export const allCards: CardDefinition[] = [
     type: 'tank',
     elixirCost: 7,
     emoji: '👹',
-    health: 480,
-    damage: 42,
-    attackSpeed: 0.6,
-    moveSpeed: 0.35,
-    range: 32,
-    description: 'Jumps and smashes everything',
+    health: 3300,
+    damage: 267,
+    attackSpeed: 0.59, // 1.7s hit speed
+    moveSpeed: 60, // Medium
+    range: 40,
+    hitSpeed: 1.7,
+    description: 'Jumps and smashes with splash damage',
     rarity: 'legendary',
     color: '#0f172a',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    splashRadius: 70, // Big splash area
+    count: 1
   },
   {
     id: 'electro-wizard',
@@ -299,15 +388,19 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '⚡',
-    health: 100,
-    damage: 20,
-    attackSpeed: 1.2,
-    moveSpeed: 0.55,
-    range: 100,
-    description: 'Zaps enemies with lightning',
+    health: 649,
+    damage: 110, // Per zap (hits 2 targets)
+    attackSpeed: 0.56, // 1.8s hit speed
+    moveSpeed: 60, // Medium
+    range: 130,
+    hitSpeed: 1.8,
+    description: 'Zaps 2 enemies at once - stuns on hit',
     rarity: 'legendary',
     color: '#0ea5e9',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both', // Can hit air
+    count: 1
   },
   {
     id: 'princess',
@@ -315,19 +408,24 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '👸',
-    health: 60,
-    damage: 16,
-    attackSpeed: 1.0,
-    moveSpeed: 0.5,
-    range: 160,
-    description: 'Incredible range archer',
+    health: 280,
+    damage: 186,
+    attackSpeed: 0.33, // 3.0s hit speed - very slow
+    moveSpeed: 60, // Medium
+    range: 250, // Incredible range - outranges towers
+    hitSpeed: 3.0,
+    description: 'Incredible range - outranges everything',
     rarity: 'legendary',
     color: '#f472b6',
-    deployCooldown: 1.0
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'both',
+    splashRadius: 40, // Small area damage
+    count: 1
   }
 ];
 
-// Starting cards for new players
+// Starting cards for new players - balanced starter deck
 export const starterCardIds = ['knight', 'archers', 'goblins', 'skeletons', 'bomber', 'minions', 'giant', 'wizard'];
 
 // Fisher-Yates shuffle for randomizing deck order at battle start
@@ -342,15 +440,12 @@ function shuffleArray<T>(array: T[]): T[] {
 
 export function createDeck(cardIds: string[], shuffle = true): CardDefinition[] {
   const cards = cardIds.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
-  // Shuffle the deck at battle start for random initial order
   return shuffle ? shuffleArray(cards) : cards;
 }
 
 export function drawHand(deck: CardDefinition[]): { hand: CardDefinition[], remainingDeck: CardDefinition[] } {
-  // Hand is first 4 cards, remaining deck is cards 5-8 (cards not in hand yet)
-  // When a card is played, it goes to the BACK of the queue (handled in playCard)
   const hand = deck.slice(0, 4);
-  const remainingDeck = deck.slice(4); // Only cards NOT in hand - cycling handled by playCard
+  const remainingDeck = deck.slice(4);
   return { hand, remainingDeck };
 }
 

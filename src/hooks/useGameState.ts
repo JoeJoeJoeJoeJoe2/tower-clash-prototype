@@ -329,7 +329,12 @@ export function useGameState(playerDeckIds: string[]) {
       state: 'idle',
       animationFrame: 0,
       direction: owner === 'player' ? 'up' : 'down',
-      deployCooldown: card.deployCooldown // Unit has cooldown before it can act
+      deployCooldown: card.deployCooldown,
+      // Combat properties from card
+      isFlying: card.isFlying,
+      targetType: card.targetType,
+      splashRadius: card.splashRadius,
+      count: card.count || 1
     };
   }, []);
 
@@ -582,15 +587,34 @@ export function useGameState(playerDeckIds: string[]) {
             return unit; // Don't move or attack while deploying
           }
 
+          // Filter valid targets based on unit's targetType
+          const validEnemyUnits = state.enemyUnits.filter(u => {
+            if (u.health <= 0) return false;
+            // Check if this unit can target the enemy based on flying status
+            if (unit.targetType === 'ground' && u.isFlying) return false;
+            if (unit.targetType === 'air' && !u.isFlying) return false;
+            if (unit.targetType === 'buildings') return false; // Buildings-only units don't attack units
+            return true; // 'both' targets everything
+          });
+
+          const validEnemyTowers = unit.targetType === 'air' 
+            ? [] // Air-only units can't attack towers (ground buildings)
+            : state.enemyTowers.filter(t => t.health > 0);
+
           const enemies = [
-            ...state.enemyUnits.filter(u => u.health > 0),
-            ...state.enemyTowers.filter(t => t.health > 0)
+            ...validEnemyUnits,
+            ...validEnemyTowers
           ];
+
+          // For buildings-only units (Giant, Hog, Balloon), prioritize buildings
+          const priorityTargets = unit.targetType === 'buildings'
+            ? validEnemyTowers
+            : enemies;
 
           let closestEnemy: (Unit | Tower) | null = null;
           let closestDist = Infinity;
 
-          for (const enemy of enemies) {
+          for (const enemy of priorityTargets) {
             const dist = getDistance(unit.position, enemy.position);
             if (dist < closestDist) {
               closestDist = dist;
@@ -604,8 +628,23 @@ export function useGameState(playerDeckIds: string[]) {
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
                 const damage = unit.damage;
-                closestEnemy.health -= damage;
-                addDamageNumber(closestEnemy.position, damage, damage > 25);
+                
+                // Handle splash damage
+                if (unit.splashRadius && unit.splashRadius > 0) {
+                  // Deal damage to all valid enemies in splash radius
+                  const splashTargets = [...validEnemyUnits, ...validEnemyTowers];
+                  splashTargets.forEach(target => {
+                    const distToTarget = getDistance(closestEnemy!.position, target.position);
+                    if (distToTarget <= unit.splashRadius!) {
+                      target.health -= damage;
+                      addDamageNumber(target.position, damage, damage > 200);
+                    }
+                  });
+                } else {
+                  // Single target damage
+                  closestEnemy.health -= damage;
+                  addDamageNumber(closestEnemy.position, damage, damage > 200);
+                }
               }
             } else {
               unit.state = 'moving';
@@ -632,15 +671,32 @@ export function useGameState(playerDeckIds: string[]) {
             return unit; // Don't move or attack while deploying
           }
 
+          // Filter valid targets based on unit's targetType
+          const validPlayerUnits = state.playerUnits.filter(u => {
+            if (u.health <= 0) return false;
+            if (unit.targetType === 'ground' && u.isFlying) return false;
+            if (unit.targetType === 'air' && !u.isFlying) return false;
+            if (unit.targetType === 'buildings') return false;
+            return true;
+          });
+
+          const validPlayerTowers = unit.targetType === 'air' 
+            ? []
+            : state.playerTowers.filter(t => t.health > 0);
+
           const enemies = [
-            ...state.playerUnits.filter(u => u.health > 0),
-            ...state.playerTowers.filter(t => t.health > 0)
+            ...validPlayerUnits,
+            ...validPlayerTowers
           ];
+
+          const priorityTargets = unit.targetType === 'buildings'
+            ? validPlayerTowers
+            : enemies;
 
           let closestEnemy: (Unit | Tower) | null = null;
           let closestDist = Infinity;
 
-          for (const enemy of enemies) {
+          for (const enemy of priorityTargets) {
             const dist = getDistance(unit.position, enemy.position);
             if (dist < closestDist) {
               closestDist = dist;
@@ -654,8 +710,21 @@ export function useGameState(playerDeckIds: string[]) {
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
                 const damage = unit.damage;
-                closestEnemy.health -= damage;
-                addDamageNumber(closestEnemy.position, damage, damage > 25);
+                
+                // Handle splash damage
+                if (unit.splashRadius && unit.splashRadius > 0) {
+                  const splashTargets = [...validPlayerUnits, ...validPlayerTowers];
+                  splashTargets.forEach(target => {
+                    const distToTarget = getDistance(closestEnemy!.position, target.position);
+                    if (distToTarget <= unit.splashRadius!) {
+                      target.health -= damage;
+                      addDamageNumber(target.position, damage, damage > 200);
+                    }
+                  });
+                } else {
+                  closestEnemy.health -= damage;
+                  addDamageNumber(closestEnemy.position, damage, damage > 200);
+                }
               }
             } else {
               unit.state = 'moving';
