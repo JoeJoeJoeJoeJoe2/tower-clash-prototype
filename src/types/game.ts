@@ -25,13 +25,19 @@ export interface CardDefinition {
   emoji: string;
   health: number;
   damage: number;
-  attackSpeed: number;
-  moveSpeed: number;
-  range: number;
+  attackSpeed: number; // Attacks per second (higher = faster)
+  moveSpeed: number; // Movement speed (higher = faster)
+  range: number; // Attack range in pixels
   description: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   color: string;
-  deployCooldown: number; // Cooldown in seconds before card can be played again
+  deployCooldown: number; // Cooldown in seconds before unit can act after spawn
+  // Combat properties for counterplay
+  isFlying: boolean; // Air units - only targetable by air-targeting units
+  targetType: 'ground' | 'air' | 'both' | 'buildings'; // What this unit can attack
+  splashRadius?: number; // Optional - units with splash deal damage in this radius
+  count?: number; // Number of units spawned (for swarm cards like Skeletons, Goblins)
+  hitSpeed?: number; // Time between attacks in seconds (alternative to attackSpeed)
 }
 
 export interface Unit {
@@ -51,6 +57,11 @@ export interface Unit {
   animationFrame: number;
   direction: 'up' | 'down';
   deployCooldown: number; // Remaining deploy cooldown before unit can act
+  // Combat properties
+  isFlying: boolean;
+  targetType: 'ground' | 'air' | 'both' | 'buildings';
+  splashRadius?: number;
+  count: number; // Number of units in this group
 }
 
 export interface PlacementZone {
