@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone, Building, ActiveSpell } from '@/types/game';
-import { createDeck, drawHand, getCardById } from '@/data/cards';
+import { createDeck, drawHand, getCardById, SIZE_SPEED_MULTIPLIERS } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 
 export const ARENA_WIDTH = 320;
@@ -347,6 +347,10 @@ export function useGameState(
     // Apply balance modifiers for player cards
     const balancedCard = owner === 'player' ? getCardWithBalance(card) : card;
     
+    // Apply size-based speed multiplier
+    const sizeSpeedMultiplier = SIZE_SPEED_MULTIPLIERS[balancedCard.size];
+    const effectiveMoveSpeed = Math.round(balancedCard.moveSpeed * sizeSpeedMultiplier);
+    
     return {
       id: `unit-${unitIdCounter.current++}`,
       cardId: balancedCard.id,
@@ -356,7 +360,7 @@ export function useGameState(
       maxHealth: balancedCard.health,
       damage: balancedCard.damage,
       attackSpeed: balancedCard.attackSpeed,
-      moveSpeed: balancedCard.moveSpeed,
+      moveSpeed: effectiveMoveSpeed,
       range: balancedCard.range,
       lastAttackTime: 0,
       targetId: null,
@@ -369,6 +373,7 @@ export function useGameState(
       targetType: balancedCard.targetType,
       splashRadius: balancedCard.splashRadius,
       count: balancedCard.count || 1,
+      size: balancedCard.size,
       statusEffects: []
     };
   }, [getCardWithBalance]);
