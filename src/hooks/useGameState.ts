@@ -9,6 +9,7 @@ const BASE_ELIXIR_REGEN_RATE = 0.35;
 const SUDDEN_DEATH_ELIXIR_MULTIPLIER = 2;
 const GAME_DURATION = 180;
 const SUDDEN_DEATH_TIME = 60;
+const DAMAGE_MULTIPLIER = 0.4; // Global damage reduction
 
 export interface Projectile {
   id: string;
@@ -202,7 +203,7 @@ function calculateMovement(
 ): { newX: number; newY: number; direction: 'up' | 'down' } {
   const currentX = unit.position.x;
   const currentY = unit.position.y;
-  const speed = unit.moveSpeed * delta * 25; // Reduced movement speed multiplier
+  const speed = unit.moveSpeed * delta * 12; // Very slow movement
   
   // Check if we're on opposite sides of the river from target
   const unitOnPlayerSide = currentY > RIVER_Y;
@@ -701,7 +702,7 @@ export function useGameState(playerDeckIds: string[]) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
-                const damage = unit.damage;
+                const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
                 
                 // Handle splash damage
                 if (unit.splashRadius && unit.splashRadius > 0) {
@@ -783,7 +784,7 @@ export function useGameState(playerDeckIds: string[]) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
-                const damage = unit.damage;
+                const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
                 
                 // Handle splash damage
                 if (unit.splashRadius && unit.splashRadius > 0) {
@@ -842,9 +843,10 @@ export function useGameState(playerDeckIds: string[]) {
           
           // Apply instant damage (only once)
           if (!updatedSpell.hasAppliedInstant && spell.damage > 0) {
+            const spellDamage = Math.round(spell.damage * DAMAGE_MULTIPLIER);
             targetsInRange.forEach(target => {
-              target.health -= spell.damage;
-              addDamageNumber(target.position, spell.damage, spell.damage > 300);
+              target.health -= spellDamage;
+              addDamageNumber(target.position, spellDamage, spellDamage > 150);
             });
             updatedSpell.hasAppliedInstant = true;
           }
@@ -965,16 +967,17 @@ export function useGameState(playerDeckIds: string[]) {
                 updated.lastAttackTime = now;
                 
                 // Apply damage (splash or single target)
+                const buildingDamage = Math.round(updated.damage * DAMAGE_MULTIPLIER);
                 if (updated.splashRadius && updated.splashRadius > 0) {
                   validTargets.forEach(t => {
                     if (getDistance(target.position, t.position) <= updated.splashRadius!) {
-                      t.health -= updated.damage;
-                      addDamageNumber(t.position, updated.damage, updated.damage > 150);
+                      t.health -= buildingDamage;
+                      addDamageNumber(t.position, buildingDamage, buildingDamage > 60);
                     }
                   });
                 } else {
-                  target.health -= updated.damage;
-                  addDamageNumber(target.position, updated.damage, updated.damage > 150);
+                  target.health -= buildingDamage;
+                  addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
                 }
                 
                 // Add projectile visual
@@ -1016,7 +1019,7 @@ export function useGameState(playerDeckIds: string[]) {
                 from: { ...tower.position },
                 to: { ...target.position },
                 progress: 0,
-                damage: tower.attackDamage,
+                damage: Math.round(tower.attackDamage * DAMAGE_MULTIPLIER),
                 targetId: target.id,
                 type: tower.type === 'king' ? 'fireball' : 'arrow',
                 owner: 'player'
@@ -1042,7 +1045,7 @@ export function useGameState(playerDeckIds: string[]) {
                 from: { ...tower.position },
                 to: { ...target.position },
                 progress: 0,
-                damage: tower.attackDamage,
+                damage: Math.round(tower.attackDamage * DAMAGE_MULTIPLIER),
                 targetId: target.id,
                 type: tower.type === 'king' ? 'fireball' : 'arrow',
                 owner: 'enemy'
