@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { HomeNavigator } from './HomeNavigator';
+import { LoadingScreen } from './LoadingScreen';
 import { MatchmakingScreen } from './MatchmakingScreen';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { PlayerProfile } from './PlayerProfile';
 
-type Screen = 'home' | 'matchmaking' | 'battle';
+type Screen = 'home' | 'loading' | 'matchmaking' | 'battle';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -53,13 +54,17 @@ export function GameScreen() {
       {screen === 'home' && (
         <HomeNavigator
           progress={progress}
-          onBattle={() => setScreen('matchmaking')}
+          onBattle={() => setScreen('loading')}
           onOpenChest={handleOpenChest}
           onReset={handleReset}
           onOpenProfile={() => setShowProfile(true)}
           onSaveDeck={(deckId, cardIds) => updateDeckSlot(deckId as 'A' | 'B' | 'C', cardIds)}
           onSetActiveDeck={setActiveDeck}
         />
+      )}
+
+      {screen === 'loading' && (
+        <LoadingScreen onComplete={() => setScreen('matchmaking')} />
       )}
 
       {screen === 'matchmaking' && (
