@@ -46,10 +46,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
       health: 450,
       maxHealth: 450,
-      attackDamage: 18,
+      attackDamage: 25,
       attackRange: 100,
-      attackCooldown: 1200,
-      lastAttackTime: 0
+      attackCooldown: 2000, // Slower cannon attack
+      lastAttackTime: 0,
+      isActivated: false // King tower starts inactive
     },
     {
       id: 'player-princess-left',
@@ -59,8 +60,8 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180, // Extended range to hit units crossing the bridge
-      attackCooldown: 1000,
+      attackRange: 180,
+      attackCooldown: 1800, // Slower arrow attack
       lastAttackTime: 0
     },
     {
@@ -71,8 +72,8 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180, // Extended range to hit units crossing the bridge
-      attackCooldown: 1000,
+      attackRange: 180,
+      attackCooldown: 1800, // Slower arrow attack
       lastAttackTime: 0
     }
   ];
@@ -85,10 +86,11 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       position: { x: ARENA_WIDTH / 2, y: 50 },
       health: 450,
       maxHealth: 450,
-      attackDamage: 18,
+      attackDamage: 25,
       attackRange: 100,
-      attackCooldown: 1200,
-      lastAttackTime: 0
+      attackCooldown: 2000, // Slower cannon attack
+      lastAttackTime: 0,
+      isActivated: false // King tower starts inactive
     },
     {
       id: 'enemy-princess-left',
@@ -98,8 +100,8 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180, // Extended range to hit units crossing the bridge
-      attackCooldown: 1000,
+      attackRange: 180,
+      attackCooldown: 1800, // Slower arrow attack
       lastAttackTime: 0
     },
     {
@@ -110,8 +112,8 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
-      attackRange: 180, // Extended range to hit units crossing the bridge
-      attackCooldown: 1000,
+      attackRange: 180,
+      attackCooldown: 1800, // Slower arrow attack
       lastAttackTime: 0
     }
   ];
@@ -669,9 +671,22 @@ export function useGameState(playerDeckIds: string[]) {
           return unit;
         });
 
+        // Activate king towers if they take damage
+        const playerKingTower = state.playerTowers.find(t => t.type === 'king');
+        const enemyKingTower = state.enemyTowers.find(t => t.type === 'king');
+        if (playerKingTower && playerKingTower.health < playerKingTower.maxHealth) {
+          playerKingTower.isActivated = true;
+        }
+        if (enemyKingTower && enemyKingTower.health < enemyKingTower.maxHealth) {
+          enemyKingTower.isActivated = true;
+        }
+
         // Tower attacks with projectiles
         state.playerTowers.forEach(tower => {
           if (tower.health <= 0) return;
+          // King tower only attacks when activated
+          if (tower.type === 'king' && !tower.isActivated) return;
+          
           if (now - tower.lastAttackTime > tower.attackCooldown) {
             const enemies = state.enemyUnits.filter(u => 
               u.health > 0 && getDistance(tower.position, u.position) <= tower.attackRange
@@ -695,6 +710,9 @@ export function useGameState(playerDeckIds: string[]) {
 
         state.enemyTowers.forEach(tower => {
           if (tower.health <= 0) return;
+          // King tower only attacks when activated
+          if (tower.type === 'king' && !tower.isActivated) return;
+          
           if (now - tower.lastAttackTime > tower.attackCooldown) {
             const enemies = state.playerUnits.filter(u => 
               u.health > 0 && getDistance(tower.position, u.position) <= tower.attackRange
@@ -758,7 +776,35 @@ export function useGameState(playerDeckIds: string[]) {
           } else if (enemyTowersDestroyed > playerTowersDestroyed) {
             state.gameStatus = 'enemy-wins';
           } else {
-            state.gameStatus = 'draw';
+            // Tie-breaker: find tower with lowest health percentage and destroy it
+            const allTowers = [
+              ...state.playerTowers.filter(t => t.health > 0).map(t => ({ ...t, side: 'player' as const })),
+              ...state.enemyTowers.filter(t => t.health > 0).map(t => ({ ...t, side: 'enemy' as const }))
+            ];
+            
+            let lowestHealthTower: { id: string; healthPercent: number; side: 'player' | 'enemy' } | null = null;
+            
+            for (const tower of allTowers) {
+              const healthPercent = tower.health / tower.maxHealth;
+              if (!lowestHealthTower || healthPercent < lowestHealthTower.healthPercent) {
+                lowestHealthTower = { id: tower.id, healthPercent, side: tower.side };
+              }
+            }
+            
+            if (lowestHealthTower) {
+              // Destroy the tower with lowest health
+              if (lowestHealthTower.side === 'player') {
+                const tower = state.playerTowers.find(t => t.id === lowestHealthTower!.id);
+                if (tower) tower.health = 0;
+                state.gameStatus = 'enemy-wins';
+              } else {
+                const tower = state.enemyTowers.find(t => t.id === lowestHealthTower!.id);
+                if (tower) tower.health = 0;
+                state.gameStatus = 'player-wins';
+              }
+            } else {
+              state.gameStatus = 'draw';
+            }
           }
         }
 
