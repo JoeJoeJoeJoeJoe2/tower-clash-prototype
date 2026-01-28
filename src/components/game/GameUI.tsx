@@ -1,4 +1,5 @@
 import { useGameState } from '@/hooks/useGameState';
+import { CardDefinition } from '@/types/game';
 import { Arena } from './Arena';
 import { Hand } from './Hand';
 import { ElixirBar } from './ElixirBar';
@@ -10,6 +11,8 @@ interface GameUIProps {
   playerDeck: string[];
   onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
   onBack: () => void;
+  onTrackDamage?: (cardId: string, damage: number) => void;
+  getBalancedCardStats?: (cardId: string) => CardDefinition | null;
 }
 
 function formatTime(seconds: number): string {
@@ -18,8 +21,8 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function GameUI({ playerDeck, onGameEnd, onBack }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck);
+export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalancedCardStats }: GameUIProps) {
+  const { gameState, projectiles, spawnEffects, damageNumbers, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, onTrackDamage, getBalancedCardStats);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {

@@ -187,6 +187,14 @@ export interface PlayerProgress {
   ownedBannerIds: string[]; // Banners unlocked from chests
 }
 
+// Card balance tracking for dynamic nerfs
+export interface CardBalanceData {
+  cardId: string;
+  winStreak: number;
+  nerfLevel: number;
+  lastNerfedStat: 'damage' | 'speed' | 'health' | 'attackSpeed' | null;
+}
+
 export interface ChestReward {
   cards: { cardId: string; isNew: boolean }[];
   bannerId?: string; // Optional banner unlock from chest
