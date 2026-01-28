@@ -44,12 +44,12 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         }
       `}
       style={{
-        // Rotate banners to point toward middle
+        // Rotate banners to point toward middle (flipped 180 from before)
         transform: isVisible 
-          ? `rotate(${isPlayer ? '90deg' : '-90deg'})` 
+          ? `rotate(${isPlayer ? '-90deg' : '90deg'})` 
           : isPlayer 
-            ? 'rotate(90deg) translateX(-80px) translateY(80px)' 
-            : 'rotate(-90deg) translateX(80px) translateY(-80px)',
+            ? 'rotate(-90deg) translateX(-80px) translateY(80px)' 
+            : 'rotate(90deg) translateX(80px) translateY(-80px)',
       }}
     >
       {/* Large Banner/Shield Container - Extended length */}
@@ -80,7 +80,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         {/* Large emoji - counter-rotate to stay upright */}
         <span 
           className="text-5xl sm:text-6xl mb-8 drop-shadow-lg"
-          style={{ transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` }}
+          style={{ transform: `rotate(${isPlayer ? '90deg' : '-90deg'})` }}
         >
           {bannerEmoji}
         </span>
@@ -97,7 +97,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
           `}
           style={{ 
             bottom: '8%',
-            transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` 
+            transform: `rotate(${isPlayer ? '90deg' : '-90deg'})` 
           }}
         >
           <span className="text-white font-black text-lg sm:text-xl">{level}</span>
@@ -107,7 +107,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
       {/* Name and trophies - counter-rotate to stay readable */}
       <div 
         className="mt-4 text-center"
-        style={{ transform: `rotate(${isPlayer ? '-90deg' : '90deg'})` }}
+        style={{ transform: `rotate(${isPlayer ? '90deg' : '-90deg'})` }}
       >
         <p className="text-white font-bold text-lg sm:text-xl drop-shadow-lg whitespace-nowrap">{name}</p>
         <div className="flex items-center justify-center gap-2 mt-1">
