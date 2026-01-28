@@ -55,9 +55,44 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
   }, [onReady]);
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-b from-[#1a0a2e] via-[#16213e] to-[#0f0f23] flex flex-col items-center justify-between py-8 overflow-hidden">
+    <div className="h-screen w-screen relative flex flex-col items-center justify-between py-8 overflow-hidden">
+      {/* Arena Background - Dimmed */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-700 via-emerald-600 to-emerald-700">
+          {/* Grid lines */}
+          <div className="absolute inset-0 opacity-20">
+            {[...Array(12)].map((_, i) => (
+              <div key={`h-${i}`} className="absolute w-full h-px bg-emerald-900" style={{ top: `${(i + 1) * 8}%` }} />
+            ))}
+            {[...Array(6)].map((_, i) => (
+              <div key={`v-${i}`} className="absolute h-full w-px bg-emerald-900" style={{ left: `${(i + 1) * 15}%` }} />
+            ))}
+          </div>
+          
+          {/* River */}
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-6 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 opacity-60" />
+          
+          {/* Bridges */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-[20%] w-16 h-8 bg-amber-800/70 rounded" />
+          <div className="absolute top-1/2 -translate-y-1/2 right-[20%] w-16 h-8 bg-amber-800/70 rounded" />
+          
+          {/* Enemy side towers */}
+          <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-16 h-16 rounded-lg bg-red-700/50 border-2 border-red-500/30" />
+          <div className="absolute top-[25%] left-[15%] w-12 h-12 rounded bg-red-700/50 border-2 border-red-500/30" />
+          <div className="absolute top-[25%] right-[15%] w-12 h-12 rounded bg-red-700/50 border-2 border-red-500/30" />
+          
+          {/* Player side towers */}
+          <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-16 h-16 rounded-lg bg-blue-700/50 border-2 border-blue-500/30" />
+          <div className="absolute bottom-[25%] left-[15%] w-12 h-12 rounded bg-blue-700/50 border-2 border-blue-500/30" />
+          <div className="absolute bottom-[25%] right-[15%] w-12 h-12 rounded bg-blue-700/50 border-2 border-blue-500/30" />
+        </div>
+        
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+
       {/* Enemy Profile - Top */}
-      <div className="flex flex-col items-center animate-fade-in">
+      <div className="flex flex-col items-center animate-fade-in z-10">
         {/* Enemy Banner */}
         <div 
           className="w-20 h-20 rounded-xl flex items-center justify-center border-4 shadow-2xl"
@@ -88,7 +123,7 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
       </div>
 
       {/* VS Badge - Center */}
-      <div className={`flex flex-col items-center transition-all duration-500 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+      <div className={`flex flex-col items-center transition-all duration-500 z-10 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
         {/* Arena Preview */}
         <div className="relative w-48 h-32 rounded-xl overflow-hidden border-2 border-cyan-600/50 shadow-2xl mb-4">
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-600">
@@ -138,7 +173,7 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
       </div>
 
       {/* Player Profile - Bottom */}
-      <div className={`flex flex-col items-center transition-all duration-500 ${showPlayer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className={`flex flex-col items-center transition-all duration-500 z-10 ${showPlayer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Player Name & Trophies */}
         <div className="mb-2 text-center">
           <p className="text-white font-bold text-xl">{progress.playerName}</p>
