@@ -17,7 +17,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
       {/* Title */}
       <div className="text-center">
         <h1 className="game-title text-5xl md:text-6xl text-primary mb-2">
-          Tower Clash
+          Cracked Royale
         </h1>
         <p className="text-muted-foreground">Real-time strategy battles</p>
       </div>
