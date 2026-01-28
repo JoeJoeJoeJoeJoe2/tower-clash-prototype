@@ -27,16 +27,19 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard }: H
       )}
       
       {/* Hand cards */}
-      {cards.map((card, index) => (
-        <GameCard
-          key={`${card.id}-${index}`}
-          card={card}
-          isSelected={selectedIndex === index}
-          canAfford={elixir >= card.elixirCost}
-          onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
-          size="medium"
-        />
-      ))}
+      {cards.map((card, index) => {
+        if (!card) return null;
+        return (
+          <GameCard
+            key={`${card.id}-${index}`}
+            card={card}
+            isSelected={selectedIndex === index}
+            canAfford={elixir >= card.elixirCost}
+            onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
+            size="medium"
+          />
+        );
+      })}
     </div>
   );
 }
