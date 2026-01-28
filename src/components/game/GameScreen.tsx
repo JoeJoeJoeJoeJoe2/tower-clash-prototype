@@ -6,8 +6,9 @@ import { DeckBuilder } from './DeckBuilder';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { CardGallery } from './CardGallery';
+import { ClanScreen } from './ClanScreen';
 
-type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle';
+type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle' | 'clan';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -53,6 +54,7 @@ export function GameScreen() {
           onBattle={() => setScreen('battle')}
           onDeckBuilder={() => setScreen('deck-builder')}
           onCollection={() => setScreen('collection')}
+          onClan={() => setScreen('clan')}
           onOpenChest={handleOpenChest}
           onReset={handleReset}
         />
@@ -75,6 +77,14 @@ export function GameScreen() {
       {screen === 'collection' && (
         <CardGallery
           ownedCardIds={progress.ownedCardIds}
+          onBack={() => setScreen('menu')}
+        />
+      )}
+
+      {screen === 'clan' && (
+        <ClanScreen
+          playerName="Player"
+          trophies={progress.wins * 30}
           onBack={() => setScreen('menu')}
         />
       )}

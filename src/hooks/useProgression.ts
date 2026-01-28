@@ -17,8 +17,18 @@ const initialProgress: PlayerProgress = {
   activeDeckId: 'A',
   wins: 0,
   losses: 0,
-  chestsAvailable: 0
+  chestsAvailable: 0,
+  lastFreeChestDate: null
 };
+
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function canClaimFreeChest(lastDate: string | null): boolean {
+  if (!lastDate) return true;
+  return lastDate !== getTodayDateString();
+}
 
 export function useProgression() {
   const [progress, setProgress] = useState<PlayerProgress>(() => {
@@ -41,6 +51,11 @@ export function useProgression() {
           parsed.activeDeckId = 'A';
         }
         
+        // Migration: add lastFreeChestDate if missing
+        if (parsed.lastFreeChestDate === undefined) {
+          parsed.lastFreeChestDate = null;
+        }
+        
         // Ensure currentDeck syncs with active deck slot
         const activeSlot = parsed.deckSlots.find((s: DeckSlot) => s.id === parsed.activeDeckId);
         if (activeSlot && activeSlot.cardIds.length === 8) {
@@ -55,12 +70,24 @@ export function useProgression() {
           }
         }
         
+        // Check and grant daily free chest
+        if (canClaimFreeChest(parsed.lastFreeChestDate)) {
+          parsed.chestsAvailable = (parsed.chestsAvailable || 0) + 1;
+          parsed.lastFreeChestDate = getTodayDateString();
+        }
+        
         return parsed;
       }
     } catch (e) {
       console.error('Failed to load progress:', e);
     }
-    return initialProgress;
+    
+    // For new players, give them the first free chest
+    return {
+      ...initialProgress,
+      chestsAvailable: 1,
+      lastFreeChestDate: getTodayDateString()
+    };
   });
 
   useEffect(() => {
