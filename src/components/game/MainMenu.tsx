@@ -1,6 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Package, Trophy, LayoutGrid, Crown, Sparkles } from 'lucide-react';
+import { Swords, Package, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
 import { allCards } from '@/data/cards';
 
 interface MainMenuProps {
@@ -13,134 +13,170 @@ interface MainMenuProps {
 }
 
 export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOpenChest, onReset }: MainMenuProps) {
-  // Get a featured card for display
-  const featuredCard = allCards.find(c => c.rarity === 'legendary') || allCards[0];
+  const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
+  const xpProgress = ((progress.wins % 5) / 5) * 100;
+  const trophies = progress.wins * 30;
+  const gold = progress.wins * 100 + 500;
+  const gems = progress.wins * 5 + 50;
   
+  // Get some cards for the bottom tray
+  const deckPreview = progress.currentDeck.slice(0, 4).map(id => 
+    allCards.find(c => c.id === id)
+  ).filter(Boolean);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[hsl(210,80%,25%)] via-[hsl(210,70%,20%)] to-[hsl(220,60%,15%)] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <div className="bg-gradient-to-b from-[hsl(220,30%,12%)] to-[hsl(220,25%,18%)] px-3 py-2 flex items-center justify-between border-b-2 border-primary/30">
-        {/* Player Info */}
+      <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-2 py-1.5 flex items-center justify-between border-b border-cyan-900/50">
+        {/* Player Level & XP */}
         <div className="flex items-center gap-2">
           <div className="relative">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center border-2 border-primary">
-              <Crown className="w-5 h-5 text-primary-foreground" />
+            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center border-2 border-blue-400 shadow-lg">
+              <span className="text-white font-bold text-lg">{playerLevel}</span>
             </div>
-            <span className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold px-1 rounded">
-              {Math.min(13, Math.floor(progress.wins / 3) + 1)}
-            </span>
+            {/* XP bar below level */}
+            <div className="absolute -bottom-1 left-0 right-0 h-1.5 bg-gray-800 rounded-full overflow-hidden mx-0.5">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
+                style={{ width: `${xpProgress}%` }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-foreground font-bold text-sm leading-tight">Player</p>
-            <div className="flex items-center gap-1">
-              <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-green-500 to-green-400 w-3/4" />
-              </div>
-            </div>
+          <div className="hidden sm:block">
+            <p className="text-white font-semibold text-sm leading-tight">Player</p>
+            <p className="text-gray-400 text-[10px]">{progress.wins * 100}/500 XP</p>
           </div>
         </div>
 
         {/* Currency */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1">
-            <span className="text-amber-400 text-sm">💰</span>
-            <span className="text-foreground font-bold text-xs">{(progress.wins * 100).toLocaleString()}</span>
+        <div className="flex items-center gap-2">
+          {/* Gold */}
+          <div className="flex items-center bg-gradient-to-b from-yellow-900/80 to-yellow-950/80 rounded-full pl-1 pr-2.5 py-0.5 border border-yellow-600/50">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mr-1">
+              <span className="text-[10px]">💰</span>
+            </div>
+            <span className="text-yellow-300 font-bold text-xs">{gold.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1">
-            <span className="text-purple-400 text-sm">💎</span>
-            <span className="text-foreground font-bold text-xs">{progress.wins * 10}</span>
+          
+          {/* Gems */}
+          <div className="flex items-center bg-gradient-to-b from-purple-900/80 to-purple-950/80 rounded-full pl-1 pr-2.5 py-0.5 border border-purple-600/50">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mr-1">
+              <span className="text-[10px]">💎</span>
+            </div>
+            <span className="text-purple-300 font-bold text-xs">{gems}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 gap-4">
-        {/* Trophy Display */}
-        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-900/50 via-amber-800/60 to-amber-900/50 px-6 py-2 rounded-full border border-amber-500/30">
-          <Trophy className="w-6 h-6 text-amber-400" />
-          <span className="text-2xl font-bold text-foreground">{progress.wins * 30}</span>
-        </div>
-
-        {/* Featured Card Display */}
-        <div className="relative w-64 h-72 flex items-center justify-center">
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-radial from-primary/20 via-transparent to-transparent rounded-full blur-2xl" />
-          
-          {/* Card frame */}
-          <div className="relative z-10 w-48 h-60 rounded-2xl bg-gradient-to-b from-amber-600 via-amber-700 to-amber-900 p-1 shadow-2xl transform hover:scale-105 transition-transform">
-            <div className="w-full h-full rounded-xl bg-gradient-to-b from-[hsl(220,20%,25%)] to-[hsl(220,25%,15%)] flex flex-col items-center justify-center overflow-hidden">
-              {/* Card emoji/icon */}
-              <div className="text-7xl mb-2 drop-shadow-lg">{featuredCard.emoji}</div>
-              <p className="text-foreground font-bold text-lg">{featuredCard.name}</p>
-              <p className="text-muted-foreground text-xs capitalize">{featuredCard.rarity}</p>
-              
-              {/* Sparkle effects */}
-              <Sparkles className="absolute top-4 right-4 w-4 h-4 text-amber-400 animate-pulse" />
-              <Sparkles className="absolute bottom-8 left-4 w-3 h-3 text-amber-300 animate-pulse delay-300" />
-            </div>
+      {/* Trophy Display */}
+      <div className="flex justify-center py-3">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-orange-900/60 via-orange-800/70 to-orange-900/60 px-5 py-1.5 rounded-full border border-orange-500/40 shadow-lg">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+            <Trophy className="w-4 h-4 text-yellow-200" />
           </div>
+          <span className="text-2xl font-bold text-white tracking-wide">{trophies}</span>
+        </div>
+      </div>
+
+      {/* Arena Display Area */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
+        {/* Arena Background */}
+        <div className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border-4 border-emerald-700/50 shadow-2xl">
+          {/* Arena grass field */}
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-600">
+            {/* Grid lines for arena feel */}
+            <div className="absolute inset-0 opacity-20">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="absolute w-full h-px bg-emerald-900" style={{ top: `${(i + 1) * 16}%` }} />
+              ))}
+            </div>
+            
+            {/* River */}
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-3 bg-gradient-to-r from-blue-400 via-blue-300 to-blue-400 opacity-80" />
+            
+            {/* Bridges */}
+            <div className="absolute top-1/2 -translate-y-1/2 left-[15%] w-8 h-5 bg-amber-700 rounded" />
+            <div className="absolute top-1/2 -translate-y-1/2 right-[15%] w-8 h-5 bg-amber-700 rounded" />
+          </div>
+
+          {/* Towers */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-10 h-10 rounded-lg bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-yellow-300" />
+          </div>
+          <div className="absolute top-8 left-4 w-7 h-7 rounded bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400" />
+          <div className="absolute top-8 right-4 w-7 h-7 rounded bg-gradient-to-b from-red-500 to-red-700 border-2 border-red-400" />
+          
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-10 h-10 rounded-lg bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-yellow-300" />
+          </div>
+          <div className="absolute bottom-8 left-4 w-7 h-7 rounded bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400" />
+          <div className="absolute bottom-8 right-4 w-7 h-7 rounded bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400" />
+
+          {/* Decorative trees */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-3xl">🌲</div>
+          <div className="absolute top-16 left-2 text-xl">🌳</div>
+          <div className="absolute top-16 right-2 text-xl">🌳</div>
         </div>
 
-        {/* Battle Button */}
+        {/* Arena Name Badge */}
+        <div className="mt-3 bg-gradient-to-r from-blue-900/80 to-cyan-900/80 px-4 py-1 rounded-full border border-cyan-500/40">
+          <span className="text-cyan-300 font-semibold text-sm">Cracked Arena</span>
+        </div>
+      </div>
+
+      {/* Chest notification */}
+      {progress.chestsAvailable > 0 && (
+        <div className="px-4 mb-2">
+          <Button 
+            onClick={onOpenChest}
+            variant="outline"
+            className="w-full relative animate-pulse border-amber-500 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+          >
+            <Package className="w-5 h-5 mr-2" />
+            Open Chest ({progress.chestsAvailable} available)
+          </Button>
+        </div>
+      )}
+
+      {/* Battle Button */}
+      <div className="px-4 pb-3">
         <Button 
           onClick={onBattle}
-          size="lg"
-          className="relative w-64 h-16 text-2xl font-bold gap-3 bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900 rounded-xl shadow-lg transform hover:scale-105 transition-all"
+          className="w-full h-14 text-2xl font-bold gap-3 bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900 rounded-xl shadow-lg transform hover:scale-[1.02] transition-all"
         >
           <Swords className="w-7 h-7" />
           Battle
         </Button>
-
-        {/* Win/Loss Stats */}
-        <div className="flex gap-6 text-center mt-2">
-          <div>
-            <span className="text-xl font-bold text-green-400">{progress.wins}</span>
-            <p className="text-xs text-muted-foreground">Wins</p>
-          </div>
-          <div className="w-px bg-border" />
-          <div>
-            <span className="text-xl font-bold text-destructive">{progress.losses}</span>
-            <p className="text-xs text-muted-foreground">Losses</p>
-          </div>
-        </div>
+        <p className="text-center text-gray-500 text-xs mt-1">
+          {progress.wins}W - {progress.losses}L
+        </p>
       </div>
 
-      {/* Chest Slots */}
-      <div className="bg-gradient-to-t from-[hsl(220,25%,10%)] to-transparent px-4 py-3">
-        <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
-          {[0, 1, 2, 3].map((slot) => (
-            <button
-              key={slot}
-              onClick={slot === 0 && progress.chestsAvailable > 0 ? onOpenChest : undefined}
-              className={`relative aspect-square rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
-                slot < progress.chestsAvailable 
-                  ? 'bg-gradient-to-b from-amber-700 to-amber-900 border-amber-500 hover:scale-105 cursor-pointer animate-pulse' 
-                  : 'bg-gradient-to-b from-muted to-muted/50 border-border cursor-default opacity-60'
-              }`}
+      {/* Card Tray */}
+      <div className="bg-gradient-to-t from-[#0a1525] to-[#0d1b2a] px-4 py-2 border-t border-cyan-900/30">
+        <div className="flex justify-center gap-2">
+          {deckPreview.map((card, idx) => (
+            <div 
+              key={idx}
+              className="w-14 h-16 rounded-lg bg-gradient-to-b from-blue-800/50 to-blue-900/50 border border-blue-600/30 flex flex-col items-center justify-center"
             >
-              {slot < progress.chestsAvailable ? (
-                <>
-                  <Package className="w-8 h-8 text-amber-400" />
-                  <span className="text-[10px] text-amber-300 font-bold mt-1">OPEN</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-8 h-8 rounded border-2 border-dashed border-muted-foreground/30" />
-                  <span className="text-[10px] text-muted-foreground mt-1">Empty</span>
-                </>
-              )}
-            </button>
+              <span className="text-2xl">{card?.emoji}</span>
+              <div className="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center -mt-1">
+                <span className="text-white text-[10px] font-bold">{card?.elixirCost}</span>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
       {/* Bottom Navigation */}
-      <div className="bg-[hsl(220,30%,8%)] border-t-2 border-primary/20 px-2 py-2 safe-area-inset-bottom">
+      <div className="bg-[#0a1525] border-t border-cyan-900/40 px-2 py-1.5 safe-area-inset-bottom">
         <div className="flex justify-around max-w-md mx-auto">
-          <NavButton icon="🃏" label="Cards" onClick={onDeckBuilder} />
-          <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Collection" onClick={onCollection} />
-          <NavButton icon="⚔️" label="Battle" onClick={onBattle} active />
-          <NavButton icon="🔄" label="Reset" onClick={onReset} />
+          <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Cards" onClick={onDeckBuilder} />
+          <NavButton icon={<ShoppingBag className="w-5 h-5" />} label="Shop" onClick={onCollection} />
+          <NavButton icon={<Swords className="w-5 h-5" />} label="Battle" onClick={onBattle} active />
+          <NavButton icon={<Users className="w-5 h-5" />} label="Social" onClick={onCollection} />
+          <NavButton icon={<Calendar className="w-5 h-5" />} label="Events" onClick={onReset} />
         </div>
       </div>
     </div>
@@ -161,14 +197,14 @@ function NavButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-lg transition-all ${
+      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
         active 
-          ? 'bg-primary/20 text-primary' 
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+          ? 'bg-cyan-600/30 text-cyan-400' 
+          : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
       }`}
     >
-      <span className="text-lg">{icon}</span>
-      <span className="text-[10px] font-semibold">{label}</span>
+      {icon}
+      <span className="text-[9px] font-semibold">{label}</span>
     </button>
   );
 }
