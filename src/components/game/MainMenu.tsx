@@ -1,6 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
+import { Swords, Trophy, LayoutGrid, Crown, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MainMenuProps {
@@ -172,10 +172,8 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
       <div className="bg-[#0a1525] border-t border-cyan-900/40 px-2 py-1.5 safe-area-inset-bottom">
         <div className="flex justify-around max-w-md mx-auto">
           <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Cards" onClick={onDeckBuilder} />
-          <NavButton icon={<ShoppingBag className="w-5 h-5" />} label="Shop" onClick={onCollection} />
           <NavButton icon={<Swords className="w-5 h-5" />} label="Battle" onClick={onBattle} active />
           <NavButton icon={<Users className="w-5 h-5" />} label="Social" onClick={onCollection} />
-          <NavButton icon={<Calendar className="w-5 h-5" />} label="Events" onClick={onReset} />
         </div>
       </div>
     </div>
