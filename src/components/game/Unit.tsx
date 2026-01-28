@@ -13,10 +13,19 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
   
   const healthPercent = (unit.health / unit.maxHealth) * 100;
   const isPlayer = unit.owner === 'player';
+  const cooldownRemaining = unit.deployCooldown ?? 0;
+  const isOnCooldown = cooldownRemaining > 0;
 
   // Smoother animations based on state
   const getTransformStyle = () => {
     const frame = unit.animationFrame;
+    
+    // If on cooldown, show spawn animation
+    if (isOnCooldown) {
+      const spawnProgress = 1 - (cooldownRemaining / card.deployCooldown);
+      const scale = 0.5 + spawnProgress * 0.5;
+      return `scale(${scale})`;
+    }
     
     switch (unit.state) {
       case 'moving':
@@ -55,19 +64,39 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
       <div
         className={cn(
           'w-10 h-10 flex items-center justify-center text-xl rounded-full relative',
-          isPlayer ? 'ring-2 ring-blue-400' : 'ring-2 ring-red-400'
+          isPlayer ? 'ring-2 ring-blue-400' : 'ring-2 ring-red-400',
+          isOnCooldown && 'opacity-70'
         )}
         style={{
           transform: getTransformStyle(),
           background: `linear-gradient(145deg, ${card.color}dd, ${card.color}99)`,
-          boxShadow: unit.state === 'attacking' 
-            ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
-            : `0 4px 8px rgba(0,0,0,0.4)`,
-          transition: 'box-shadow 0.15s ease'
+          boxShadow: isOnCooldown
+            ? `0 0 30px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)`
+            : unit.state === 'attacking' 
+              ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
+              : `0 4px 8px rgba(0,0,0,0.4)`,
+          transition: 'box-shadow 0.15s ease, transform 0.1s ease'
         }}
       >
+        {/* Cooldown overlay */}
+        {isOnCooldown && (
+          <>
+            <div 
+              className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"
+              style={{
+                background: `conic-gradient(transparent ${(1 - cooldownRemaining / card.deployCooldown) * 360}deg, rgba(0,0,0,0.6) 0deg)`
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-white font-bold text-[10px] drop-shadow-lg z-10">
+                {cooldownRemaining.toFixed(1)}
+              </span>
+            </div>
+          </>
+        )}
+
         {/* Direction arrow */}
-        {unit.state === 'moving' && (
+        {unit.state === 'moving' && !isOnCooldown && (
           <div className={cn(
             'absolute w-0 h-0',
             unit.direction === 'up' 
@@ -79,7 +108,7 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         <span className="drop-shadow-lg text-lg">{card.emoji}</span>
 
         {/* Attack flash */}
-        {unit.state === 'attacking' && (
+        {unit.state === 'attacking' && !isOnCooldown && (
           <div 
             className="absolute inset-0 rounded-full animate-ping opacity-40"
             style={{
