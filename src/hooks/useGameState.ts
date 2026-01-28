@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone } from '@/types/game';
-import { createDeck, drawHand } from '@/data/cards';
+import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone, Building, ActiveSpell } from '@/types/game';
+import { createDeck, drawHand, getCardById } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 
 export const ARENA_WIDTH = 320;
@@ -273,6 +273,9 @@ function createInitialState(playerDeckIds: string[]): GameState {
     enemyTowers,
     playerUnits: [],
     enemyUnits: [],
+    playerBuildings: [],
+    enemyBuildings: [],
+    activeSpells: [],
     playerDeck: playerRemainingDeck,
     playerHand,
     enemyDeck: enemyRemainingDeck,
@@ -283,7 +286,7 @@ function createInitialState(playerDeckIds: string[]): GameState {
     isSuddenDeath: false,
     playerPlacementZones: playerZones,
     enemyPlacementZones: enemyZones,
-    playerCardCooldowns: [0, 0, 0, 0], // No cooldown at start
+    playerCardCooldowns: [0, 0, 0, 0],
     enemyCardCooldowns: [0, 0, 0, 0]
   };
 }
@@ -334,7 +337,8 @@ export function useGameState(playerDeckIds: string[]) {
       isFlying: card.isFlying,
       targetType: card.targetType,
       splashRadius: card.splashRadius,
-      count: card.count || 1
+      count: card.count || 1,
+      statusEffects: []
     };
   }, []);
 
@@ -349,6 +353,44 @@ export function useGameState(playerDeckIds: string[]) {
     setSpawnEffects(prev => [...prev, effect]);
   }, []);
 
+  const spawnBuilding = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): Building => {
+    return {
+      id: `building-${unitIdCounter.current++}`,
+      cardId: card.id,
+      owner,
+      position: { ...position },
+      health: card.health,
+      maxHealth: card.health,
+      damage: card.damage,
+      attackSpeed: card.attackSpeed,
+      range: card.range,
+      lastAttackTime: 0,
+      targetType: card.targetType === 'buildings' ? 'both' : card.targetType,
+      lifetime: card.buildingLifetime || 30,
+      maxLifetime: card.buildingLifetime || 30,
+      isSpawner: !!(card.spawnCardId),
+      spawnInterval: card.spawnInterval,
+      spawnCardId: card.spawnCardId,
+      spawnCount: card.spawnCount || 1,
+      lastSpawnTime: 0,
+      splashRadius: card.splashRadius
+    };
+  }, []);
+
+  const castSpell = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): ActiveSpell => {
+    return {
+      id: `spell-${unitIdCounter.current++}`,
+      cardId: card.id,
+      owner,
+      position: { ...position },
+      radius: card.spellRadius || 80,
+      effects: card.spellEffects || [],
+      remainingDuration: card.spellDuration || 0,
+      damage: card.damage,
+      hasAppliedInstant: false
+    };
+  }, []);
+
   const playCard = useCallback((cardIndex: number, position: Position) => {
     setGameState(prev => {
       const card = prev.playerHand[cardIndex];
@@ -357,36 +399,64 @@ export function useGameState(playerDeckIds: string[]) {
       // Check if card is on cooldown
       if (prev.playerCardCooldowns[cardIndex] > 0) return prev;
       
-      // Check if position is in valid placement zones
-      if (!isPositionInZones(position, prev.playerPlacementZones)) return prev;
+      // Spells can be placed anywhere (even enemy side)
+      const isSpell = card.type === 'spell';
+      
+      // Check if position is in valid placement zones (unless it's a spell)
+      if (!isSpell && !isPositionInZones(position, prev.playerPlacementZones)) return prev;
 
       // Check we have a next card available
       const nextCard = prev.playerDeck[0];
       if (!nextCard) return prev;
 
-      const newUnit = spawnUnit(card, position, 'player');
       addSpawnEffect(position, 'player', card.emoji);
       
       const newHand = [...prev.playerHand];
       newHand[cardIndex] = nextCard;
-      // Played card goes to end of deck queue (FIFO cycling)
       const newDeck = [...prev.playerDeck.slice(1), card];
 
-      // Set cooldown for the new card entering this slot
       const newCooldowns = [...prev.playerCardCooldowns];
       newCooldowns[cardIndex] = nextCard.deployCooldown;
 
-      return {
+      const newState = {
         ...prev,
         playerElixir: prev.playerElixir - card.elixirCost,
-        playerUnits: [...prev.playerUnits, newUnit],
         playerHand: newHand,
         playerDeck: newDeck,
         selectedCardIndex: null,
         playerCardCooldowns: newCooldowns
       };
+
+      // Handle different card types
+      if (card.type === 'spell') {
+        const newSpell = castSpell(card, position, 'player');
+        newState.activeSpells = [...prev.activeSpells, newSpell];
+      } else if (card.type === 'building') {
+        const newBuilding = spawnBuilding(card, position, 'player');
+        newState.playerBuildings = [...prev.playerBuildings, newBuilding];
+      } else {
+        // Troop/tank/mini-tank - spawn units
+        const unitCount = card.count || 1;
+        const newUnits: Unit[] = [];
+        for (let i = 0; i < unitCount; i++) {
+          // Spread multiple units slightly
+          const offset = unitCount > 1 ? {
+            x: (i - (unitCount - 1) / 2) * 15,
+            y: (i % 2) * 10
+          } : { x: 0, y: 0 };
+          const unitPos = { x: position.x + offset.x, y: position.y + offset.y };
+          const unit = spawnUnit(card, unitPos, 'player');
+          // Adjust health for multi-unit cards (health is per unit)
+          unit.health = card.health;
+          unit.maxHealth = card.health;
+          newUnits.push(unit);
+        }
+        newState.playerUnits = [...prev.playerUnits, ...newUnits];
+      }
+
+      return newState;
     });
-  }, [spawnUnit, addSpawnEffect]);
+  }, [spawnUnit, spawnBuilding, castSpell, addSpawnEffect]);
 
   const selectCard = useCallback((index: number | null) => {
     setGameState(prev => ({
@@ -435,8 +505,11 @@ export function useGameState(playerDeckIds: string[]) {
           ...prev,
           playerTowers: prev.playerTowers.map(t => ({ ...t })),
           enemyTowers: prev.enemyTowers.map(t => ({ ...t })),
-          playerUnits: prev.playerUnits.map(u => ({ ...u })),
-          enemyUnits: prev.enemyUnits.map(u => ({ ...u })),
+          playerUnits: prev.playerUnits.map(u => ({ ...u, statusEffects: [...u.statusEffects] })),
+          enemyUnits: prev.enemyUnits.map(u => ({ ...u, statusEffects: [...u.statusEffects] })),
+          playerBuildings: prev.playerBuildings.map(b => ({ ...b })),
+          enemyBuildings: prev.enemyBuildings.map(b => ({ ...b })),
+          activeSpells: prev.activeSpells.map(s => ({ ...s, effects: [...s.effects] })),
           playerPlacementZones: [...prev.playerPlacementZones],
           enemyPlacementZones: [...prev.enemyPlacementZones],
           playerCardCooldowns: prev.playerCardCooldowns.map(cd => Math.max(0, cd - delta)),
@@ -740,15 +813,189 @@ export function useGameState(playerDeckIds: string[]) {
           return unit;
         });
 
-        // Activate king towers if they take damage
-        const playerKingTower = state.playerTowers.find(t => t.type === 'king');
-        const enemyKingTower = state.enemyTowers.find(t => t.type === 'king');
-        if (playerKingTower && playerKingTower.health < playerKingTower.maxHealth) {
-          playerKingTower.isActivated = true;
-        }
-        if (enemyKingTower && enemyKingTower.health < enemyKingTower.maxHealth) {
-          enemyKingTower.isActivated = true;
-        }
+        // ==================== UPDATE SPELLS ====================
+        // Process active spells (damage, status effects)
+        state.activeSpells = state.activeSpells.map(spell => {
+          const updatedSpell = { ...spell };
+          
+          // Get all targets in spell radius
+          const allEnemyUnits = spell.owner === 'player' ? state.enemyUnits : state.playerUnits;
+          const allEnemyTowers = spell.owner === 'player' ? state.enemyTowers : state.playerTowers;
+          const allEnemyBuildings = spell.owner === 'player' ? state.enemyBuildings : state.playerBuildings;
+          
+          // Check targetType from card
+          const card = getCardById(spell.cardId);
+          const canHitAir = card?.targetType !== 'ground';
+          const canHitGround = card?.targetType !== 'air';
+          
+          const targetsInRange = [
+            ...allEnemyUnits.filter(u => {
+              if (u.health <= 0) return false;
+              if (u.isFlying && !canHitAir) return false;
+              if (!u.isFlying && !canHitGround) return false;
+              return getDistance(spell.position, u.position) <= spell.radius;
+            }),
+            ...allEnemyTowers.filter(t => t.health > 0 && getDistance(spell.position, t.position) <= spell.radius),
+            ...allEnemyBuildings.filter(b => b.health > 0 && getDistance(spell.position, b.position) <= spell.radius)
+          ];
+          
+          // Apply instant damage (only once)
+          if (!updatedSpell.hasAppliedInstant && spell.damage > 0) {
+            targetsInRange.forEach(target => {
+              target.health -= spell.damage;
+              addDamageNumber(target.position, spell.damage, spell.damage > 300);
+            });
+            updatedSpell.hasAppliedInstant = true;
+          }
+          
+          // Apply duration-based effects
+          if (spell.remainingDuration > 0) {
+            spell.effects.forEach(effect => {
+              if (effect.type === 'freeze' || effect.type === 'stun') {
+                // Apply freeze/stun status effect to units
+                allEnemyUnits.filter(u => u.health > 0 && getDistance(spell.position, u.position) <= spell.radius)
+                  .forEach(unit => {
+                    const existingEffect = unit.statusEffects.find(e => e.sourceId === spell.id && e.type === effect.type);
+                    if (!existingEffect) {
+                      unit.statusEffects.push({
+                        type: effect.type,
+                        value: effect.value,
+                        remainingDuration: effect.duration || spell.remainingDuration,
+                        sourceId: spell.id
+                      });
+                    }
+                  });
+              } else if (effect.type === 'slow') {
+                // Apply slow (or speed boost if negative)
+                allEnemyUnits.filter(u => u.health > 0 && getDistance(spell.position, u.position) <= spell.radius)
+                  .forEach(unit => {
+                    const existingEffect = unit.statusEffects.find(e => e.sourceId === spell.id && e.type === 'slow');
+                    if (!existingEffect) {
+                      unit.statusEffects.push({
+                        type: 'slow',
+                        value: effect.value,
+                        remainingDuration: effect.duration || spell.remainingDuration,
+                        sourceId: spell.id
+                      });
+                    }
+                  });
+              } else if (effect.type === 'damage' && spell.remainingDuration > 0) {
+                // DoT spells (like Poison) deal damage over time
+                const dotDamage = effect.value * delta; // Damage per second
+                targetsInRange.forEach(target => {
+                  target.health -= dotDamage;
+                });
+              }
+            });
+            
+            updatedSpell.remainingDuration -= delta;
+          }
+          
+          return updatedSpell;
+        }).filter(spell => spell.remainingDuration > 0 || !spell.hasAppliedInstant || spell.remainingDuration === 0 && spell.hasAppliedInstant);
+        
+        // Remove expired instant spells
+        state.activeSpells = state.activeSpells.filter(spell => {
+          if (spell.remainingDuration <= 0 && spell.hasAppliedInstant) {
+            return false; // Remove completed spells
+          }
+          return true;
+        });
+        
+        // Update unit status effects (decrement durations, apply effects)
+        [...state.playerUnits, ...state.enemyUnits].forEach(unit => {
+          // Apply status effect modifiers
+          unit.statusEffects = unit.statusEffects.map(effect => ({
+            ...effect,
+            remainingDuration: effect.remainingDuration - delta
+          })).filter(effect => effect.remainingDuration > 0);
+          
+          // Check for freeze/stun - prevents movement and attacking
+          const isFrozen = unit.statusEffects.some(e => e.type === 'freeze' || e.type === 'stun');
+          if (isFrozen) {
+            unit.state = 'idle';
+          }
+        });
+
+        // ==================== UPDATE BUILDINGS ====================
+        // Decrease building lifetime and handle spawner buildings
+        const updateBuildings = (buildings: Building[], owner: 'player' | 'enemy') => {
+          return buildings.map(building => {
+            const updated = { ...building };
+            
+            // Decrease lifetime
+            updated.lifetime -= delta;
+            
+            // Spawner buildings spawn units periodically
+            if (updated.isSpawner && updated.spawnCardId && updated.lifetime > 0) {
+              if (now - updated.lastSpawnTime > (updated.spawnInterval || 5) * 1000) {
+                const spawnCard = getCardById(updated.spawnCardId);
+                if (spawnCard) {
+                  // Spawn offset based on owner direction
+                  const spawnY = owner === 'player' ? updated.position.y - 20 : updated.position.y + 20;
+                  for (let i = 0; i < (updated.spawnCount || 1); i++) {
+                    const newUnit = spawnUnit(spawnCard, { x: updated.position.x + (i * 10), y: spawnY }, owner);
+                    if (owner === 'player') {
+                      state.playerUnits.push(newUnit);
+                    } else {
+                      state.enemyUnits.push(newUnit);
+                    }
+                    addSpawnEffect({ x: updated.position.x, y: spawnY }, owner, spawnCard.emoji);
+                  }
+                  updated.lastSpawnTime = now;
+                }
+              }
+            }
+            
+            // Defensive buildings attack enemies
+            if (updated.damage > 0 && updated.range > 0 && updated.lifetime > 0 && updated.health > 0) {
+              const enemyUnits = owner === 'player' ? state.enemyUnits : state.playerUnits;
+              
+              // Filter valid targets based on building's targetType
+              const validTargets = enemyUnits.filter(u => {
+                if (u.health <= 0) return false;
+                if (updated.targetType === 'ground' && u.isFlying) return false;
+                if (updated.targetType === 'air' && !u.isFlying) return false;
+                return getDistance(updated.position, u.position) <= updated.range;
+              });
+              
+              if (validTargets.length > 0 && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
+                const target = validTargets[0];
+                updated.lastAttackTime = now;
+                
+                // Apply damage (splash or single target)
+                if (updated.splashRadius && updated.splashRadius > 0) {
+                  validTargets.forEach(t => {
+                    if (getDistance(target.position, t.position) <= updated.splashRadius!) {
+                      t.health -= updated.damage;
+                      addDamageNumber(t.position, updated.damage, updated.damage > 150);
+                    }
+                  });
+                } else {
+                  target.health -= updated.damage;
+                  addDamageNumber(target.position, updated.damage, updated.damage > 150);
+                }
+                
+                // Add projectile visual
+                newProjectiles.push({
+                  id: `proj-${projectileIdCounter.current++}`,
+                  from: { ...updated.position },
+                  to: { ...target.position },
+                  progress: 0,
+                  damage: 0, // Damage already applied
+                  targetId: target.id,
+                  type: 'arrow',
+                  owner
+                });
+              }
+            }
+            
+            return updated;
+          }).filter(b => b.lifetime > 0 && b.health > 0); // Remove expired/destroyed buildings
+        };
+        
+        state.playerBuildings = updateBuildings(state.playerBuildings, 'player');
+        state.enemyBuildings = updateBuildings(state.enemyBuildings, 'enemy');
 
         // Tower attacks with projectiles
         state.playerTowers.forEach(tower => {
