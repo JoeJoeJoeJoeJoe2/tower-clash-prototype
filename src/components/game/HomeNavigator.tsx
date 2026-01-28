@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PlayerProgress } from '@/types/game';
 import { MainMenu } from './MainMenu';
-import { DeckBuilder } from './DeckBuilder';
+import { DeckBuilder, CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ interface HomeNavigatorProps {
   onSaveDeck: (deckId: string, cardIds: string[]) => void;
   onSetActiveDeck: (deckId: string) => void;
   onAddDeck: () => void;
+  cardBalanceInfo?: CardBalanceInfo[];
 }
 
 export function HomeNavigator({
@@ -29,6 +30,7 @@ export function HomeNavigator({
   onSaveDeck,
   onSetActiveDeck,
   onAddDeck,
+  cardBalanceInfo = [],
 }: HomeNavigatorProps) {
   const [currentIndex, setCurrentIndex] = useState(1); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
@@ -83,6 +85,7 @@ export function HomeNavigator({
             onAddDeck={onAddDeck}
             onStartBattle={onBattle}
             onBack={() => goToScreen('battle')}
+            cardBalanceInfo={cardBalanceInfo}
           />
         </div>
 
