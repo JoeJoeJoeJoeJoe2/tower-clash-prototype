@@ -1,7 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Swords, Package, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
-import { allCards } from '@/data/cards';
 import { cn } from '@/lib/utils';
 
 interface MainMenuProps {
@@ -19,11 +18,6 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
   const trophies = progress.wins * 30;
   const gold = progress.wins * 100 + 500;
   const gems = progress.wins * 5 + 50;
-  
-  // Get some cards for the bottom tray
-  const deckPreview = progress.currentDeck.slice(0, 4).map(id => 
-    allCards.find(c => c.id === id)
-  ).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
@@ -125,9 +119,9 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
         </div>
       </div>
 
-      {/* Chest Slots - 4 slots below battle button area */}
-      <div className="px-4 mb-3">
-        <div className="grid grid-cols-4 gap-2">
+      {/* Chest Slots - 4 small slots above battle button */}
+      <div className="px-4 mb-2">
+        <div className="flex justify-center gap-2">
           {[0, 1, 2, 3].map((slotIndex) => {
             const hasChest = slotIndex < progress.chestsAvailable;
             return (
@@ -136,23 +130,16 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
                 onClick={hasChest ? onOpenChest : undefined}
                 disabled={!hasChest}
                 className={cn(
-                  "aspect-square rounded-lg border-2 flex flex-col items-center justify-center transition-all",
+                  "w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-all",
                   hasChest 
                     ? "bg-gradient-to-b from-amber-700/80 to-amber-900/80 border-amber-500 cursor-pointer hover:scale-105 animate-pulse shadow-lg shadow-amber-500/30" 
                     : "bg-gradient-to-b from-gray-800/50 to-gray-900/50 border-gray-700/50 cursor-not-allowed"
                 )}
               >
-                {hasChest ? (
-                  <>
-                    <Package className="w-8 h-8 text-amber-400" />
-                    <span className="text-[10px] text-amber-300 mt-1 font-bold">OPEN</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-8 h-8 rounded border-2 border-dashed border-gray-600/50" />
-                    <span className="text-[10px] text-gray-600 mt-1">Empty</span>
-                  </>
-                )}
+                <Package className={cn(
+                  "w-6 h-6",
+                  hasChest ? "text-amber-400" : "text-gray-600"
+                )} />
               </button>
             );
           })}
@@ -171,23 +158,6 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
         <p className="text-center text-gray-500 text-xs mt-1">
           {progress.wins}W - {progress.losses}L
         </p>
-      </div>
-
-      {/* Card Tray */}
-      <div className="bg-gradient-to-t from-[#0a1525] to-[#0d1b2a] px-4 py-2 border-t border-cyan-900/30">
-        <div className="flex justify-center gap-2">
-          {deckPreview.map((card, idx) => (
-            <div 
-              key={idx}
-              className="w-14 h-16 rounded-lg bg-gradient-to-b from-blue-800/50 to-blue-900/50 border border-blue-600/30 flex flex-col items-center justify-center"
-            >
-              <span className="text-2xl">{card?.emoji}</span>
-              <div className="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center -mt-1">
-                <span className="text-white text-[10px] font-bold">{card?.elixirCost}</span>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Bottom Navigation */}
