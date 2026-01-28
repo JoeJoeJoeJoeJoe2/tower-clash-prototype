@@ -17,24 +17,21 @@ interface MainMenuProps {
 
 export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onOpenChest, onReset, onOpenProfile }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
-  const xpProgress = ((progress.wins % 5) / 5) * 100;
   const trophies = progress.wins * 30;
-  const gold = progress.wins * 100 + 500;
-  const gems = progress.wins * 5 + 50;
   const currentBanner = getBannerById(progress.bannerId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-2 py-1.5 flex items-center justify-between border-b border-cyan-900/50">
-        {/* Player Level & XP - Clickable for profile */}
+      <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-3 py-2 flex items-center border-b border-cyan-900/50">
+        {/* Player Level & Info - Clickable for profile */}
         <button 
           onClick={onOpenProfile}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="relative">
             <div 
-              className="w-11 h-11 rounded-lg flex items-center justify-center border-2 border-blue-400 shadow-lg"
+              className="w-12 h-12 rounded-lg flex items-center justify-center border-2 border-blue-400 shadow-lg"
               style={{ 
                 background: currentBanner 
                   ? `linear-gradient(to bottom, ${currentBanner.color}dd, ${currentBanner.color}88)` 
@@ -43,44 +40,21 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
             >
               <span className="text-white font-bold text-lg">{playerLevel}</span>
             </div>
-            {/* XP bar below level */}
-            <div className="absolute -bottom-1 left-0 right-0 h-1.5 bg-gray-800 rounded-full overflow-hidden mx-0.5">
-              <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
-                style={{ width: `${xpProgress}%` }}
-              />
-            </div>
           </div>
-          <div className="hidden sm:block">
+          <div>
             <p className="text-white font-semibold text-sm leading-tight">{progress.playerName}</p>
-            <p className="text-gray-400 text-[10px]">{progress.wins * 100}/500 XP</p>
+            <div className="flex items-center gap-1">
+              <Trophy className="w-3 h-3 text-orange-400" />
+              <span className="text-orange-300 text-xs font-bold">{trophies}</span>
+            </div>
           </div>
         </button>
-
-        {/* Currency */}
-        <div className="flex items-center gap-2">
-          {/* Gold */}
-          <div className="flex items-center bg-gradient-to-b from-yellow-900/80 to-yellow-950/80 rounded-full pl-1 pr-2.5 py-0.5 border border-yellow-600/50">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mr-1">
-              <span className="text-[10px]">💰</span>
-            </div>
-            <span className="text-yellow-300 font-bold text-xs">{gold.toLocaleString()}</span>
-          </div>
-          
-          {/* Gems */}
-          <div className="flex items-center bg-gradient-to-b from-purple-900/80 to-purple-950/80 rounded-full pl-1 pr-2.5 py-0.5 border border-purple-600/50">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mr-1">
-              <span className="text-[10px]">💎</span>
-            </div>
-            <span className="text-purple-300 font-bold text-xs">{gems}</span>
-          </div>
-        </div>
       </div>
 
       {/* Game Title */}
-      <div className="text-center pt-2 flex flex-col items-center -space-y-2">
+      <div className="text-center pt-3 flex flex-col items-center -space-y-1">
         <h1 
-          className="text-3xl font-black tracking-wider uppercase"
+          className="text-4xl font-black tracking-wider uppercase"
           style={{
             fontFamily: "'Luckiest Guy', cursive",
             color: '#ffffff',
@@ -92,7 +66,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
           Cracked
         </h1>
         <h1 
-          className="text-4xl font-black tracking-wider uppercase"
+          className="text-5xl font-black tracking-wider uppercase"
           style={{
             fontFamily: "'Luckiest Guy', cursive",
             background: 'linear-gradient(180deg, #fff9c4 0%, #ffd54f 25%, #ff8f00 50%, #e65100 75%, #8b4513 100%)',
@@ -105,16 +79,6 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
         >
           Royale
         </h1>
-      </div>
-
-      {/* Trophy Display */}
-      <div className="flex justify-center py-2">
-        <div className="flex items-center gap-2 bg-gradient-to-r from-orange-900/60 via-orange-800/70 to-orange-900/60 px-5 py-1.5 rounded-full border border-orange-500/40 shadow-lg">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-            <Trophy className="w-4 h-4 text-yellow-200" />
-          </div>
-          <span className="text-2xl font-bold text-white tracking-wide">{trophies}</span>
-        </div>
       </div>
 
       {/* Arena Display Area */}
@@ -159,7 +123,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
 
         {/* Arena Name Badge */}
         <div className="mt-3 bg-gradient-to-r from-blue-900/80 to-cyan-900/80 px-4 py-1 rounded-full border border-cyan-500/40">
-          <span className="text-cyan-300 font-semibold text-sm">Cracked Arena</span>
+          <span className="text-cyan-300 font-semibold text-sm">Arena 1</span>
         </div>
       </div>
 
