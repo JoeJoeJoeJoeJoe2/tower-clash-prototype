@@ -13,7 +13,7 @@ export const allCards: CardDefinition[] = [
     health: 1452,
     damage: 167,
     attackSpeed: 0.77, // 1.3s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 30,
     hitSpeed: 1.3,
     description: 'A sturdy melee fighter with a big sword',
@@ -33,7 +33,7 @@ export const allCards: CardDefinition[] = [
     health: 304, // Per archer
     damage: 107,
     attackSpeed: 0.83, // 1.2s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 150,
     hitSpeed: 1.2,
     description: 'A pair of sharpshooters',
@@ -53,7 +53,7 @@ export const allCards: CardDefinition[] = [
     health: 202, // Per goblin
     damage: 120,
     attackSpeed: 0.91, // 1.1s hit speed
-    moveSpeed: 80, // Very Fast
+    moveSpeed: 50, // Very Fast
     range: 30,
     hitSpeed: 1.1,
     description: 'Fast and cheap swarm',
@@ -73,7 +73,7 @@ export const allCards: CardDefinition[] = [
     health: 81, // Per skeleton - very fragile
     damage: 81,
     attackSpeed: 1.0, // 1.0s hit speed
-    moveSpeed: 70, // Fast
+    moveSpeed: 42, // Fast
     range: 30,
     hitSpeed: 1.0,
     description: 'Three spooky scary skeletons',
@@ -93,7 +93,7 @@ export const allCards: CardDefinition[] = [
     health: 332,
     damage: 233,
     attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 100,
     hitSpeed: 1.8,
     description: 'Throws explosive bombs - splash damage',
@@ -114,7 +114,7 @@ export const allCards: CardDefinition[] = [
     health: 216, // Per minion - fragile flying
     damage: 84,
     attackSpeed: 1.0, // 1.0s hit speed
-    moveSpeed: 80, // Very Fast
+    moveSpeed: 50, // Very Fast
     range: 35,
     hitSpeed: 1.0,
     description: 'Flying blue creatures',
@@ -138,7 +138,7 @@ export const allCards: CardDefinition[] = [
     health: 4091,
     damage: 254,
     attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 45, // Slow
+    moveSpeed: 28, // Slow
     range: 30,
     hitSpeed: 1.5,
     description: 'Slow but incredibly tanky - targets buildings',
@@ -158,7 +158,7 @@ export const allCards: CardDefinition[] = [
     health: 720,
     damage: 281,
     attackSpeed: 0.59, // 1.7s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 130,
     hitSpeed: 1.7,
     description: 'Powerful fireball magic - splash damage',
@@ -179,7 +179,7 @@ export const allCards: CardDefinition[] = [
     health: 1908,
     damage: 221,
     attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 35,
     hitSpeed: 1.5,
     description: 'Spins and hits all ground units around her',
@@ -200,7 +200,7 @@ export const allCards: CardDefinition[] = [
     health: 720,
     damage: 208,
     attackSpeed: 0.91, // 1.1s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 180,
     hitSpeed: 1.1,
     description: 'Long range shooter - high single target DPS',
@@ -220,7 +220,7 @@ export const allCards: CardDefinition[] = [
     health: 1152,
     damage: 160,
     attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 70, // Fast
+    moveSpeed: 42, // Fast
     range: 100,
     hitSpeed: 1.5,
     description: 'Flying fire breather - splash damage',
@@ -241,7 +241,7 @@ export const allCards: CardDefinition[] = [
     health: 1696,
     damage: 264,
     attackSpeed: 0.63, // 1.6s hit speed
-    moveSpeed: 100, // Very Fast
+    moveSpeed: 60, // Very Fast
     range: 30,
     hitSpeed: 1.6,
     description: 'Fast tower rusher - targets buildings only',
@@ -265,7 +265,7 @@ export const allCards: CardDefinition[] = [
     health: 1920,
     damage: 392,
     attackSpeed: 0.71, // 1.4s hit speed
-    moveSpeed: 75, // Fast (can charge faster)
+    moveSpeed: 45, // Fast (can charge faster)
     range: 35,
     hitSpeed: 1.4,
     description: 'Charges into battle for double damage',
@@ -285,7 +285,7 @@ export const allCards: CardDefinition[] = [
     health: 880,
     damage: 138,
     attackSpeed: 0.71, // 1.4s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 130,
     hitSpeed: 1.4,
     description: 'Summons skeletons to fight - splash damage',
@@ -306,7 +306,7 @@ export const allCards: CardDefinition[] = [
     health: 1129,
     damage: 598,
     attackSpeed: 0.56, // 1.8s hit speed - slow but devastating
-    moveSpeed: 70, // Fast
+    moveSpeed: 42, // Fast
     range: 30,
     hitSpeed: 1.8,
     description: 'Pancakes! Devastating single-target damage',
@@ -326,7 +326,7 @@ export const allCards: CardDefinition[] = [
     health: 1680,
     damage: 798,
     attackSpeed: 0.33, // 3.0s hit speed - very slow
-    moveSpeed: 50, // Slow flying
+    moveSpeed: 30, // Slow flying
     range: 35,
     hitSpeed: 3.0,
     description: 'Death from above - targets buildings only',
@@ -350,7 +350,7 @@ export const allCards: CardDefinition[] = [
     health: 3760,
     damage: 816,
     attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 45, // Slow
+    moveSpeed: 28, // Slow
     range: 35,
     hitSpeed: 1.8,
     description: 'The ultimate war machine - massive damage',
@@ -370,7 +370,7 @@ export const allCards: CardDefinition[] = [
     health: 3300,
     damage: 267,
     attackSpeed: 0.59, // 1.7s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 40,
     hitSpeed: 1.7,
     description: 'Jumps and smashes with splash damage',
@@ -391,7 +391,7 @@ export const allCards: CardDefinition[] = [
     health: 649,
     damage: 110, // Per zap (hits 2 targets)
     attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 130,
     hitSpeed: 1.8,
     description: 'Zaps 2 enemies at once - stuns on hit',
@@ -411,7 +411,7 @@ export const allCards: CardDefinition[] = [
     health: 280,
     damage: 186,
     attackSpeed: 0.33, // 3.0s hit speed - very slow
-    moveSpeed: 60, // Medium
+    moveSpeed: 35, // Medium
     range: 250, // Incredible range - outranges towers
     hitSpeed: 3.0,
     description: 'Incredible range - outranges everything',
