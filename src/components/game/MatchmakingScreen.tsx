@@ -31,21 +31,25 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
   return (
     <div 
       className={`
-        flex flex-col items-center transition-all duration-700 ease-out
+        absolute flex flex-col items-center transition-all duration-700 ease-out
+        ${isPlayer 
+          ? 'bottom-16 left-8 sm:bottom-20 sm:left-12' 
+          : 'top-16 right-8 sm:top-20 sm:right-12'
+        }
         ${isVisible 
-          ? 'opacity-100 translate-x-0' 
+          ? 'opacity-100 translate-x-0 translate-y-0' 
           : isPlayer 
-            ? 'opacity-0 -translate-x-full' 
-            : 'opacity-0 translate-x-full'
+            ? 'opacity-0 -translate-x-20 translate-y-20' 
+            : 'opacity-0 translate-x-20 -translate-y-20'
         }
       `}
     >
-      {/* Large Banner/Shield Container */}
+      {/* Large Banner/Shield Container - Extended length */}
       <div 
-        className="relative w-36 h-48 sm:w-44 sm:h-56 flex flex-col items-center justify-center"
+        className="relative w-32 h-56 sm:w-40 sm:h-64 flex flex-col items-center justify-center"
         style={{
           background: `linear-gradient(180deg, ${bannerColor}dd 0%, ${bannerColor} 30%, ${bannerColor}aa 70%, ${bannerColor}66 100%)`,
-          clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
+          clipPath: 'polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)',
           boxShadow: `0 0 40px ${bannerColor}88, inset 0 0 30px rgba(255,255,255,0.1)`,
         }}
       >
@@ -53,7 +57,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         <div 
           className="absolute inset-3 opacity-40 pointer-events-none"
           style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)',
             background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%)',
           }}
         />
@@ -62,11 +66,11 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
         <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         
         {/* Side decorations */}
-        <div className="absolute top-4 left-2 w-1 h-16 bg-white/20 rounded-full" />
-        <div className="absolute top-4 right-2 w-1 h-16 bg-white/20 rounded-full" />
+        <div className="absolute top-4 left-2 w-1 h-20 bg-white/20 rounded-full" />
+        <div className="absolute top-4 right-2 w-1 h-20 bg-white/20 rounded-full" />
         
         {/* Large emoji */}
-        <span className="text-6xl sm:text-7xl mb-4 drop-shadow-lg">{bannerEmoji}</span>
+        <span className="text-5xl sm:text-6xl mb-6 drop-shadow-lg">{bannerEmoji}</span>
         
         {/* Level badge */}
         <div 
@@ -78,18 +82,18 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
               : 'bg-gradient-to-b from-red-400 to-red-600 border-red-300'
             }
           `}
-          style={{ bottom: '12%' }}
+          style={{ bottom: '10%' }}
         >
           <span className="text-white font-black text-lg sm:text-xl">{level}</span>
         </div>
       </div>
 
       {/* Name and trophies */}
-      <div className="mt-6 text-center">
-        <p className="text-white font-bold text-xl sm:text-2xl drop-shadow-lg">{name}</p>
-        <div className="flex items-center justify-center gap-2 mt-2">
-          <Trophy className="w-5 h-5 text-orange-400" />
-          <span className="text-orange-300 font-bold text-lg">{trophies}</span>
+      <div className="mt-4 text-center">
+        <p className="text-white font-bold text-lg sm:text-xl drop-shadow-lg">{name}</p>
+        <div className="flex items-center justify-center gap-2 mt-1">
+          <Trophy className="w-4 h-4 text-orange-400" />
+          <span className="text-orange-300 font-bold text-base">{trophies}</span>
         </div>
       </div>
     </div>
@@ -195,10 +199,10 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
         </div>
       )}
 
-      {/* Versus Phase - Show banners side by side */}
+      {/* Versus Phase - Show banners in corners */}
       {(phase === 'versus' || phase === 'ready') && (
-        <div className="flex items-center justify-center gap-4 sm:gap-8 z-10 w-full px-4">
-          {/* Player Banner - Slides from Left */}
+        <>
+          {/* Player Banner - Bottom Left, slides from bottom-left */}
           <BannerCard
             name={progress.playerName}
             bannerColor={playerBanner?.color || '#3b82f6'}
@@ -209,8 +213,8 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
             isVisible={showPlayer}
           />
 
-          {/* VS Badge - Center */}
-          <div className={`flex flex-col items-center transition-all duration-500 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+          {/* VS Badge and Countdown - Center */}
+          <div className={`z-10 flex flex-col items-center transition-all duration-500 ${showVs ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
             <div 
               className="text-5xl sm:text-7xl font-black"
               style={{
@@ -232,7 +236,7 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
             )}
           </div>
 
-          {/* Enemy Banner - Slides from Right */}
+          {/* Enemy Banner - Top Right, slides from top-right */}
           <BannerCard
             name={enemy.name}
             bannerColor={enemy.banner.color}
@@ -242,7 +246,7 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
             isPlayer={false}
             isVisible={showEnemy}
           />
-        </div>
+        </>
       )}
     </div>
   );
