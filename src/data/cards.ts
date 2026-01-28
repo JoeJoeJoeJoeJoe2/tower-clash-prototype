@@ -1,5 +1,23 @@
 import { CardDefinition } from '@/types/game';
 
+// Size affects visual scale and movement speed multiplier
+// tiny: 0.6x scale, +30% speed | small: 0.8x scale, +15% speed | medium: 1.0x scale | large: 1.2x scale, -15% speed | huge: 1.4x scale, -30% speed
+export const SIZE_SPEED_MULTIPLIERS = {
+  tiny: 1.30,
+  small: 1.15,
+  medium: 1.0,
+  large: 0.85,
+  huge: 0.70
+};
+
+export const SIZE_SCALE = {
+  tiny: 0.6,
+  small: 0.8,
+  medium: 1.0,
+  large: 1.2,
+  huge: 1.4
+};
+
 export const allCards: CardDefinition[] = [
   // ==================== COMMON TROOPS ====================
   // Low cost, basic stats, starter-friendly
@@ -12,8 +30,8 @@ export const allCards: CardDefinition[] = [
     emoji: '⚔️',
     health: 1452,
     damage: 167,
-    attackSpeed: 0.77, // 1.3s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.77,
+    moveSpeed: 35,
     range: 30,
     hitSpeed: 1.3,
     description: 'A sturdy melee fighter with a big sword',
@@ -21,8 +39,9 @@ export const allCards: CardDefinition[] = [
     color: '#d97706',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'ground', // Melee, can't hit air
-    count: 1
+    targetType: 'ground',
+    count: 1,
+    size: 'medium' // Reference size - Witch-like
   },
   {
     id: 'archers',
@@ -30,10 +49,10 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🏹',
-    health: 304, // Per archer
+    health: 304,
     damage: 107,
-    attackSpeed: 0.83, // 1.2s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.83,
+    moveSpeed: 35,
     range: 150,
     hitSpeed: 1.2,
     description: 'A pair of sharpshooters',
@@ -41,8 +60,9 @@ export const allCards: CardDefinition[] = [
     color: '#ec4899',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'both', // Can shoot air
-    count: 2
+    targetType: 'both',
+    count: 2,
+    size: 'small' // Smaller than Witch
   },
   {
     id: 'goblins',
@@ -50,10 +70,10 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 2,
     emoji: '👺',
-    health: 202, // Per goblin
+    health: 202,
     damage: 120,
-    attackSpeed: 0.91, // 1.1s hit speed
-    moveSpeed: 50, // Very Fast
+    attackSpeed: 0.91,
+    moveSpeed: 50,
     range: 30,
     hitSpeed: 1.1,
     description: 'Fast and cheap swarm',
@@ -62,7 +82,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    count: 3
+    count: 3,
+    size: 'small' // Small creatures
   },
   {
     id: 'skeletons',
@@ -70,10 +91,10 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 1,
     emoji: '💀',
-    health: 81, // Per skeleton - very fragile
+    health: 81,
     damage: 81,
-    attackSpeed: 1.0, // 1.0s hit speed
-    moveSpeed: 42, // Fast
+    attackSpeed: 1.0,
+    moveSpeed: 42,
     range: 30,
     hitSpeed: 1.0,
     description: 'Three spooky scary skeletons',
@@ -82,7 +103,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    count: 3
+    count: 3,
+    size: 'tiny' // Smallest units
   },
   {
     id: 'bomber',
@@ -92,8 +114,8 @@ export const allCards: CardDefinition[] = [
     emoji: '💣',
     health: 332,
     damage: 233,
-    attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.56,
+    moveSpeed: 35,
     range: 100,
     hitSpeed: 1.8,
     description: 'Throws explosive bombs - splash damage',
@@ -101,9 +123,10 @@ export const allCards: CardDefinition[] = [
     color: '#f97316',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'ground', // Can't hit air
+    targetType: 'ground',
     splashRadius: 40,
-    count: 1
+    count: 1,
+    size: 'small' // Smaller skeleton with bomb
   },
   {
     id: 'minions',
@@ -111,19 +134,20 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🦇',
-    health: 216, // Per minion - fragile flying
+    health: 216,
     damage: 84,
-    attackSpeed: 1.0, // 1.0s hit speed
-    moveSpeed: 50, // Very Fast
+    attackSpeed: 1.0,
+    moveSpeed: 50,
     range: 35,
     hitSpeed: 1.0,
     description: 'Flying blue creatures',
     rarity: 'common',
     color: '#3b82f6',
     deployCooldown: 1.0,
-    isFlying: true, // AIR UNIT
+    isFlying: true,
     targetType: 'both',
-    count: 3
+    count: 3,
+    size: 'tiny' // Small flying units
   },
 
   // ==================== RARE TROOPS ====================
@@ -137,8 +161,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🗿',
     health: 4091,
     damage: 254,
-    attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 28, // Slow
+    attackSpeed: 0.67,
+    moveSpeed: 28,
     range: 30,
     hitSpeed: 1.5,
     description: 'Slow but incredibly tanky - targets buildings',
@@ -146,8 +170,9 @@ export const allCards: CardDefinition[] = [
     color: '#78716c',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'buildings', // Only attacks buildings/towers
-    count: 1
+    targetType: 'buildings',
+    count: 1,
+    size: 'huge' // Very large tank
   },
   {
     id: 'wizard',
@@ -157,8 +182,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🔥',
     health: 720,
     damage: 281,
-    attackSpeed: 0.59, // 1.7s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.59,
+    moveSpeed: 35,
     range: 130,
     hitSpeed: 1.7,
     description: 'Powerful fireball magic - splash damage',
@@ -166,9 +191,10 @@ export const allCards: CardDefinition[] = [
     color: '#ea580c',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'both', // Hits air and ground
+    targetType: 'both',
     splashRadius: 50,
-    count: 1
+    count: 1,
+    size: 'medium' // Standard human size
   },
   {
     id: 'valkyrie',
@@ -178,8 +204,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🪓',
     health: 1908,
     damage: 221,
-    attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.67,
+    moveSpeed: 35,
     range: 35,
     hitSpeed: 1.5,
     description: 'Spins and hits all ground units around her',
@@ -187,9 +213,10 @@ export const allCards: CardDefinition[] = [
     color: '#f472b6',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'ground', // Can't hit air
-    splashRadius: 60, // 360° splash around her
-    count: 1
+    targetType: 'ground',
+    splashRadius: 60,
+    count: 1,
+    size: 'medium' // Standard warrior size
   },
   {
     id: 'musketeer',
@@ -199,8 +226,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🎯',
     health: 720,
     damage: 208,
-    attackSpeed: 0.91, // 1.1s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.91,
+    moveSpeed: 35,
     range: 180,
     hitSpeed: 1.1,
     description: 'Long range shooter - high single target DPS',
@@ -208,8 +235,9 @@ export const allCards: CardDefinition[] = [
     color: '#0891b2',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'both', // Can shoot air
-    count: 1
+    targetType: 'both',
+    count: 1,
+    size: 'medium' // Standard human size
   },
   {
     id: 'baby-dragon',
@@ -219,18 +247,19 @@ export const allCards: CardDefinition[] = [
     emoji: '🐉',
     health: 1152,
     damage: 160,
-    attackSpeed: 0.67, // 1.5s hit speed
-    moveSpeed: 42, // Fast
+    attackSpeed: 0.67,
+    moveSpeed: 42,
     range: 100,
     hitSpeed: 1.5,
     description: 'Flying fire breather - splash damage',
     rarity: 'rare',
     color: '#7c3aed',
     deployCooldown: 1.0,
-    isFlying: true, // AIR UNIT
+    isFlying: true,
     targetType: 'both',
     splashRadius: 45,
-    count: 1
+    count: 1,
+    size: 'medium' // Medium dragon
   },
   {
     id: 'hog-rider',
@@ -240,8 +269,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🐗',
     health: 1696,
     damage: 264,
-    attackSpeed: 0.63, // 1.6s hit speed
-    moveSpeed: 60, // Very Fast
+    attackSpeed: 0.63,
+    moveSpeed: 60,
     range: 30,
     hitSpeed: 1.6,
     description: 'Fast tower rusher - targets buildings only',
@@ -249,8 +278,9 @@ export const allCards: CardDefinition[] = [
     color: '#b45309',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'buildings', // Only attacks buildings
-    count: 1
+    targetType: 'buildings',
+    count: 1,
+    size: 'large' // Rider on hog
   },
 
   // ==================== EPIC TROOPS ====================
@@ -264,8 +294,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🏇',
     health: 1920,
     damage: 392,
-    attackSpeed: 0.71, // 1.4s hit speed
-    moveSpeed: 45, // Fast (can charge faster)
+    attackSpeed: 0.71,
+    moveSpeed: 45,
     range: 35,
     hitSpeed: 1.4,
     description: 'Charges into battle for double damage',
@@ -274,7 +304,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    count: 1
+    count: 1,
+    size: 'large' // Knight on horse
   },
   {
     id: 'witch',
@@ -284,8 +315,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🧙‍♀️',
     health: 880,
     damage: 138,
-    attackSpeed: 0.71, // 1.4s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.71,
+    moveSpeed: 35,
     range: 130,
     hitSpeed: 1.4,
     description: 'Summons skeletons to fight - splash damage',
@@ -293,9 +324,10 @@ export const allCards: CardDefinition[] = [
     color: '#a855f7',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'both', // Can hit air
+    targetType: 'both',
     splashRadius: 35,
-    count: 1
+    count: 1,
+    size: 'medium' // REFERENCE SIZE - Normal speed
   },
   {
     id: 'mini-pekka',
@@ -305,8 +337,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🤖',
     health: 1129,
     damage: 598,
-    attackSpeed: 0.56, // 1.8s hit speed - slow but devastating
-    moveSpeed: 42, // Fast
+    attackSpeed: 0.56,
+    moveSpeed: 42,
     range: 30,
     hitSpeed: 1.8,
     description: 'Pancakes! Devastating single-target damage',
@@ -315,7 +347,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    count: 1
+    count: 1,
+    size: 'small' // Smaller than PEKKA - faster
   },
   {
     id: 'balloon',
@@ -325,17 +358,18 @@ export const allCards: CardDefinition[] = [
     emoji: '🎈',
     health: 1680,
     damage: 798,
-    attackSpeed: 0.33, // 3.0s hit speed - very slow
-    moveSpeed: 30, // Slow flying
+    attackSpeed: 0.33,
+    moveSpeed: 30,
     range: 35,
     hitSpeed: 3.0,
     description: 'Death from above - targets buildings only',
     rarity: 'epic',
     color: '#ef4444',
     deployCooldown: 1.0,
-    isFlying: true, // AIR UNIT
-    targetType: 'buildings', // Only attacks buildings
-    count: 1
+    isFlying: true,
+    targetType: 'buildings',
+    count: 1,
+    size: 'large' // Big balloon
   },
 
   // ==================== LEGENDARY TROOPS ====================
@@ -349,8 +383,8 @@ export const allCards: CardDefinition[] = [
     emoji: '🦾',
     health: 3760,
     damage: 816,
-    attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 28, // Slow
+    attackSpeed: 0.56,
+    moveSpeed: 28,
     range: 35,
     hitSpeed: 1.8,
     description: 'The ultimate war machine - massive damage',
@@ -359,7 +393,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    count: 1
+    count: 1,
+    size: 'huge' // Massive robot
   },
   {
     id: 'mega-knight',
@@ -369,8 +404,8 @@ export const allCards: CardDefinition[] = [
     emoji: '👹',
     health: 3300,
     damage: 267,
-    attackSpeed: 0.59, // 1.7s hit speed
-    moveSpeed: 35, // Medium
+    attackSpeed: 0.59,
+    moveSpeed: 35,
     range: 40,
     hitSpeed: 1.7,
     description: 'Jumps and smashes with splash damage',
@@ -379,8 +414,9 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
-    splashRadius: 70, // Big splash area
-    count: 1
+    splashRadius: 70,
+    count: 1,
+    size: 'huge' // Massive armored knight
   },
   {
     id: 'electro-wizard',
@@ -389,9 +425,9 @@ export const allCards: CardDefinition[] = [
     elixirCost: 4,
     emoji: '⚡',
     health: 649,
-    damage: 110, // Per zap (hits 2 targets)
-    attackSpeed: 0.56, // 1.8s hit speed
-    moveSpeed: 35, // Medium
+    damage: 110,
+    attackSpeed: 0.56,
+    moveSpeed: 35,
     range: 130,
     hitSpeed: 1.8,
     description: 'Zaps 2 enemies at once - stuns on hit',
@@ -399,8 +435,9 @@ export const allCards: CardDefinition[] = [
     color: '#0ea5e9',
     deployCooldown: 1.0,
     isFlying: false,
-    targetType: 'both', // Can hit air
-    count: 1
+    targetType: 'both',
+    count: 1,
+    size: 'medium' // Standard wizard size
   },
   {
     id: 'princess',
@@ -410,9 +447,9 @@ export const allCards: CardDefinition[] = [
     emoji: '👸',
     health: 280,
     damage: 186,
-    attackSpeed: 0.33, // 3.0s hit speed - very slow
-    moveSpeed: 35, // Medium
-    range: 250, // Incredible range - outranges towers
+    attackSpeed: 0.33,
+    moveSpeed: 35,
+    range: 250,
     hitSpeed: 3.0,
     description: 'Incredible range - outranges everything',
     rarity: 'legendary',
@@ -420,8 +457,9 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'both',
-    splashRadius: 40, // Small area damage
-    count: 1
+    splashRadius: 40,
+    count: 1,
+    size: 'small' // Petite princess
   },
 
   // ==================== SPELLS ====================
@@ -445,7 +483,8 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'both',
     spellRadius: 80,
-    spellEffects: [{ type: 'damage', value: 572 }]
+    spellEffects: [{ type: 'damage', value: 572 }],
+    size: 'medium' // Spells don't move but need size
   },
   {
     id: 'arrows',
@@ -465,7 +504,8 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'both',
     spellRadius: 120,
-    spellEffects: [{ type: 'damage', value: 303 }]
+    spellEffects: [{ type: 'damage', value: 303 }],
+    size: 'medium'
   },
   {
     id: 'zap',
@@ -488,7 +528,8 @@ export const allCards: CardDefinition[] = [
     spellEffects: [
       { type: 'damage', value: 192 },
       { type: 'stun', value: 0.5, duration: 0.5 }
-    ]
+    ],
+    size: 'medium'
   },
   {
     id: 'freeze',
@@ -512,7 +553,8 @@ export const allCards: CardDefinition[] = [
     spellEffects: [
       { type: 'damage', value: 95 },
       { type: 'freeze', value: 1, duration: 4.0 }
-    ]
+    ],
+    size: 'medium'
   },
   {
     id: 'poison',
@@ -521,7 +563,7 @@ export const allCards: CardDefinition[] = [
     elixirCost: 4,
     emoji: '☠️',
     health: 0,
-    damage: 90, // Per second
+    damage: 90,
     attackSpeed: 0,
     moveSpeed: 0,
     range: 0,
@@ -536,7 +578,8 @@ export const allCards: CardDefinition[] = [
     spellEffects: [
       { type: 'damage', value: 90 },
       { type: 'slow', value: 0.35, duration: 8.0 }
-    ]
+    ],
+    size: 'medium'
   },
   {
     id: 'log',
@@ -554,12 +597,13 @@ export const allCards: CardDefinition[] = [
     color: '#78350f',
     deployCooldown: 0,
     isFlying: false,
-    targetType: 'ground', // Can't hit air!
+    targetType: 'ground',
     spellRadius: 60,
     spellEffects: [
       { type: 'damage', value: 240 },
       { type: 'knockback', value: 50 }
-    ]
+    ],
+    size: 'medium'
   },
   {
     id: 'rage',
@@ -581,8 +625,9 @@ export const allCards: CardDefinition[] = [
     spellRadius: 100,
     spellDuration: 6.0,
     spellEffects: [
-      { type: 'slow', value: -0.35, duration: 6.0 } // Negative slow = speed boost
-    ]
+      { type: 'slow', value: -0.35, duration: 6.0 }
+    ],
+    size: 'medium'
   },
 
   // ==================== BUILDINGS ====================
@@ -596,7 +641,7 @@ export const allCards: CardDefinition[] = [
     emoji: '🔫',
     health: 742,
     damage: 127,
-    attackSpeed: 0.91, // 1.1s hit speed
+    attackSpeed: 0.91,
     moveSpeed: 0,
     range: 130,
     hitSpeed: 1.1,
@@ -606,7 +651,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 0,
     isFlying: false,
     targetType: 'ground',
-    buildingLifetime: 30
+    buildingLifetime: 30,
+    size: 'medium'
   },
   {
     id: 'tesla',
@@ -616,7 +662,7 @@ export const allCards: CardDefinition[] = [
     emoji: '⚡',
     health: 954,
     damage: 150,
-    attackSpeed: 0.77, // 1.3s hit speed
+    attackSpeed: 0.77,
     moveSpeed: 0,
     range: 110,
     hitSpeed: 1.3,
@@ -626,7 +672,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 0,
     isFlying: false,
     targetType: 'both',
-    buildingLifetime: 35
+    buildingLifetime: 35,
+    size: 'medium'
   },
   {
     id: 'inferno-tower',
@@ -635,8 +682,8 @@ export const allCards: CardDefinition[] = [
     elixirCost: 5,
     emoji: '🔥',
     health: 1408,
-    damage: 50, // Ramps up over time
-    attackSpeed: 2.5, // Continuous beam
+    damage: 50,
+    attackSpeed: 2.5,
     moveSpeed: 0,
     range: 100,
     description: 'Melts tanks with ramping damage',
@@ -645,7 +692,8 @@ export const allCards: CardDefinition[] = [
     deployCooldown: 0,
     isFlying: false,
     targetType: 'both',
-    buildingLifetime: 40
+    buildingLifetime: 40,
+    size: 'large'
   },
   {
     id: 'bomb-tower',
@@ -655,7 +703,7 @@ export const allCards: CardDefinition[] = [
     emoji: '💣',
     health: 1126,
     damage: 184,
-    attackSpeed: 0.56, // 1.8s hit speed
+    attackSpeed: 0.56,
     moveSpeed: 0,
     range: 100,
     hitSpeed: 1.8,
@@ -666,7 +714,8 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     buildingLifetime: 35,
-    splashRadius: 45
+    splashRadius: 45,
+    size: 'large'
   },
   {
     id: 'goblin-hut',
@@ -688,7 +737,8 @@ export const allCards: CardDefinition[] = [
     buildingLifetime: 60,
     spawnInterval: 5.0,
     spawnCardId: 'goblins',
-    spawnCount: 1
+    spawnCount: 1,
+    size: 'large'
   },
   {
     id: 'tombstone',
@@ -710,7 +760,8 @@ export const allCards: CardDefinition[] = [
     buildingLifetime: 40,
     spawnInterval: 3.5,
     spawnCardId: 'skeletons',
-    spawnCount: 1
+    spawnCount: 1,
+    size: 'medium'
   },
   {
     id: 'furnace',
@@ -731,8 +782,9 @@ export const allCards: CardDefinition[] = [
     targetType: 'both',
     buildingLifetime: 50,
     spawnInterval: 10.0,
-    spawnCardId: 'bomber', // Using bomber as fire spirit substitute
-    spawnCount: 1
+    spawnCardId: 'bomber',
+    spawnCount: 1,
+    size: 'medium'
   },
   {
     id: 'x-bow',
@@ -742,16 +794,17 @@ export const allCards: CardDefinition[] = [
     emoji: '🎯',
     health: 1500,
     damage: 26,
-    attackSpeed: 4.0, // Very fast
+    attackSpeed: 4.0,
     moveSpeed: 0,
-    range: 280, // Can reach towers!
+    range: 280,
     description: 'Long range siege weapon',
     rarity: 'epic',
     color: '#7c3aed',
-    deployCooldown: 3.5, // Long deploy time
+    deployCooldown: 3.5,
     isFlying: false,
     targetType: 'ground',
-    buildingLifetime: 40
+    buildingLifetime: 40,
+    size: 'large'
   }
 ];
 
@@ -781,4 +834,9 @@ export function drawHand(deck: CardDefinition[]): { hand: CardDefinition[], rema
 
 export function getCardById(id: string): CardDefinition | undefined {
   return allCards.find(c => c.id === id);
+}
+
+// Get effective move speed based on size
+export function getEffectiveMoveSpeed(card: CardDefinition): number {
+  return Math.round(card.moveSpeed * SIZE_SPEED_MULTIPLIERS[card.size]);
 }

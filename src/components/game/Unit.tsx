@@ -1,11 +1,20 @@
 import { Unit as UnitType } from '@/types/game';
-import { getCardById } from '@/data/cards';
+import { getCardById, SIZE_SCALE } from '@/data/cards';
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
 
 interface UnitProps {
   unit: UnitType;
 }
+
+// Size-based dimensions
+const SIZE_DIMENSIONS = {
+  tiny: { body: 'w-6 h-6', text: 'text-sm', health: 'w-6', name: 'text-[5px]', shadow: 'w-5 h-1' },
+  small: { body: 'w-8 h-8', text: 'text-base', health: 'w-8', name: 'text-[6px]', shadow: 'w-6 h-1.5' },
+  medium: { body: 'w-10 h-10', text: 'text-xl', health: 'w-10', name: 'text-[7px]', shadow: 'w-8 h-2' },
+  large: { body: 'w-12 h-12', text: 'text-2xl', health: 'w-12', name: 'text-[8px]', shadow: 'w-10 h-2' },
+  huge: { body: 'w-14 h-14', text: 'text-3xl', health: 'w-14', name: 'text-[9px]', shadow: 'w-12 h-2.5' }
+};
 
 export const Unit = memo(function Unit({ unit }: UnitProps) {
   const card = getCardById(unit.cardId);
@@ -15,6 +24,10 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
   const isPlayer = unit.owner === 'player';
   const cooldownRemaining = unit.deployCooldown ?? 0;
   const isOnCooldown = cooldownRemaining > 0;
+  
+  // Get size-based dimensions
+  const size = unit.size || 'medium';
+  const dimensions = SIZE_DIMENSIONS[size];
 
   // Smoother animations based on state
   const getTransformStyle = () => {
@@ -54,16 +67,21 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         zIndex: Math.floor(unit.position.y) + 10
       }}
     >
-      {/* Shadow */}
+      {/* Shadow - scales with size */}
       <div 
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-2 bg-black/50 rounded-full blur-sm"
+        className={cn(
+          "absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/50 rounded-full blur-sm",
+          dimensions.shadow
+        )}
         style={{ transform: `translateX(-50%) scaleX(${unit.state === 'moving' ? 1.3 : 1})` }}
       />
       
-      {/* Unit body */}
+      {/* Unit body - size varies */}
       <div
         className={cn(
-          'w-10 h-10 flex items-center justify-center text-xl rounded-full relative',
+          'flex items-center justify-center rounded-full relative',
+          dimensions.body,
+          dimensions.text,
           isPlayer ? 'ring-2 ring-blue-400' : 'ring-2 ring-red-400',
           isOnCooldown && 'opacity-70'
         )}
@@ -105,7 +123,7 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
           )} />
         )}
         
-        <span className="drop-shadow-lg text-lg">{card.emoji}</span>
+        <span className="drop-shadow-lg">{card.emoji}</span>
 
         {/* Attack flash */}
         {unit.state === 'attacking' && !isOnCooldown && (
@@ -118,8 +136,8 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         )}
       </div>
       
-      {/* Health bar */}
-      <div className="w-10 mt-1">
+      {/* Health bar - scales with size */}
+      <div className={cn("mt-1", dimensions.health)}>
         <div className="h-1.5 rounded-full bg-black/60 overflow-hidden">
           <div
             className={cn(
@@ -131,10 +149,11 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         </div>
       </div>
       
-      {/* Card name */}
+      {/* Card name - scales with size */}
       <div 
         className={cn(
-          "text-[7px] font-semibold text-center mt-0.5 px-1 rounded whitespace-nowrap",
+          "font-semibold text-center mt-0.5 px-1 rounded whitespace-nowrap",
+          dimensions.name,
           isPlayer ? "text-blue-200" : "text-red-200"
         )}
         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}

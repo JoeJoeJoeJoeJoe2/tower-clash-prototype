@@ -42,6 +42,10 @@ export interface CardDefinition {
   color: string;
   deployCooldown: number; // Cooldown in seconds before unit can act after spawn
   
+  // Size affects visual scale and movement speed
+  // 'small' = 15% faster, 'medium' = normal, 'large' = 15% slower
+  size: 'tiny' | 'small' | 'medium' | 'large' | 'huge';
+  
   // Combat properties for counterplay
   isFlying: boolean; // Air units - only targetable by air-targeting units
   targetType: 'ground' | 'air' | 'both' | 'buildings'; // What this unit can attack
@@ -84,6 +88,9 @@ export interface Unit {
   targetType: 'ground' | 'air' | 'both' | 'buildings';
   splashRadius?: number;
   count: number; // Number of units in this group
+  
+  // Size affects visual scale
+  size: 'tiny' | 'small' | 'medium' | 'large' | 'huge';
   
   // Status effects
   statusEffects: StatusEffect[];
