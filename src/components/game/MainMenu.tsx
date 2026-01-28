@@ -1,6 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Package, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
+import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MainMenuProps {
@@ -130,16 +130,17 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
                 onClick={hasChest ? onOpenChest : undefined}
                 disabled={!hasChest}
                 className={cn(
-                  "w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-all",
+                  "w-14 h-14 rounded-lg border-2 flex items-center justify-center transition-all relative overflow-hidden",
                   hasChest 
-                    ? "bg-gradient-to-b from-amber-700/80 to-amber-900/80 border-amber-500 cursor-pointer hover:scale-105 animate-pulse shadow-lg shadow-amber-500/30" 
+                    ? "bg-gradient-to-b from-purple-600 to-purple-900 border-amber-500 cursor-pointer hover:scale-105 shadow-lg shadow-purple-500/40" 
                     : "bg-gradient-to-b from-gray-800/50 to-gray-900/50 border-gray-700/50 cursor-not-allowed"
                 )}
               >
-                <Package className={cn(
-                  "w-6 h-6",
-                  hasChest ? "text-amber-400" : "text-gray-600"
-                )} />
+                {hasChest ? (
+                  <span className="text-2xl animate-bounce">🎁</span>
+                ) : (
+                  <span className="text-2xl opacity-30">📦</span>
+                )}
               </button>
             );
           })}
@@ -147,18 +148,18 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onOp
       </div>
 
       {/* Battle Button */}
-      <div className="px-4 pb-3">
+      <div className="flex justify-center pb-3">
         <Button 
           onClick={onBattle}
-          className="w-full h-14 text-2xl font-bold gap-3 bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900 rounded-xl shadow-lg transform hover:scale-[1.02] transition-all"
+          className="px-12 h-12 text-xl font-bold gap-2 bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900 rounded-xl shadow-lg transform hover:scale-[1.02] transition-all"
         >
-          <Swords className="w-7 h-7" />
+          <Swords className="w-6 h-6" />
           Battle
         </Button>
-        <p className="text-center text-gray-500 text-xs mt-1">
-          {progress.wins}W - {progress.losses}L
-        </p>
       </div>
+      <p className="text-center text-gray-500 text-xs pb-2">
+        {progress.wins}W - {progress.losses}L
+      </p>
 
       {/* Bottom Navigation */}
       <div className="bg-[#0a1525] border-t border-cyan-900/40 px-2 py-1.5 safe-area-inset-bottom">
