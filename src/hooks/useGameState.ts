@@ -280,7 +280,9 @@ function createInitialState(playerDeckIds: string[]): GameState {
     selectedCardIndex: null,
     isSuddenDeath: false,
     playerPlacementZones: playerZones,
-    enemyPlacementZones: enemyZones
+    enemyPlacementZones: enemyZones,
+    playerCardCooldowns: [0, 0, 0, 0], // No cooldown at start
+    enemyCardCooldowns: [0, 0, 0, 0]
   };
 }
 
@@ -344,6 +346,9 @@ export function useGameState(playerDeckIds: string[]) {
       const card = prev.playerHand[cardIndex];
       if (!card || prev.playerElixir < card.elixirCost) return prev;
       
+      // Check if card is on cooldown
+      if (prev.playerCardCooldowns[cardIndex] > 0) return prev;
+      
       // Check if position is in valid placement zones
       if (!isPositionInZones(position, prev.playerPlacementZones)) return prev;
 
@@ -359,13 +364,18 @@ export function useGameState(playerDeckIds: string[]) {
       // Played card goes to end of deck queue (FIFO cycling)
       const newDeck = [...prev.playerDeck.slice(1), card];
 
+      // Set cooldown for the new card entering this slot
+      const newCooldowns = [...prev.playerCardCooldowns];
+      newCooldowns[cardIndex] = nextCard.deployCooldown;
+
       return {
         ...prev,
         playerElixir: prev.playerElixir - card.elixirCost,
         playerUnits: [...prev.playerUnits, newUnit],
         playerHand: newHand,
         playerDeck: newDeck,
-        selectedCardIndex: null
+        selectedCardIndex: null,
+        playerCardCooldowns: newCooldowns
       };
     });
   }, [spawnUnit, addSpawnEffect]);
@@ -420,7 +430,9 @@ export function useGameState(playerDeckIds: string[]) {
           playerUnits: prev.playerUnits.map(u => ({ ...u })),
           enemyUnits: prev.enemyUnits.map(u => ({ ...u })),
           playerPlacementZones: [...prev.playerPlacementZones],
-          enemyPlacementZones: [...prev.enemyPlacementZones]
+          enemyPlacementZones: [...prev.enemyPlacementZones],
+          playerCardCooldowns: prev.playerCardCooldowns.map(cd => Math.max(0, cd - delta)),
+          enemyCardCooldowns: prev.enemyCardCooldowns.map(cd => Math.max(0, cd - delta))
         };
 
         // Check for sudden death
@@ -529,21 +541,27 @@ export function useGameState(playerDeckIds: string[]) {
         state.enemyPlacementZones = updatePlacementZonesForEnemy();
 
         // AI decision making with adjusted timing for sudden death
-        const aiMinDelay = state.isSuddenDeath ? 1200 : 2000;
         const aiDecision = makeAIDecision(state, aiLastPlayTime.current);
         if (aiDecision.shouldPlay && aiDecision.card && aiDecision.position !== undefined && aiDecision.cardIndex !== undefined) {
-          // Validate AI placement against their zones
-          if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
-            const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
-            addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
-            state.enemyUnits = [...state.enemyUnits, newUnit];
-            state.enemyElixir -= aiDecision.card.elixirCost;
-            aiLastPlayTime.current = performance.now();
+          // Check AI cooldown
+          if (state.enemyCardCooldowns[aiDecision.cardIndex] <= 0) {
+            // Validate AI placement against their zones
+            if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
+              const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
+              addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
+              state.enemyUnits = [...state.enemyUnits, newUnit];
+              state.enemyElixir -= aiDecision.card.elixirCost;
+              aiLastPlayTime.current = performance.now();
 
-            const newHand = [...state.enemyHand];
-            newHand[aiDecision.cardIndex] = state.enemyDeck[0];
-            state.enemyHand = newHand;
-            state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
+              const newHand = [...state.enemyHand];
+              const nextCard = state.enemyDeck[0];
+              if (nextCard) {
+                newHand[aiDecision.cardIndex] = nextCard;
+                state.enemyHand = newHand;
+                state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
+                state.enemyCardCooldowns[aiDecision.cardIndex] = nextCard.deployCooldown;
+              }
+            }
           }
         }
 

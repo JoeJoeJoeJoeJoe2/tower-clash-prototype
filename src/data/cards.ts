@@ -15,7 +15,8 @@ export const allCards: CardDefinition[] = [
     range: 30,
     description: 'A sturdy melee fighter with a big sword',
     rarity: 'common',
-    color: '#d97706'
+    color: '#d97706',
+    deployCooldown: 1.0
   },
   {
     id: 'archers',
@@ -30,7 +31,8 @@ export const allCards: CardDefinition[] = [
     range: 120,
     description: 'A pair of sharpshooters',
     rarity: 'common',
-    color: '#ec4899'
+    color: '#ec4899',
+    deployCooldown: 1.0
   },
   {
     id: 'goblins',
@@ -45,7 +47,8 @@ export const allCards: CardDefinition[] = [
     range: 25,
     description: 'Fast and cheap swarm',
     rarity: 'common',
-    color: '#22c55e'
+    color: '#22c55e',
+    deployCooldown: 1.0
   },
   {
     id: 'skeletons',
@@ -60,7 +63,8 @@ export const allCards: CardDefinition[] = [
     range: 25,
     description: 'Three spooky scary skeletons',
     rarity: 'common',
-    color: '#a1a1aa'
+    color: '#a1a1aa',
+    deployCooldown: 1.0
   },
   {
     id: 'bomber',
@@ -75,7 +79,8 @@ export const allCards: CardDefinition[] = [
     range: 90,
     description: 'Throws explosive bombs',
     rarity: 'common',
-    color: '#f97316'
+    color: '#f97316',
+    deployCooldown: 1.0
   },
   {
     id: 'minions',
@@ -90,7 +95,8 @@ export const allCards: CardDefinition[] = [
     range: 35,
     description: 'Flying blue creatures',
     rarity: 'common',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    deployCooldown: 1.0
   },
   // Rare troops
   {
@@ -106,7 +112,8 @@ export const allCards: CardDefinition[] = [
     range: 25,
     description: 'Slow but incredibly tanky',
     rarity: 'rare',
-    color: '#78716c'
+    color: '#78716c',
+    deployCooldown: 1.0
   },
   {
     id: 'wizard',
@@ -121,7 +128,8 @@ export const allCards: CardDefinition[] = [
     range: 100,
     description: 'Powerful fireball magic',
     rarity: 'rare',
-    color: '#ea580c'
+    color: '#ea580c',
+    deployCooldown: 1.0
   },
   {
     id: 'valkyrie',
@@ -136,7 +144,8 @@ export const allCards: CardDefinition[] = [
     range: 35,
     description: 'Spins and hits everything around',
     rarity: 'rare',
-    color: '#f472b6'
+    color: '#f472b6',
+    deployCooldown: 1.0
   },
   {
     id: 'musketeer',
@@ -151,7 +160,8 @@ export const allCards: CardDefinition[] = [
     range: 140,
     description: 'Long range shooter',
     rarity: 'rare',
-    color: '#0891b2'
+    color: '#0891b2',
+    deployCooldown: 1.0
   },
   {
     id: 'baby-dragon',
@@ -166,7 +176,8 @@ export const allCards: CardDefinition[] = [
     range: 80,
     description: 'Flying fire breather',
     rarity: 'rare',
-    color: '#7c3aed'
+    color: '#7c3aed',
+    deployCooldown: 1.0
   },
   {
     id: 'hog-rider',
@@ -181,7 +192,8 @@ export const allCards: CardDefinition[] = [
     range: 30,
     description: 'Fast tower rusher',
     rarity: 'rare',
-    color: '#b45309'
+    color: '#b45309',
+    deployCooldown: 1.0
   },
   // Epic troops
   {
@@ -197,7 +209,8 @@ export const allCards: CardDefinition[] = [
     range: 30,
     description: 'Charges into battle',
     rarity: 'epic',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    deployCooldown: 1.0
   },
   {
     id: 'witch',
@@ -212,7 +225,8 @@ export const allCards: CardDefinition[] = [
     range: 110,
     description: 'Summons skeletons to fight',
     rarity: 'epic',
-    color: '#a855f7'
+    color: '#a855f7',
+    deployCooldown: 1.0
   },
   {
     id: 'mini-pekka',
@@ -227,7 +241,8 @@ export const allCards: CardDefinition[] = [
     range: 28,
     description: 'Pancakes! High damage dealer',
     rarity: 'epic',
-    color: '#6366f1'
+    color: '#6366f1',
+    deployCooldown: 1.0
   },
   {
     id: 'balloon',
@@ -242,7 +257,8 @@ export const allCards: CardDefinition[] = [
     range: 25,
     description: 'Death from above',
     rarity: 'epic',
-    color: '#ef4444'
+    color: '#ef4444',
+    deployCooldown: 1.0
   },
   // Legendary troops
   {
@@ -258,7 +274,8 @@ export const allCards: CardDefinition[] = [
     range: 30,
     description: 'The ultimate war machine',
     rarity: 'legendary',
-    color: '#1e40af'
+    color: '#1e40af',
+    deployCooldown: 1.0
   },
   {
     id: 'mega-knight',
@@ -273,7 +290,8 @@ export const allCards: CardDefinition[] = [
     range: 32,
     description: 'Jumps and smashes everything',
     rarity: 'legendary',
-    color: '#0f172a'
+    color: '#0f172a',
+    deployCooldown: 1.0
   },
   {
     id: 'electro-wizard',
@@ -288,7 +306,8 @@ export const allCards: CardDefinition[] = [
     range: 100,
     description: 'Zaps enemies with lightning',
     rarity: 'legendary',
-    color: '#0ea5e9'
+    color: '#0ea5e9',
+    deployCooldown: 1.0
   },
   {
     id: 'princess',
@@ -303,7 +322,8 @@ export const allCards: CardDefinition[] = [
     range: 160,
     description: 'Incredible range archer',
     rarity: 'legendary',
-    color: '#f472b6'
+    color: '#f472b6',
+    deployCooldown: 1.0
   }
 ];
 

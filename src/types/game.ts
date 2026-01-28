@@ -30,6 +30,7 @@ export interface CardDefinition {
   description: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   color: string;
+  deployCooldown: number; // Cooldown in seconds before card can be played again
 }
 
 export interface Unit {
@@ -77,6 +78,8 @@ export interface GameState {
   isSuddenDeath: boolean;
   playerPlacementZones: PlacementZone[];
   enemyPlacementZones: PlacementZone[];
+  playerCardCooldowns: number[]; // Remaining cooldown time for each hand slot (in seconds)
+  enemyCardCooldowns: number[];
 }
 
 export interface DeckSlot {
