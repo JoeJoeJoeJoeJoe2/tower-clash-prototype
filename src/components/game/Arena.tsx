@@ -1,5 +1,5 @@
 import { GameState, Position, PlacementZone, Building as BuildingType, ActiveSpell } from '@/types/game';
-import { Projectile, SpawnEffect, DamageNumber } from '@/hooks/useGameState';
+import { Projectile, SpawnEffect, DamageNumber, CrownAnimation } from '@/hooks/useGameState';
 import { Tower } from './Tower';
 import { Unit } from './Unit';
 import { ProjectileComponent, SpawnEffectComponent } from './Projectile';
@@ -11,6 +11,7 @@ interface ArenaProps {
   projectiles: Projectile[];
   spawnEffects: SpawnEffect[];
   damageNumbers: DamageNumber[];
+  crownAnimations: CrownAnimation[];
   arenaWidth: number;
   arenaHeight: number;
   onArenaClick: (position: Position) => void;
@@ -158,11 +159,60 @@ function PlacementZoneOverlay({ zone, isBonus }: { zone: PlacementZone; isBonus:
   );
 }
 
+// Crown animation that flies from destroyed tower to score display
+function CrownAnimationComponent({ crown, arenaHeight }: { crown: CrownAnimation; arenaHeight: number }) {
+  // Calculate animation path - crown flies up and curves to the side
+  const startX = crown.fromPosition.x;
+  const startY = crown.fromPosition.y;
+  
+  // End position: top of arena, left side for player score, right for enemy
+  const endX = crown.toSide === 'player' ? 60 : 260;
+  const endY = -40; // Above the arena (into the HUD)
+  
+  // Bezier curve control point for arc motion
+  const controlY = startY - 100;
+  
+  // Quadratic bezier interpolation
+  const t = crown.progress;
+  const oneMinusT = 1 - t;
+  
+  const x = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * startX + t * t * endX;
+  const y = oneMinusT * oneMinusT * startY + 2 * oneMinusT * t * controlY + t * t * endY;
+  
+  // Scale and opacity animation
+  const scale = 1 + Math.sin(t * Math.PI) * 0.5; // Bulge in the middle
+  const opacity = t < 0.8 ? 1 : 1 - (t - 0.8) / 0.2; // Fade out at the end
+  
+  return (
+    <div
+      className="absolute pointer-events-none z-[100]"
+      style={{
+        left: x,
+        top: y,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        opacity,
+      }}
+    >
+      <div className="relative">
+        <span className="text-3xl drop-shadow-lg animate-pulse">👑</span>
+        {/* Sparkle trail */}
+        <div 
+          className="absolute inset-0 animate-ping"
+          style={{ animationDuration: '0.3s' }}
+        >
+          <span className="text-3xl opacity-50">✨</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Arena({ 
   gameState, 
   projectiles, 
   spawnEffects,
   damageNumbers,
+  crownAnimations,
   arenaWidth, 
   arenaHeight, 
   onArenaClick 
@@ -349,6 +399,11 @@ export function Arena({
       {/* Damage Numbers */}
       {damageNumbers.map(dmg => (
         <DamageNumberComponent key={dmg.id} dmg={dmg} />
+      ))}
+
+      {/* Crown Animations */}
+      {crownAnimations.map(crown => (
+        <CrownAnimationComponent key={crown.id} crown={crown} arenaHeight={arenaHeight} />
       ))}
 
       {/* Center decoration */}

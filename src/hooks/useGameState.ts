@@ -38,6 +38,14 @@ export interface DamageNumber {
   isCritical: boolean;
 }
 
+export interface CrownAnimation {
+  id: string;
+  fromPosition: Position;
+  toSide: 'player' | 'enemy'; // Which score side it goes to
+  progress: number;
+  towerType: 'king' | 'princess';
+}
+
 function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } {
   const playerTowers: Tower[] = [
     {
@@ -301,12 +309,17 @@ export function useGameState(
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
   const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);
+  const [crownAnimations, setCrownAnimations] = useState<CrownAnimation[]>([]);
+  
+  // Track previous tower health to detect when towers are destroyed
+  const prevTowerHealthRef = useRef<Map<string, number>>(new Map());
   
   const lastTickRef = useRef<number>(performance.now());
   const unitIdCounter = useRef(0);
   const projectileIdCounter = useRef(0);
   const spawnIdCounter = useRef(0);
   const damageIdCounter = useRef(0);
+  const crownIdCounter = useRef(0);
   const aiLastPlayTime = useRef(0);
   const trackDamageRef = useRef(onTrackDamage);
   const getBalancedStatsRef = useRef(getBalancedCardStats);
@@ -533,6 +546,14 @@ export function useGameState(
           ...d,
           progress: d.progress + delta * 2
         })).filter(d => d.progress < 1)
+      );
+
+      // Update crown animations
+      setCrownAnimations(prev =>
+        prev.map(c => ({
+          ...c,
+          progress: c.progress + delta * 0.8
+        })).filter(c => c.progress < 1)
       );
 
       setGameState(prev => {
@@ -1226,13 +1247,65 @@ export function useGameState(
         state.playerUnits = state.playerUnits.filter(u => u.health > 0);
         state.enemyUnits = state.enemyUnits.filter(u => u.health > 0);
 
+        // Detect tower destructions and spawn crown animations
+        const checkTowerDestruction = (towers: Tower[], side: 'player' | 'enemy') => {
+          towers.forEach(tower => {
+            const prevHealth = prevTowerHealthRef.current.get(tower.id) ?? tower.maxHealth;
+            if (prevHealth > 0 && tower.health <= 0) {
+              // Tower just got destroyed - spawn crown animation
+              // Crown goes to the opposite side (enemy tower destroyed = player scores)
+              const scoringSide = side === 'enemy' ? 'player' : 'enemy';
+              setCrownAnimations(prev => [...prev, {
+                id: `crown-${crownIdCounter.current++}`,
+                fromPosition: { ...tower.position },
+                toSide: scoringSide,
+                progress: 0,
+                towerType: tower.type
+              }]);
+            }
+            prevTowerHealthRef.current.set(tower.id, tower.health);
+          });
+        };
+        
+        checkTowerDestruction(state.playerTowers, 'player');
+        checkTowerDestruction(state.enemyTowers, 'enemy');
+
         // Check win conditions
         const playerKing = state.playerTowers.find(t => t.type === 'king');
         const enemyKing = state.enemyTowers.find(t => t.type === 'king');
 
+        // King tower destroyed = instant win (all 3 towers count as destroyed)
         if (enemyKing && enemyKing.health <= 0) {
+          // Destroy all enemy towers when king falls
+          state.enemyTowers.forEach(t => {
+            if (t.health > 0) {
+              t.health = 0;
+              // Spawn crowns for any remaining towers
+              setCrownAnimations(prev => [...prev, {
+                id: `crown-${crownIdCounter.current++}`,
+                fromPosition: { ...t.position },
+                toSide: 'player',
+                progress: 0,
+                towerType: t.type
+              }]);
+            }
+          });
           state.gameStatus = 'player-wins';
         } else if (playerKing && playerKing.health <= 0) {
+          // Destroy all player towers when king falls
+          state.playerTowers.forEach(t => {
+            if (t.health > 0) {
+              t.health = 0;
+              // Spawn crowns for any remaining towers
+              setCrownAnimations(prev => [...prev, {
+                id: `crown-${crownIdCounter.current++}`,
+                fromPosition: { ...t.position },
+                toSide: 'enemy',
+                progress: 0,
+                towerType: t.type
+              }]);
+            }
+          });
           state.gameStatus = 'enemy-wins';
         } else if (state.timeRemaining <= 0) {
           const playerTowersAlive = state.playerTowers.filter(t => t.health > 0).length;
@@ -1303,6 +1376,7 @@ export function useGameState(
     projectiles,
     spawnEffects,
     damageNumbers,
+    crownAnimations,
     playCard,
     selectCard,
     resetGame,
