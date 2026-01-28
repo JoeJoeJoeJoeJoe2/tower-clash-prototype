@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
+import { useCardBalance } from '@/hooks/useCardBalance';
 import { HomeNavigator } from './HomeNavigator';
 import { LoadingScreen } from './LoadingScreen';
 import { MatchmakingScreen } from './MatchmakingScreen';
@@ -27,8 +28,21 @@ export function GameScreen() {
     updateBanner,
     resetProgress 
   } = useProgression();
+  
+  const {
+    trackDamage,
+    processGameEnd,
+    getBalancedCardStats,
+    resetBalance
+  } = useCardBalance();
 
   const handleGameEnd = (result: 'win' | 'loss' | 'draw') => {
+    // Process card balance (track MVP and apply nerfs)
+    const mvpCard = processGameEnd(result === 'win', progress.currentDeck);
+    if (mvpCard) {
+      console.log(`🏆 Game MVP: ${mvpCard}`);
+    }
+    
     if (result === 'win') {
       recordWin();
     } else if (result === 'loss') {
@@ -81,6 +95,8 @@ export function GameScreen() {
           playerDeck={progress.currentDeck}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
+          onTrackDamage={trackDamage}
+          getBalancedCardStats={getBalancedCardStats}
         />
       )}
 

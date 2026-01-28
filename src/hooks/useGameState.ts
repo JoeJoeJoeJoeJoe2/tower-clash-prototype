@@ -292,7 +292,11 @@ function createInitialState(playerDeckIds: string[]): GameState {
   };
 }
 
-export function useGameState(playerDeckIds: string[]) {
+export function useGameState(
+  playerDeckIds: string[],
+  onTrackDamage?: (cardId: string, damage: number) => void,
+  getBalancedCardStats?: (cardId: string) => CardDefinition | null
+) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
@@ -304,6 +308,14 @@ export function useGameState(playerDeckIds: string[]) {
   const spawnIdCounter = useRef(0);
   const damageIdCounter = useRef(0);
   const aiLastPlayTime = useRef(0);
+  const trackDamageRef = useRef(onTrackDamage);
+  const getBalancedStatsRef = useRef(getBalancedCardStats);
+  
+  // Keep refs updated
+  useEffect(() => {
+    trackDamageRef.current = onTrackDamage;
+    getBalancedStatsRef.current = getBalancedCardStats;
+  }, [onTrackDamage, getBalancedCardStats]);
 
   const addDamageNumber = useCallback((position: Position, damage: number, isCritical = false) => {
     const num: DamageNumber = {
@@ -316,32 +328,50 @@ export function useGameState(playerDeckIds: string[]) {
     setDamageNumbers(prev => [...prev, num]);
   }, []);
 
+  // Track damage for balance system
+  const trackCardDamage = useCallback((cardId: string, damage: number, owner: 'player' | 'enemy') => {
+    // Only track player's cards for balance
+    if (owner === 'player' && trackDamageRef.current) {
+      trackDamageRef.current(cardId, damage);
+    }
+  }, []);
+
+  // Get balanced card (with nerfs applied if any)
+  const getCardWithBalance = useCallback((card: CardDefinition): CardDefinition => {
+    if (!getBalancedStatsRef.current) return card;
+    const balanced = getBalancedStatsRef.current(card.id);
+    return balanced || card;
+  }, []);
+
   const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): Unit => {
+    // Apply balance modifiers for player cards
+    const balancedCard = owner === 'player' ? getCardWithBalance(card) : card;
+    
     return {
       id: `unit-${unitIdCounter.current++}`,
-      cardId: card.id,
+      cardId: balancedCard.id,
       owner,
       position: { ...position },
-      health: card.health,
-      maxHealth: card.health,
-      damage: card.damage,
-      attackSpeed: card.attackSpeed,
-      moveSpeed: card.moveSpeed,
-      range: card.range,
+      health: balancedCard.health,
+      maxHealth: balancedCard.health,
+      damage: balancedCard.damage,
+      attackSpeed: balancedCard.attackSpeed,
+      moveSpeed: balancedCard.moveSpeed,
+      range: balancedCard.range,
       lastAttackTime: 0,
       targetId: null,
       state: 'idle',
       animationFrame: 0,
       direction: owner === 'player' ? 'up' : 'down',
-      deployCooldown: card.deployCooldown,
+      deployCooldown: balancedCard.deployCooldown,
       // Combat properties from card
-      isFlying: card.isFlying,
-      targetType: card.targetType,
-      splashRadius: card.splashRadius,
-      count: card.count || 1,
+      isFlying: balancedCard.isFlying,
+      targetType: balancedCard.targetType,
+      splashRadius: balancedCard.splashRadius,
+      count: balancedCard.count || 1,
       statusEffects: []
     };
-  }, []);
+  }, [getCardWithBalance]);
 
   const addSpawnEffect = useCallback((position: Position, owner: 'player' | 'enemy', emoji: string) => {
     const effect: SpawnEffect = {
@@ -713,12 +743,16 @@ export function useGameState(playerDeckIds: string[]) {
                     if (distToTarget <= unit.splashRadius!) {
                       target.health -= damage;
                       addDamageNumber(target.position, damage, damage > 200);
+                      // Track damage for balance system (player units only)
+                      trackCardDamage(unit.cardId, damage, 'player');
                     }
                   });
                 } else {
                   // Single target damage
                   closestEnemy.health -= damage;
                   addDamageNumber(closestEnemy.position, damage, damage > 200);
+                  // Track damage for balance system (player units only)
+                  trackCardDamage(unit.cardId, damage, 'player');
                 }
               }
             } else {
@@ -847,6 +881,10 @@ export function useGameState(playerDeckIds: string[]) {
             targetsInRange.forEach(target => {
               target.health -= spellDamage;
               addDamageNumber(target.position, spellDamage, spellDamage > 150);
+              // Track spell damage for balance system (player spells only)
+              if (spell.owner === 'player') {
+                trackCardDamage(spell.cardId, spellDamage, 'player');
+              }
             });
             updatedSpell.hasAppliedInstant = true;
           }
@@ -1139,7 +1177,7 @@ export function useGameState(playerDeckIds: string[]) {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [spawnUnit, addSpawnEffect, addDamageNumber]);
+  }, [spawnUnit, addSpawnEffect, addDamageNumber, trackCardDamage]);
 
   const resetGame = useCallback(() => {
     setGameState(createInitialState(playerDeckIds));
