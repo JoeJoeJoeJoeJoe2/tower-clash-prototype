@@ -78,21 +78,32 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
       </div>
 
       {/* Game Title */}
-      <div className="text-center pt-2">
+      <div className="text-center pt-2 flex flex-col items-center -space-y-2">
         <h1 
           className="text-3xl font-black tracking-wider uppercase"
+          style={{
+            fontFamily: "'Luckiest Guy', cursive",
+            color: '#ffffff',
+            textShadow: '2px 2px 0px #1a3a5c, 3px 3px 0px #0d2840, 4px 4px 8px rgba(0,0,0,0.5)',
+            filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.6))',
+            letterSpacing: '3px',
+          }}
+        >
+          Cracked
+        </h1>
+        <h1 
+          className="text-4xl font-black tracking-wider uppercase"
           style={{
             fontFamily: "'Luckiest Guy', cursive",
             background: 'linear-gradient(180deg, #fff9c4 0%, #ffd54f 25%, #ff8f00 50%, #e65100 75%, #8b4513 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            textShadow: '3px 3px 0px #5d4037, 4px 4px 0px #3e2723, 5px 5px 8px rgba(0,0,0,0.5)',
             filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.6))',
             letterSpacing: '2px',
           }}
         >
-          Cracked Royale
+          Royale
         </h1>
       </div>
 
