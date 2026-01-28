@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PlayerProgress, ChestReward, DeckSlot } from '@/types/game';
 import { allCards, starterCardIds } from '@/data/cards';
+import { starterBannerIds, getRandomBanner } from '@/data/banners';
 
 const STORAGE_KEY = 'clash-game-progress';
 
@@ -18,7 +19,11 @@ const initialProgress: PlayerProgress = {
   wins: 0,
   losses: 0,
   chestsAvailable: 0,
-  lastFreeChestDate: null
+  lastFreeChestDate: null,
+  // Player profile defaults
+  playerName: 'Player',
+  bannerId: 'banner-blue',
+  ownedBannerIds: [...starterBannerIds]
 };
 
 function getTodayDateString(): string {
@@ -54,6 +59,17 @@ export function useProgression() {
         // Migration: add lastFreeChestDate if missing
         if (parsed.lastFreeChestDate === undefined) {
           parsed.lastFreeChestDate = null;
+        }
+        
+        // Migration: add player profile fields if missing
+        if (!parsed.playerName) {
+          parsed.playerName = 'Player';
+        }
+        if (!parsed.bannerId) {
+          parsed.bannerId = 'banner-blue';
+        }
+        if (!parsed.ownedBannerIds) {
+          parsed.ownedBannerIds = [...starterBannerIds];
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -159,6 +175,12 @@ export function useProgression() {
     const rewards: ChestReward = { cards: [] };
     const unownedCards = allCards.filter(c => !progress.ownedCardIds.includes(c.id));
     
+    // 20% chance to unlock a new banner
+    const bannerReward = getRandomBanner(progress.ownedBannerIds);
+    if (bannerReward && Math.random() < 0.2) {
+      rewards.bannerId = bannerReward.id;
+    }
+    
     // Give 2-4 random cards
     const cardCount = 2 + Math.floor(Math.random() * 3);
     
@@ -176,22 +198,42 @@ export function useProgression() {
       }
     }
 
-    // Update progress with new cards
+    // Update progress with new cards and banner
     const newOwnedIds = [...progress.ownedCardIds];
     rewards.cards.forEach(reward => {
       if (reward.isNew && !newOwnedIds.includes(reward.cardId)) {
         newOwnedIds.push(reward.cardId);
       }
     });
+    
+    const newOwnedBanners = [...progress.ownedBannerIds];
+    if (rewards.bannerId && !newOwnedBanners.includes(rewards.bannerId)) {
+      newOwnedBanners.push(rewards.bannerId);
+    }
 
     setProgress(prev => ({
       ...prev,
       ownedCardIds: newOwnedIds,
+      ownedBannerIds: newOwnedBanners,
       chestsAvailable: prev.chestsAvailable - 1
     }));
 
     return rewards;
   }, [progress]);
+
+  const updatePlayerName = useCallback((name: string) => {
+    setProgress(prev => ({
+      ...prev,
+      playerName: name
+    }));
+  }, []);
+
+  const updateBanner = useCallback((bannerId: string) => {
+    setProgress(prev => ({
+      ...prev,
+      bannerId
+    }));
+  }, []);
 
   const resetProgress = useCallback(() => {
     setProgress(initialProgress);
@@ -205,6 +247,8 @@ export function useProgression() {
     recordWin,
     recordLoss,
     openChest,
+    updatePlayerName,
+    updateBanner,
     resetProgress
   };
 }
