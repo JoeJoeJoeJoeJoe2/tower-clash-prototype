@@ -2,6 +2,7 @@ import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Swords, Trophy, LayoutGrid, Crown, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getBannerById } from '@/data/banners';
 
 interface MainMenuProps {
   progress: PlayerProgress;
@@ -11,23 +12,35 @@ interface MainMenuProps {
   onClan: () => void;
   onOpenChest: () => void;
   onReset: () => void;
+  onOpenProfile: () => void;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onOpenChest, onReset }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onOpenChest, onReset, onOpenProfile }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const xpProgress = ((progress.wins % 5) / 5) * 100;
   const trophies = progress.wins * 30;
   const gold = progress.wins * 100 + 500;
   const gems = progress.wins * 5 + 50;
+  const currentBanner = getBannerById(progress.bannerId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
       {/* Top Bar */}
       <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-2 py-1.5 flex items-center justify-between border-b border-cyan-900/50">
-        {/* Player Level & XP */}
-        <div className="flex items-center gap-2">
+        {/* Player Level & XP - Clickable for profile */}
+        <button 
+          onClick={onOpenProfile}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <div className="relative">
-            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center border-2 border-blue-400 shadow-lg">
+            <div 
+              className="w-11 h-11 rounded-lg flex items-center justify-center border-2 border-blue-400 shadow-lg"
+              style={{ 
+                background: currentBanner 
+                  ? `linear-gradient(to bottom, ${currentBanner.color}dd, ${currentBanner.color}88)` 
+                  : 'linear-gradient(to bottom, #3b82f6, #1d4ed8)'
+              }}
+            >
               <span className="text-white font-bold text-lg">{playerLevel}</span>
             </div>
             {/* XP bar below level */}
@@ -39,10 +52,10 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
             </div>
           </div>
           <div className="hidden sm:block">
-            <p className="text-white font-semibold text-sm leading-tight">Player</p>
+            <p className="text-white font-semibold text-sm leading-tight">{progress.playerName}</p>
             <p className="text-gray-400 text-[10px]">{progress.wins * 100}/500 XP</p>
           </div>
-        </div>
+        </button>
 
         {/* Currency */}
         <div className="flex items-center gap-2">

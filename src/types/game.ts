@@ -181,8 +181,22 @@ export interface PlayerProgress {
   losses: number;
   chestsAvailable: number;
   lastFreeChestDate: string | null; // ISO date string for daily free chest
+  // Player profile
+  playerName: string;
+  bannerId: string; // ID of currently equipped banner
+  ownedBannerIds: string[]; // Banners unlocked from chests
 }
 
 export interface ChestReward {
   cards: { cardId: string; isNew: boolean }[];
+  bannerId?: string; // Optional banner unlock from chest
+}
+
+// Available banners in the game
+export interface Banner {
+  id: string;
+  name: string;
+  emoji: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  color: string;
 }

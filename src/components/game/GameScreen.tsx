@@ -7,12 +7,14 @@ import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { CardGallery } from './CardGallery';
 import { ClanScreen } from './ClanScreen';
+import { PlayerProfile } from './PlayerProfile';
 
 type Screen = 'menu' | 'deck-builder' | 'collection' | 'battle' | 'clan';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [chestReward, setChestReward] = useState<ChestReward | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
   const { 
     progress, 
     updateDeck, 
@@ -21,6 +23,8 @@ export function GameScreen() {
     recordWin, 
     recordLoss, 
     openChest, 
+    updatePlayerName,
+    updateBanner,
     resetProgress 
   } = useProgression();
 
@@ -57,6 +61,7 @@ export function GameScreen() {
           onClan={() => setScreen('clan')}
           onOpenChest={handleOpenChest}
           onReset={handleReset}
+          onOpenProfile={() => setShowProfile(true)}
         />
       )}
 
@@ -103,6 +108,14 @@ export function GameScreen() {
           onClose={() => setChestReward(null)}
         />
       )}
+
+      <PlayerProfile
+        open={showProfile}
+        onOpenChange={setShowProfile}
+        progress={progress}
+        onUpdateName={updatePlayerName}
+        onUpdateBanner={updateBanner}
+      />
     </>
   );
 }

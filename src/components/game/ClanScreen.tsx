@@ -26,13 +26,7 @@ interface ChatMessage {
   isSystem?: boolean;
 }
 
-const mockClanMembers: ClanMember[] = [
-  { id: '1', name: 'DragonSlayer', role: 'leader', trophies: 5200, level: 13, isOnline: true },
-  { id: '2', name: 'ShadowKnight', role: 'co-leader', trophies: 4800, level: 12, isOnline: true },
-  { id: '3', name: 'FireWizard', role: 'elder', trophies: 4500, level: 11, isOnline: false },
-  { id: '4', name: 'IceQueen', role: 'member', trophies: 4200, level: 10, isOnline: true },
-  { id: '5', name: 'ThunderBolt', role: 'member', trophies: 3900, level: 9, isOnline: false },
-];
+// No mock members - clan starts empty until real multiplayer is implemented
 
 const mockChatMessages: ChatMessage[] = [
   { id: '1', sender: 'DragonSlayer', message: 'Good game everyone! 🎮', timestamp: new Date(Date.now() - 300000) },
@@ -238,34 +232,27 @@ export function ClanScreen({ playerName, trophies, onBack }: ClanScreenProps) {
 
         {activeTab === 'members' && (
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {mockClanMembers.map((member, idx) => (
-              <div 
-                key={member.id}
-                className="bg-gray-800/50 rounded-lg p-3 flex items-center gap-3"
-              >
-                <div className="text-gray-500 font-bold w-6 text-center">{idx + 1}</div>
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold",
-                  member.isOnline ? "bg-green-600" : "bg-gray-600"
-                )}>
-                  {member.level}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    {getRoleIcon(member.role)}
-                    <span className={cn("font-semibold", getRoleColor(member.role))}>
-                      {member.name}
-                    </span>
-                    {member.isOnline && (
-                      <span className="w-2 h-2 rounded-full bg-green-400" />
-                    )}
-                  </div>
-                  <p className="text-gray-400 text-sm flex items-center gap-1">
-                    <Trophy className="w-3 h-3" /> {member.trophies.toLocaleString()}
-                  </p>
-                </div>
+            {/* Show player as the only member for now */}
+            <div className="bg-gray-800/50 rounded-lg p-3 flex items-center gap-3">
+              <div className="text-gray-500 font-bold w-6 text-center">1</div>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-green-600">
+                {Math.min(14, Math.floor(trophies / 150) + 1)}
               </div>
-            ))}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-yellow-400" />
+                  <span className="font-semibold text-yellow-400">{playerName}</span>
+                  <span className="w-2 h-2 rounded-full bg-green-400" />
+                </div>
+                <p className="text-gray-400 text-sm flex items-center gap-1">
+                  <Trophy className="w-3 h-3" /> {trophies.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            
+            <p className="text-gray-500 text-center py-4 text-sm">
+              Invite friends to join your clan!
+            </p>
           </div>
         )}
 
