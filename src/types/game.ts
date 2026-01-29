@@ -205,6 +205,9 @@ export interface PlayerProgress {
   gold: number;
   // Tower levels - Princess and King towers level up by collecting tower cards
   towerCopies: Record<string, number>; // 'princess' | 'king' -> copies collected
+  // Evolution system
+  evolutionShards: number; // Shards collected (6 unlocks one evolution)
+  unlockedEvolutions: string[]; // Card IDs with unlocked evolutions
 }
 
 // Shop item for daily refreshing shop
@@ -235,6 +238,7 @@ export interface ChestReward {
   bannerId?: string; // Optional banner unlock from chest
   goldEarned?: number; // Gold earned from chest
   stars?: number; // Number of stars earned during chest opening (1-5)
+  evolutionShards?: number; // Evolution shards (only from 5-star chests)
 }
 
 // Available banners in the game

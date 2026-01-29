@@ -4,7 +4,7 @@ import { getCardById } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Sparkles, Gift, Coins, Star } from 'lucide-react';
+import { Sparkles, Gift, Coins, Star, Gem } from 'lucide-react';
 
 interface ChestRewardProps {
   onGenerateReward: (stars: number) => ChestRewardType | null;
@@ -175,6 +175,15 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
               <div className="flex items-center justify-center gap-2 mt-2 bg-amber-500/20 rounded-full px-4 py-1">
                 <Coins className="w-5 h-5 text-amber-400" />
                 <span className="text-amber-300 font-bold">+{reward.goldEarned} Gold</span>
+              </div>
+            )}
+            {reward.evolutionShards && reward.evolutionShards > 0 && (
+              <div className="flex items-center justify-center gap-2 mt-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-full px-4 py-1 animate-pulse">
+                <Gem className="w-5 h-5 text-pink-400" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 font-bold">
+                  +{reward.evolutionShards} Evolution Shard{reward.evolutionShards > 1 ? 's' : ''}!
+                </span>
+                <span className="text-lg">✨</span>
               </div>
             )}
           </div>

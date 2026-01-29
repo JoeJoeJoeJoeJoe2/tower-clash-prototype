@@ -1376,20 +1376,46 @@ export function useGameState(
           if (tower.type === 'king' && !tower.isActivated) return;
           
           if (now - tower.lastAttackTime > tower.attackCooldown) {
-            const enemies = state.enemyUnits.filter(u => {
-              if (u.health <= 0) return false;
-              if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+            let enemies: Unit[] = [];
+            
+            if (tower.type === 'king' && tower.isActivated) {
+              // ACTIVATED KING TOWER: Can attack enemies near either princess tower OR in king range
+              const princessTowers = state.playerTowers.filter(t => t.type === 'princess' && t.health > 0);
               
-              // Princess towers cannot fire at units on/past the bridge (enemy's side)
-              if (tower.type === 'princess') {
-                // Check if enemy unit is on the bridge or past it (in enemy territory)
-                const isOnOrPastBridge = u.position.y <= RIVER_Y + RIVER_HALF_WIDTH;
-                if (isOnOrPastBridge) return false;
-              }
-              
-              return true;
-            });
+              enemies = state.enemyUnits.filter(u => {
+                if (u.health <= 0) return false;
+                
+                // Check if enemy is in king tower's own range
+                if (getDistance(tower.position, u.position) <= tower.attackRange) return true;
+                
+                // Check if enemy is attacking/near any princess tower (within princess attack range)
+                for (const princess of princessTowers) {
+                  if (getDistance(princess.position, u.position) <= princess.attackRange) {
+                    return true;
+                  }
+                }
+                
+                return false;
+              });
+            } else {
+              // Princess towers - original logic with bridge restriction
+              enemies = state.enemyUnits.filter(u => {
+                if (u.health <= 0) return false;
+                if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+                
+                // Princess towers cannot fire at units on/past the bridge (enemy's side)
+                if (tower.type === 'princess') {
+                  const isOnOrPastBridge = u.position.y <= RIVER_Y + RIVER_HALF_WIDTH;
+                  if (isOnOrPastBridge) return false;
+                }
+                
+                return true;
+              });
+            }
+            
             if (enemies.length > 0) {
+              // Sort by distance to prioritize closer enemies
+              enemies.sort((a, b) => getDistance(tower.position, a.position) - getDistance(tower.position, b.position));
               const target = enemies[0];
               tower.lastAttackTime = now;
               newProjectiles.push({
@@ -1412,20 +1438,46 @@ export function useGameState(
           if (tower.type === 'king' && !tower.isActivated) return;
           
           if (now - tower.lastAttackTime > tower.attackCooldown) {
-            const enemies = state.playerUnits.filter(u => {
-              if (u.health <= 0) return false;
-              if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+            let enemies: Unit[] = [];
+            
+            if (tower.type === 'king' && tower.isActivated) {
+              // ACTIVATED KING TOWER: Can attack enemies near either princess tower OR in king range
+              const princessTowers = state.enemyTowers.filter(t => t.type === 'princess' && t.health > 0);
               
-              // Princess towers cannot fire at units on/past the bridge (player's side)
-              if (tower.type === 'princess') {
-                // Check if player unit is on the bridge or past it (in player territory)
-                const isOnOrPastBridge = u.position.y >= RIVER_Y - RIVER_HALF_WIDTH;
-                if (isOnOrPastBridge) return false;
-              }
-              
-              return true;
-            });
+              enemies = state.playerUnits.filter(u => {
+                if (u.health <= 0) return false;
+                
+                // Check if enemy is in king tower's own range
+                if (getDistance(tower.position, u.position) <= tower.attackRange) return true;
+                
+                // Check if enemy is attacking/near any princess tower (within princess attack range)
+                for (const princess of princessTowers) {
+                  if (getDistance(princess.position, u.position) <= princess.attackRange) {
+                    return true;
+                  }
+                }
+                
+                return false;
+              });
+            } else {
+              // Princess towers - original logic with bridge restriction
+              enemies = state.playerUnits.filter(u => {
+                if (u.health <= 0) return false;
+                if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+                
+                // Princess towers cannot fire at units on/past the bridge (player's side)
+                if (tower.type === 'princess') {
+                  const isOnOrPastBridge = u.position.y >= RIVER_Y - RIVER_HALF_WIDTH;
+                  if (isOnOrPastBridge) return false;
+                }
+                
+                return true;
+              });
+            }
+            
             if (enemies.length > 0) {
+              // Sort by distance to prioritize closer enemies
+              enemies.sort((a, b) => getDistance(tower.position, a.position) - getDistance(tower.position, b.position));
               const target = enemies[0];
               tower.lastAttackTime = now;
               newProjectiles.push({
