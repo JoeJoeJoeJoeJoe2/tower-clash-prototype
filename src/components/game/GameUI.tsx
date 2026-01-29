@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import { CardDefinition } from '@/types/game';
+import { CardDefinition, Position } from '@/types/game';
 import { Arena } from './Arena';
 import { Hand } from './Hand';
 import { ElixirBar } from './ElixirBar';
@@ -8,9 +8,11 @@ import { BattleResults } from './BattleResults';
 import { EmotePanel } from './EmotePanel';
 import { EmoteDisplay, EmoteMessage } from './EmoteDisplay';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Zap, X, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Zap, X, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentArena } from '@/data/arenas';
+import { MultiplayerBattleState, CardPlacement } from '@/hooks/useMultiplayerBattle';
+import { getCardById } from '@/data/cards';
 
 interface GameUIProps {
   playerDeck: string[];
@@ -25,6 +27,12 @@ interface GameUIProps {
   onTrackDamage?: (cardId: string, damage: number) => void;
   getBalancedCardStats?: (cardId: string) => CardDefinition | null;
   isFriendlyBattle?: boolean;
+  // Multiplayer props
+  isMultiplayer?: boolean;
+  battleState?: MultiplayerBattleState | null;
+  pendingOpponentPlacements?: CardPlacement[];
+  onSendCardPlacement?: (cardId: string, cardIndex: number, position: Position) => void;
+  onConsumePlacement?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -54,9 +62,14 @@ export function GameUI({
   onBack, 
   onTrackDamage, 
   getBalancedCardStats,
-  isFriendlyBattle = false
+  isFriendlyBattle = false,
+  isMultiplayer = false,
+  battleState,
+  pendingOpponentPlacements = [],
+  onSendCardPlacement,
+  onConsumePlacement
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer);
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
@@ -94,8 +107,25 @@ export function GameUI({
     }
   }, []);
 
+  // Handle opponent card placements in multiplayer mode
+  useEffect(() => {
+    if (!isMultiplayer || pendingOpponentPlacements.length === 0) return;
+
+    // Process the first pending placement
+    const placement = pendingOpponentPlacements[0];
+    playEnemyCard(placement.cardId, placement.position);
+    onConsumePlacement?.();
+  }, [isMultiplayer, pendingOpponentPlacements, playEnemyCard, onConsumePlacement]);
+
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
+      const selectedCard = gameState.playerHand[gameState.selectedCardIndex];
+      
+      // Send card placement to opponent in multiplayer
+      if (isMultiplayer && selectedCard && onSendCardPlacement) {
+        onSendCardPlacement(selectedCard.id, gameState.selectedCardIndex, position);
+      }
+      
       playCard(gameState.selectedCardIndex, position);
     }
   };
@@ -109,9 +139,10 @@ export function GameUI({
 
   // Handle game end with new BattleResults screen
   if (gameState.gameStatus !== 'playing') {
-    const enemyName = generateEnemyName();
+    // Use real opponent data in multiplayer, otherwise generate random
+    const enemyName = isMultiplayer && battleState ? battleState.opponentName : generateEnemyName();
     const enemyEmoji = enemyEmojis[Math.floor(Math.random() * enemyEmojis.length)];
-    const enemyLevel = Math.floor(Math.random() * 5) + 1;
+    const enemyLevel = isMultiplayer && battleState ? battleState.opponentLevel : Math.floor(Math.random() * 5) + 1;
 
     return (
       <BattleResults
@@ -160,6 +191,13 @@ export function GameUI({
               <div className="flex items-center gap-1 text-orange-400 text-[9px] font-bold">
                 <Zap className="w-2.5 h-2.5" />
                 <span>2X</span>
+              </div>
+            )}
+            {/* Multiplayer indicator */}
+            {isMultiplayer && (
+              <div className="flex items-center gap-1 text-green-400 text-[9px] font-bold">
+                <Wifi className="w-2.5 h-2.5" />
+                <span>LIVE</span>
               </div>
             )}
           </div>

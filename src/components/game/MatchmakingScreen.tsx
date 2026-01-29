@@ -7,6 +7,12 @@ interface MatchmakingScreenProps {
   progress: PlayerProgress;
   onReady: () => void;
   isFriendlyBattle?: boolean;
+  friendlyBattleData?: {
+    opponentName: string;
+    opponentBannerId: string;
+    opponentLevel: number;
+    isChallenger: boolean;
+  } | null;
 }
 
 // Random enemy names for variety
@@ -120,7 +126,7 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
   );
 }
 
-export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps) {
+export function MatchmakingScreen({ progress, onReady, isFriendlyBattle, friendlyBattleData }: MatchmakingScreenProps) {
   const [phase, setPhase] = useState<MatchmakingPhase>('searching');
   const [showEnemy, setShowEnemy] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
@@ -131,13 +137,24 @@ export function MatchmakingScreen({ progress, onReady }: MatchmakingScreenProps)
   const playerTrophies = progress.wins * 30;
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
 
-  // Generate random enemy (memoized to prevent re-renders changing it)
-  const [enemy] = useState(() => ({
-    name: ENEMY_NAMES[Math.floor(Math.random() * ENEMY_NAMES.length)],
-    banner: allBanners[Math.floor(Math.random() * allBanners.length)],
-    trophies: Math.max(0, playerTrophies + Math.floor((Math.random() - 0.5) * 200)),
-    level: Math.max(1, Math.min(14, playerLevel + Math.floor((Math.random() - 0.5) * 4)))
-  }));
+  // Use real opponent data for friendly battles, or generate random enemy
+  const [enemy] = useState(() => {
+    if (friendlyBattleData) {
+      const opponentBanner = getBannerById(friendlyBattleData.opponentBannerId);
+      return {
+        name: friendlyBattleData.opponentName,
+        banner: opponentBanner || allBanners[0],
+        trophies: playerTrophies, // Approximate, real value would need to be passed
+        level: friendlyBattleData.opponentLevel
+      };
+    }
+    return {
+      name: ENEMY_NAMES[Math.floor(Math.random() * ENEMY_NAMES.length)],
+      banner: allBanners[Math.floor(Math.random() * allBanners.length)],
+      trophies: Math.max(0, playerTrophies + Math.floor((Math.random() - 0.5) * 200)),
+      level: Math.max(1, Math.min(14, playerLevel + Math.floor((Math.random() - 0.5) * 4)))
+    };
+  });
 
   useEffect(() => {
     const searchTimer = setTimeout(() => setPhase('found'), 1500);
