@@ -191,26 +191,33 @@ export function useProgression() {
   }, []);
 
   const openChest = useCallback((starCount: number = 1): ChestReward | null => {
-    if (progress.chestsAvailable <= 0) return null;
-
+    // Use a ref-like approach to get current progress
+    let currentProgress: PlayerProgress | null = null;
+    setProgress(prev => {
+      currentProgress = prev;
+      return prev;
+    });
+    
+    if (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0) return null;
+    
+    const prog = currentProgress as PlayerProgress;
     const rewards: ChestReward = { cards: [], goldEarned: 0, stars: starCount };
-    const unownedCards = allCards.filter(c => !progress.ownedCardIds.includes(c.id));
+    const unownedCards = allCards.filter(c => !prog.ownedCardIds.includes(c.id));
     
     // Base new card chance increases with stars: 30% base + 10% per star
     const newCardChance = 0.3 + (starCount * 0.1);
     
     // Banner chance increases with stars: 20% base + 15% per star
     const bannerChance = 0.2 + (starCount * 0.15);
-    const bannerReward = getRandomBanner(progress.ownedBannerIds);
+    const bannerReward = getRandomBanner(prog.ownedBannerIds);
     if (bannerReward && Math.random() < bannerChance) {
       rewards.bannerId = bannerReward.id;
     }
     
     // Gold: 500-1125 range, stars increase the average
-    // Base range: 500-625, each star adds up to 125 more
     const baseGold = 500;
-    const maxExtraGold = 625; // 500 + 625 = 1125 max
-    const starBonus = (starCount / 5) * maxExtraGold * 0.6; // Stars guarantee some extra gold
+    const maxExtraGold = 625;
+    const starBonus = (starCount / 5) * maxExtraGold * 0.6;
     const randomGold = Math.floor(Math.random() * (maxExtraGold - starBonus));
     rewards.goldEarned = Math.floor(baseGold + starBonus + randomGold);
     
@@ -221,51 +228,48 @@ export function useProgression() {
     
     // Filter cards by rarity based on stars
     const getAvailableCards = (owned: boolean) => {
-      const pool = owned ? allCards.filter(c => progress.ownedCardIds.includes(c.id)) : unownedCards;
+      const pool = owned ? allCards.filter(c => prog.ownedCardIds.includes(c.id)) : unownedCards;
       if (starCount >= 4) {
-        // 4+ stars: higher chance of epic/legendary
         const rarePool = pool.filter(c => c.rarity === 'epic' || c.rarity === 'legendary');
         if (rarePool.length > 0 && Math.random() < 0.5) return rarePool;
       }
       if (starCount >= 2) {
-        // 2+ stars: higher chance of rare+
         const rarePool = pool.filter(c => c.rarity !== 'common');
         if (rarePool.length > 0 && Math.random() < 0.3 + starCount * 0.1) return rarePool;
       }
       return pool;
     };
     
+    const localUnownedCards = [...unownedCards];
     for (let i = 0; i < cardCount; i++) {
-      const availableUnowned = getAvailableCards(false);
+      const availableUnowned = getAvailableCards(false).filter(c => localUnownedCards.some(u => u.id === c.id));
       if (availableUnowned.length > 0 && Math.random() < newCardChance) {
         const randomIndex = Math.floor(Math.random() * availableUnowned.length);
         const newCard = availableUnowned[randomIndex];
         rewards.cards.push({ cardId: newCard.id, isNew: true });
-        // Remove from unownedCards to avoid duplicates
-        const unownedIdx = unownedCards.findIndex(c => c.id === newCard.id);
-        if (unownedIdx !== -1) unownedCards.splice(unownedIdx, 1);
+        const unownedIdx = localUnownedCards.findIndex(c => c.id === newCard.id);
+        if (unownedIdx !== -1) localUnownedCards.splice(unownedIdx, 1);
       } else {
-        // Give a duplicate of owned card (prefer rarer cards with more stars)
         const availableOwned = getAvailableCards(true);
         if (availableOwned.length > 0) {
           const ownedIndex = Math.floor(Math.random() * availableOwned.length);
           rewards.cards.push({ cardId: availableOwned[ownedIndex].id, isNew: false });
         } else {
-          const ownedIndex = Math.floor(Math.random() * progress.ownedCardIds.length);
-          rewards.cards.push({ cardId: progress.ownedCardIds[ownedIndex], isNew: false });
+          const ownedIndex = Math.floor(Math.random() * prog.ownedCardIds.length);
+          rewards.cards.push({ cardId: prog.ownedCardIds[ownedIndex], isNew: false });
         }
       }
     }
 
     // Update progress with new cards, banner, and gold
-    const newOwnedIds = [...progress.ownedCardIds];
+    const newOwnedIds = [...prog.ownedCardIds];
     rewards.cards.forEach(reward => {
       if (reward.isNew && !newOwnedIds.includes(reward.cardId)) {
         newOwnedIds.push(reward.cardId);
       }
     });
     
-    const newOwnedBanners = [...progress.ownedBannerIds];
+    const newOwnedBanners = [...prog.ownedBannerIds];
     if (rewards.bannerId && !newOwnedBanners.includes(rewards.bannerId)) {
       newOwnedBanners.push(rewards.bannerId);
     }
@@ -279,7 +283,7 @@ export function useProgression() {
     }));
 
     return rewards;
-  }, [progress]);
+  }, []);
 
   const updatePlayerName = useCallback((name: string) => {
     setProgress(prev => ({
