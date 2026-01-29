@@ -97,8 +97,16 @@ export function Tower({ tower }: TowerProps) {
               style={{ width: `${healthPercent}%` }}
             />
           </div>
-          {/* Health number */}
-          <div className="text-center mt-0.5">
+          {/* Health number and Level */}
+          <div className="text-center mt-0.5 flex items-center justify-center gap-0.5">
+            {tower.level && (
+              <span 
+                className="text-[10px] font-bold text-amber-400 px-1"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+              >
+                Lv{tower.level}
+              </span>
+            )}
             <span 
               className={cn(
                 "text-[10px] font-bold px-1 rounded",

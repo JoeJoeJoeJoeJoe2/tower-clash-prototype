@@ -32,7 +32,9 @@ const initialProgress: PlayerProgress = {
   playerName: 'Player',
   bannerId: 'banner-blue',
   ownedBannerIds: [...starterBannerIds],
-  gold: 100 // Starting gold
+  gold: 100, // Starting gold
+  // Tower levels - start with 1 copy each (level 1)
+  towerCopies: { princess: 1, king: 1 }
 };
 
 function getTodayDateString(): string {
@@ -95,6 +97,11 @@ export function useProgression() {
               parsed.cardCopies[id] = 1;
             }
           });
+        }
+        
+        // Migration: add towerCopies if missing
+        if (!parsed.towerCopies) {
+          parsed.towerCopies = { princess: 1, king: 1 };
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -220,8 +227,11 @@ export function useProgression() {
     if (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0) return null;
     
     const prog = currentProgress as PlayerProgress;
-    const rewards: ChestReward = { cards: [], goldEarned: 0, stars: starCount };
-    const unownedCards = allCards.filter(c => !prog.ownedCardIds.includes(c.id));
+    const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount };
+    const unownedCards = allCards.filter(c => 
+      !prog.ownedCardIds.includes(c.id) && 
+      c.elixirCost > 0 // Filter out tower troops (0 elixir cost)
+    );
     
     // Base new card chance increases with stars: 30% base + 10% per star
     const newCardChance = 0.3 + (starCount * 0.1);
@@ -231,6 +241,15 @@ export function useProgression() {
     const bannerReward = getRandomBanner(prog.ownedBannerIds);
     if (bannerReward && Math.random() < bannerChance) {
       rewards.bannerId = bannerReward.id;
+    }
+    
+    // Tower card chance: 40% for 3+ stars, 60% for 5 stars
+    const towerCardChance = starCount >= 5 ? 0.6 : starCount >= 3 ? 0.4 : 0.2;
+    if (Math.random() < towerCardChance) {
+      // Give 1-3 tower cards based on stars
+      const towerCardCount = Math.min(3, Math.floor(starCount / 2) + 1);
+      const towerType = Math.random() < 0.7 ? 'princess' : 'king'; // Princess more common
+      rewards.towerCards!.push({ towerId: towerType, count: towerCardCount });
     }
     
     // Gold: 500-1125 range, stars increase the average
@@ -245,9 +264,11 @@ export function useProgression() {
     if (starCount >= 3) cardCount++;
     if (starCount >= 5) cardCount++;
     
-    // Filter cards by rarity based on stars
+    // Filter cards by rarity based on stars (exclude tower troops with 0 elixir)
     const getAvailableCards = (owned: boolean) => {
-      const pool = owned ? allCards.filter(c => prog.ownedCardIds.includes(c.id)) : unownedCards;
+      const pool = owned 
+        ? allCards.filter(c => prog.ownedCardIds.includes(c.id) && c.elixirCost > 0) 
+        : unownedCards;
       if (starCount >= 4) {
         const rarePool = pool.filter(c => c.rarity === 'epic' || c.rarity === 'legendary');
         if (rarePool.length > 0 && Math.random() < 0.5) return rarePool;
@@ -298,12 +319,21 @@ export function useProgression() {
     if (rewards.bannerId && !newOwnedBanners.includes(rewards.bannerId)) {
       newOwnedBanners.push(rewards.bannerId);
     }
+    
+    // Update tower copies
+    const newTowerCopies = { ...prog.towerCopies };
+    if (rewards.towerCards && rewards.towerCards.length > 0) {
+      rewards.towerCards.forEach(tc => {
+        newTowerCopies[tc.towerId] = (newTowerCopies[tc.towerId] || 0) + tc.count;
+      });
+    }
 
     setProgress(prev => ({
       ...prev,
       ownedCardIds: newOwnedIds,
       cardCopies: newCardCopies,
       ownedBannerIds: newOwnedBanners,
+      towerCopies: newTowerCopies,
       gold: prev.gold + (rewards.goldEarned || 0),
       chestsAvailable: prev.chestsAvailable - 1
     }));

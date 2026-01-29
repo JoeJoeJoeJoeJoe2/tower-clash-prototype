@@ -15,6 +15,7 @@ export interface Tower {
   attackCooldown: number;
   lastAttackTime: number;
   isActivated?: boolean; // King tower only attacks when activated (damaged)
+  level?: number; // Tower level (1-15)
 }
 
 // Spell effect types
@@ -202,6 +203,8 @@ export interface PlayerProgress {
   ownedBannerIds: string[]; // Banners unlocked from chests
   // Currency
   gold: number;
+  // Tower levels - Princess and King towers level up by collecting tower cards
+  towerCopies: Record<string, number>; // 'princess' | 'king' -> copies collected
 }
 
 // Shop item for daily refreshing shop
@@ -228,6 +231,7 @@ export interface CardBalanceData {
 
 export interface ChestReward {
   cards: { cardId: string; isNew: boolean }[];
+  towerCards?: { towerId: string; count: number }[]; // Tower cards for leveling towers
   bannerId?: string; // Optional banner unlock from chest
   goldEarned?: number; // Gold earned from chest
   stars?: number; // Number of stars earned during chest opening (1-5)
