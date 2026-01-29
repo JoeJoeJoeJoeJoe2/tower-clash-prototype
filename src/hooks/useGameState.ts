@@ -10,6 +10,7 @@ const SUDDEN_DEATH_ELIXIR_MULTIPLIER = 2;
 const GAME_DURATION = 180;
 const SUDDEN_DEATH_TIME = 60;
 const DAMAGE_MULTIPLIER = 0.4; // Global damage reduction
+const TARGET_BREAK_DISTANCE = 160; // 4 tiles - distance at which units stop chasing
 
 export interface Projectile {
   id: string;
@@ -741,74 +742,121 @@ export function useGameState(
           // Buildings take priority if closer than towers
           if (unit.targetType === 'buildings') {
             const allBuildingTargets = [...validEnemyBuildings, ...validEnemyTowers];
-            let closestBuilding: (Building | Tower) | null = null;
-            let closestDist = Infinity;
             
-            for (const target of allBuildingTargets) {
-              const dist = getDistance(unit.position, target.position);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestBuilding = target;
+            // Check if current target is still valid
+            let currentTarget: (Building | Tower) | null = null;
+            if (unit.targetId) {
+              currentTarget = allBuildingTargets.find(t => t.id === unit.targetId) || null;
+              if (currentTarget) {
+                const distToTarget = getDistance(unit.position, currentTarget.position);
+                // Break target lock if too far away (4 tiles)
+                if (distToTarget > TARGET_BREAK_DISTANCE) {
+                  currentTarget = null;
+                  unit.targetId = null;
+                }
+              } else {
+                unit.targetId = null;
               }
             }
             
-            if (closestBuilding) {
-              if (closestDist <= unit.range) {
+            // Find new target if none locked
+            if (!currentTarget) {
+              let closestDist = Infinity;
+              for (const target of allBuildingTargets) {
+                const dist = getDistance(unit.position, target.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = target;
+                }
+              }
+              if (currentTarget) {
+                unit.targetId = currentTarget.id;
+              }
+            }
+            
+            if (currentTarget) {
+              const distToTarget = getDistance(unit.position, currentTarget.position);
+              if (distToTarget <= unit.range) {
                 unit.state = 'attacking';
                 if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                   unit.lastAttackTime = now;
                   const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
-                  closestBuilding.health -= damage;
-                  addDamageNumber(closestBuilding.position, damage, damage > 200);
+                  currentTarget.health -= damage;
+                  addDamageNumber(currentTarget.position, damage, damage > 200);
                   trackCardDamage(unit.cardId, damage, 'player');
                 }
               } else {
                 unit.state = 'moving';
-                const movement = calculateMovement(unit, closestBuilding.position, delta);
+                const movement = calculateMovement(unit, currentTarget.position, delta);
                 unit.position = { x: movement.newX, y: movement.newY };
                 unit.direction = movement.direction;
               }
               unit.animationFrame = (unit.animationFrame + 1) % 60;
             } else {
               unit.state = 'idle';
+              unit.targetId = null;
             }
             return unit;
           }
 
-          // For units that attack other units, find the CLOSEST enemy unit first
-          // If no enemy units, then target buildings/towers
-          let closestEnemy: (Unit | Tower | Building) | null = null;
-          let closestDist = Infinity;
+          // For units that attack other units - implement target locking
+          const allValidTargets = [...validEnemyUnits, ...validEnemyBuildings, ...validEnemyTowers];
           
-          // First priority: closest enemy unit (for troop-targeting units)
-          for (const enemy of validEnemyUnits) {
-            const dist = getDistance(unit.position, enemy.position);
-            if (dist < closestDist) {
-              closestDist = dist;
-              closestEnemy = enemy;
+          // Check if current target is still valid
+          let currentTarget: (Unit | Tower | Building) | null = null;
+          if (unit.targetId) {
+            currentTarget = allValidTargets.find(t => t.id === unit.targetId) || null;
+            if (currentTarget) {
+              const distToTarget = getDistance(unit.position, currentTarget.position);
+              // Break target lock if too far away (4 tiles)
+              if (distToTarget > TARGET_BREAK_DISTANCE) {
+                currentTarget = null;
+                unit.targetId = null;
+              }
+            } else {
+              unit.targetId = null;
             }
           }
           
-          // If no enemy units found, target closest building/tower
-          if (!closestEnemy) {
-            for (const building of validEnemyBuildings) {
-              const dist = getDistance(unit.position, building.position);
+          // Find new target if none locked
+          if (!currentTarget) {
+            let closestDist = Infinity;
+            
+            // First priority: closest enemy unit (for troop-targeting units)
+            for (const enemy of validEnemyUnits) {
+              const dist = getDistance(unit.position, enemy.position);
               if (dist < closestDist) {
                 closestDist = dist;
-                closestEnemy = building;
+                currentTarget = enemy;
               }
             }
-            for (const tower of validEnemyTowers) {
-              const dist = getDistance(unit.position, tower.position);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemy = tower;
+            
+            // If no enemy units found, target closest building/tower
+            if (!currentTarget) {
+              for (const building of validEnemyBuildings) {
+                const dist = getDistance(unit.position, building.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = building;
+                }
               }
+              for (const tower of validEnemyTowers) {
+                const dist = getDistance(unit.position, tower.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = tower;
+                }
+              }
+            }
+            
+            if (currentTarget) {
+              unit.targetId = currentTarget.id;
             }
           }
 
-          if (closestEnemy) {
-            if (closestDist <= unit.range) {
+          if (currentTarget) {
+            const distToTarget = getDistance(unit.position, currentTarget.position);
+            if (distToTarget <= unit.range) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
@@ -819,8 +867,8 @@ export function useGameState(
                   // Deal damage to all valid enemies in splash radius (including buildings)
                   const splashTargets = [...validEnemyUnits, ...validEnemyBuildings, ...validEnemyTowers];
                   splashTargets.forEach(target => {
-                    const distToTarget = getDistance(closestEnemy!.position, target.position);
-                    if (distToTarget <= unit.splashRadius!) {
+                    const distToSplash = getDistance(currentTarget!.position, target.position);
+                    if (distToSplash <= unit.splashRadius!) {
                       target.health -= damage;
                       addDamageNumber(target.position, damage, damage > 200);
                       // Track damage for balance system (player units only)
@@ -829,21 +877,22 @@ export function useGameState(
                   });
                 } else {
                   // Single target damage
-                  closestEnemy.health -= damage;
-                  addDamageNumber(closestEnemy.position, damage, damage > 200);
+                  currentTarget.health -= damage;
+                  addDamageNumber(currentTarget.position, damage, damage > 200);
                   // Track damage for balance system (player units only)
                   trackCardDamage(unit.cardId, damage, 'player');
                 }
               }
             } else {
               unit.state = 'moving';
-              const movement = calculateMovement(unit, closestEnemy.position, delta);
+              const movement = calculateMovement(unit, currentTarget.position, delta);
               unit.position = { x: movement.newX, y: movement.newY };
               unit.direction = movement.direction;
             }
             unit.animationFrame = (unit.animationFrame + 1) % 60;
           } else {
             unit.state = 'idle';
+            unit.targetId = null;
           }
 
           return unit;
@@ -881,72 +930,120 @@ export function useGameState(
           // For buildings-only units (Giant, Hog, Balloon, Golem), target nearest building OR tower
           if (unit.targetType === 'buildings') {
             const allBuildingTargets = [...validPlayerBuildings, ...validPlayerTowers];
-            let closestBuilding: (Building | Tower) | null = null;
-            let closestDist = Infinity;
             
-            for (const target of allBuildingTargets) {
-              const dist = getDistance(unit.position, target.position);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestBuilding = target;
+            // Check if current target is still valid
+            let currentTarget: (Building | Tower) | null = null;
+            if (unit.targetId) {
+              currentTarget = allBuildingTargets.find(t => t.id === unit.targetId) || null;
+              if (currentTarget) {
+                const distToTarget = getDistance(unit.position, currentTarget.position);
+                // Break target lock if too far away (4 tiles)
+                if (distToTarget > TARGET_BREAK_DISTANCE) {
+                  currentTarget = null;
+                  unit.targetId = null;
+                }
+              } else {
+                unit.targetId = null;
               }
             }
             
-            if (closestBuilding) {
-              if (closestDist <= unit.range) {
+            // Find new target if none locked
+            if (!currentTarget) {
+              let closestDist = Infinity;
+              for (const target of allBuildingTargets) {
+                const dist = getDistance(unit.position, target.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = target;
+                }
+              }
+              if (currentTarget) {
+                unit.targetId = currentTarget.id;
+              }
+            }
+            
+            if (currentTarget) {
+              const distToTarget = getDistance(unit.position, currentTarget.position);
+              if (distToTarget <= unit.range) {
                 unit.state = 'attacking';
                 if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                   unit.lastAttackTime = now;
                   const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
-                  closestBuilding.health -= damage;
-                  addDamageNumber(closestBuilding.position, damage, damage > 200);
+                  currentTarget.health -= damage;
+                  addDamageNumber(currentTarget.position, damage, damage > 200);
                 }
               } else {
                 unit.state = 'moving';
-                const movement = calculateMovement(unit, closestBuilding.position, delta);
+                const movement = calculateMovement(unit, currentTarget.position, delta);
                 unit.position = { x: movement.newX, y: movement.newY };
                 unit.direction = movement.direction;
               }
               unit.animationFrame = (unit.animationFrame + 1) % 60;
             } else {
               unit.state = 'idle';
+              unit.targetId = null;
             }
             return unit;
           }
 
-          // For units that attack other units, find the CLOSEST enemy unit first
-          let closestEnemy: (Unit | Tower | Building) | null = null;
-          let closestDist = Infinity;
+          // For units that attack other units - implement target locking
+          const allValidTargets = [...validPlayerUnits, ...validPlayerBuildings, ...validPlayerTowers];
           
-          // First priority: closest enemy unit
-          for (const enemy of validPlayerUnits) {
-            const dist = getDistance(unit.position, enemy.position);
-            if (dist < closestDist) {
-              closestDist = dist;
-              closestEnemy = enemy;
+          // Check if current target is still valid
+          let currentTarget: (Unit | Tower | Building) | null = null;
+          if (unit.targetId) {
+            currentTarget = allValidTargets.find(t => t.id === unit.targetId) || null;
+            if (currentTarget) {
+              const distToTarget = getDistance(unit.position, currentTarget.position);
+              // Break target lock if too far away (4 tiles)
+              if (distToTarget > TARGET_BREAK_DISTANCE) {
+                currentTarget = null;
+                unit.targetId = null;
+              }
+            } else {
+              unit.targetId = null;
             }
           }
           
-          // If no enemy units found, target closest building/tower
-          if (!closestEnemy) {
-            for (const building of validPlayerBuildings) {
-              const dist = getDistance(unit.position, building.position);
+          // Find new target if none locked
+          if (!currentTarget) {
+            let closestDist = Infinity;
+            
+            // First priority: closest enemy unit
+            for (const enemy of validPlayerUnits) {
+              const dist = getDistance(unit.position, enemy.position);
               if (dist < closestDist) {
                 closestDist = dist;
-                closestEnemy = building;
+                currentTarget = enemy;
               }
             }
-            for (const tower of validPlayerTowers) {
-              const dist = getDistance(unit.position, tower.position);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemy = tower;
+            
+            // If no enemy units found, target closest building/tower
+            if (!currentTarget) {
+              for (const building of validPlayerBuildings) {
+                const dist = getDistance(unit.position, building.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = building;
+                }
               }
+              for (const tower of validPlayerTowers) {
+                const dist = getDistance(unit.position, tower.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = tower;
+                }
+              }
+            }
+            
+            if (currentTarget) {
+              unit.targetId = currentTarget.id;
             }
           }
 
-          if (closestEnemy) {
-            if (closestDist <= unit.range) {
+          if (currentTarget) {
+            const distToTarget = getDistance(unit.position, currentTarget.position);
+            if (distToTarget <= unit.range) {
               unit.state = 'attacking';
               if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
                 unit.lastAttackTime = now;
@@ -956,26 +1053,27 @@ export function useGameState(
                 if (unit.splashRadius && unit.splashRadius > 0) {
                   const splashTargets = [...validPlayerUnits, ...validPlayerBuildings, ...validPlayerTowers];
                   splashTargets.forEach(target => {
-                    const distToTarget = getDistance(closestEnemy!.position, target.position);
-                    if (distToTarget <= unit.splashRadius!) {
+                    const distToSplash = getDistance(currentTarget!.position, target.position);
+                    if (distToSplash <= unit.splashRadius!) {
                       target.health -= damage;
                       addDamageNumber(target.position, damage, damage > 200);
                     }
                   });
                 } else {
-                  closestEnemy.health -= damage;
-                  addDamageNumber(closestEnemy.position, damage, damage > 200);
+                  currentTarget.health -= damage;
+                  addDamageNumber(currentTarget.position, damage, damage > 200);
                 }
               }
             } else {
               unit.state = 'moving';
-              const movement = calculateMovement(unit, closestEnemy.position, delta);
+              const movement = calculateMovement(unit, currentTarget.position, delta);
               unit.position = { x: movement.newX, y: movement.newY };
               unit.direction = movement.direction;
             }
             unit.animationFrame = (unit.animationFrame + 1) % 60;
           } else {
             unit.state = 'idle';
+            unit.targetId = null;
           }
 
           return unit;
