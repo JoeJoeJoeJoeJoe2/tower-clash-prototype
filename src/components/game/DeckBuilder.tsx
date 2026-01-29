@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Swords, Check, X, Info, ArrowLeft, Plus, TrendingDown } from 'lucide-react';
+import { getCardLevel, getLevelMultiplier } from '@/lib/cardLevels';
 
 export interface CardBalanceInfo {
   cardId: string;
@@ -16,6 +17,7 @@ export interface CardBalanceInfo {
 
 interface DeckBuilderProps {
   ownedCardIds: string[];
+  cardCopies: Record<string, number>;
   deckSlots: DeckSlot[];
   activeDeckId: string;
   onSaveDeck: (deckId: string, cardIds: string[]) => void;
@@ -28,6 +30,7 @@ interface DeckBuilderProps {
 
 export function DeckBuilder({ 
   ownedCardIds, 
+  cardCopies,
   deckSlots, 
   activeDeckId,
   onSaveDeck, 
@@ -205,10 +208,12 @@ export function DeckBuilder({
                       card={card} 
                       size="small"
                       onClick={() => toggleCard(card.id)}
+                      level={getCardLevel(cardCopies[card.id] || 0)}
+                      showLevel={true}
                     />
                     <button
                       onClick={() => toggleCard(card.id)}
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center hover:scale-110 transition-transform z-20"
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
@@ -217,7 +222,7 @@ export function DeckBuilder({
                       const balance = getBalanceInfo(card.id);
                       if (balance && balance.nerfLevel > 0) {
                         return (
-                          <div className="absolute -top-1 -left-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center" title={`Nerfed ${balance.nerfLevel}x`}>
+                          <div className="absolute -top-1 -left-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center z-20" title={`Nerfed ${balance.nerfLevel}x`}>
                             <TrendingDown className="w-2.5 h-2.5 text-white" />
                           </div>
                         );
@@ -226,8 +231,8 @@ export function DeckBuilder({
                     })()}
                     <div className="mt-1 text-center w-full">
                       <div className="text-[8px] text-muted-foreground flex justify-center gap-1">
-                        <span>❤️{card.health}</span>
-                        <span>⚔️{card.damage}</span>
+                        <span>❤️{Math.floor(card.health * getLevelMultiplier(getCardLevel(cardCopies[card.id] || 0)))}</span>
+                        <span>⚔️{Math.floor(card.damage * getLevelMultiplier(getCardLevel(cardCopies[card.id] || 0)))}</span>
                       </div>
                     </div>
                   </div>
@@ -269,8 +274,9 @@ export function DeckBuilder({
                   card={card} 
                   size="small"
                   isSelected={inDeck}
+                  level={getCardLevel(cardCopies[card.id] || 0)}
+                  showLevel={true}
                 />
-                {/* Check mark for cards in deck */}
                 {inDeck && (
                   <div className="absolute top-0 right-0 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
                     <Check className="w-3 h-3 text-primary-foreground" />

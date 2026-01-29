@@ -303,6 +303,7 @@ function createInitialState(playerDeckIds: string[]): GameState {
 
 export function useGameState(
   playerDeckIds: string[],
+  playerCardLevels: Record<string, number>,
   onTrackDamage?: (cardId: string, damage: number) => void,
   getBalancedCardStats?: (cardId: string) => CardDefinition | null
 ) {
@@ -311,6 +312,10 @@ export function useGameState(
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
   const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);
   const [crownAnimations, setCrownAnimations] = useState<CrownAnimation[]>([]);
+  
+  // Store card levels in a ref so spawnUnit can access them
+  const cardLevelsRef = useRef(playerCardLevels);
+  cardLevelsRef.current = playerCardLevels;
   
   // Track previous tower health to detect when towers are destroyed
   const prevTowerHealthRef = useRef<Map<string, number>>(new Map());
@@ -357,7 +362,7 @@ export function useGameState(
     return balanced || card;
   }, []);
 
-  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy'): Unit => {
+  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy', level: number = 1): Unit => {
     // Apply balance modifiers for player cards
     const balancedCard = owner === 'player' ? getCardWithBalance(card) : card;
     
@@ -365,14 +370,19 @@ export function useGameState(
     const sizeSpeedMultiplier = SIZE_SPEED_MULTIPLIERS[balancedCard.size];
     const effectiveMoveSpeed = Math.round(balancedCard.moveSpeed * sizeSpeedMultiplier);
     
+    // Calculate level multiplier (10% per level)
+    const levelMultiplier = Math.pow(1.1, level - 1);
+    const scaledHealth = Math.floor(balancedCard.health * levelMultiplier);
+    const scaledDamage = Math.floor(balancedCard.damage * levelMultiplier);
+    
     return {
       id: `unit-${unitIdCounter.current++}`,
       cardId: balancedCard.id,
       owner,
       position: { ...position },
-      health: balancedCard.health,
-      maxHealth: balancedCard.health,
-      damage: balancedCard.damage,
+      health: scaledHealth,
+      maxHealth: scaledHealth,
+      damage: scaledDamage,
       attackSpeed: balancedCard.attackSpeed,
       moveSpeed: effectiveMoveSpeed,
       range: balancedCard.range,
@@ -382,6 +392,7 @@ export function useGameState(
       animationFrame: 0,
       direction: owner === 'player' ? 'up' : 'down',
       deployCooldown: balancedCard.deployCooldown,
+      level,
       // Combat properties from card
       isFlying: balancedCard.isFlying,
       targetType: balancedCard.targetType,
@@ -492,6 +503,7 @@ export function useGameState(
       } else {
         // Troop/tank/mini-tank - spawn units
         const unitCount = card.count || 1;
+        const cardLevel = cardLevelsRef.current[card.id] || 1;
         const newUnits: Unit[] = [];
         for (let i = 0; i < unitCount; i++) {
           // Spread multiple units slightly
@@ -500,10 +512,11 @@ export function useGameState(
             y: (i % 2) * 10
           } : { x: 0, y: 0 };
           const unitPos = { x: position.x + offset.x, y: position.y + offset.y };
-          const unit = spawnUnit(card, unitPos, 'player');
-          // Adjust health for multi-unit cards (health is per unit)
-          unit.health = card.health;
-          unit.maxHealth = card.health;
+          const unit = spawnUnit(card, unitPos, 'player', cardLevel);
+          // Adjust health for multi-unit cards (health is per unit) - scale by level
+          const levelMultiplier = Math.pow(1.1, cardLevel - 1);
+          unit.health = Math.floor(card.health * levelMultiplier);
+          unit.maxHealth = Math.floor(card.health * levelMultiplier);
           newUnits.push(unit);
         }
         newState.playerUnits = [...prev.playerUnits, ...newUnits];
@@ -692,7 +705,9 @@ export function useGameState(
           if (state.enemyCardCooldowns[aiDecision.cardIndex] <= 0) {
             // Validate AI placement against their zones
             if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
-              const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy');
+              // Enemy gets random level 1-5 for variety
+              const enemyLevel = Math.floor(Math.random() * 5) + 1;
+              const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy', enemyLevel);
               addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
               state.enemyUnits = [...state.enemyUnits, newUnit];
               state.enemyElixir -= aiDecision.card.elixirCost;
@@ -1216,7 +1231,8 @@ export function useGameState(
                 const spawnCount = unit.spawnCount || 1;
                 for (let i = 0; i < spawnCount; i++) {
                   const offsetX = (i - (spawnCount - 1) / 2) * 12;
-                  const newUnit = spawnUnit(spawnCard, { x: unit.position.x + offsetX, y: spawnY }, owner);
+                  // Spawned units inherit the parent unit's level
+                  const newUnit = spawnUnit(spawnCard, { x: unit.position.x + offsetX, y: spawnY }, owner, unit.level);
                   if (owner === 'player') {
                     state.playerUnits.push(newUnit);
                   } else {
@@ -1257,8 +1273,10 @@ export function useGameState(
                 if (spawnCard) {
                   // Spawn offset based on owner direction
                   const spawnY = owner === 'player' ? updated.position.y - 20 : updated.position.y + 20;
+                  // Building spawned units get level 1 (buildings don't have levels for now)
+                  const spawnLevel = owner === 'player' ? (cardLevelsRef.current[updated.cardId] || 1) : Math.floor(Math.random() * 3) + 1;
                   for (let i = 0; i < (updated.spawnCount || 1); i++) {
-                    const newUnit = spawnUnit(spawnCard, { x: updated.position.x + (i * 10), y: spawnY }, owner);
+                    const newUnit = spawnUnit(spawnCard, { x: updated.position.x + (i * 10), y: spawnY }, owner, spawnLevel);
                     if (owner === 'player') {
                       state.playerUnits.push(newUnit);
                     } else {

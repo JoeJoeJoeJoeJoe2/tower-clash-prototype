@@ -8,6 +8,8 @@ interface GameCardProps {
   onClick?: () => void;
   size?: 'small' | 'medium' | 'large';
   showDetails?: boolean;
+  level?: number; // Card level 1-15
+  showLevel?: boolean; // Whether to display level on card
 }
 
 const rarityStyles = {
@@ -30,7 +32,9 @@ export function GameCard({
   canAfford = true, 
   onClick,
   size = 'medium',
-  showDetails = false
+  showDetails = false,
+  level = 1,
+  showLevel = false
 }: GameCardProps) {
   const sizeClasses = {
     small: 'w-12 h-[60px]',
@@ -90,6 +94,17 @@ export function GameCard({
         card.rarity === 'epic' && 'bg-purple-400',
         card.rarity === 'legendary' && 'bg-amber-400'
       )} />
+
+      {/* Level indicator */}
+      {showLevel && level > 0 && (
+        <div className={cn(
+          'absolute -top-1 -right-1 rounded-full flex items-center justify-center font-bold text-white border border-amber-300',
+          size === 'small' ? 'w-3 h-3 text-[6px]' : size === 'medium' ? 'w-4 h-4 text-[8px]' : 'w-5 h-5 text-[10px]',
+          'bg-gradient-to-br from-amber-500 to-amber-700'
+        )}>
+          {level}
+        </div>
+      )}
 
       {showDetails && (
         <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-card/95 backdrop-blur p-2 rounded-lg border border-border min-w-32 z-10 text-center">

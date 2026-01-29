@@ -2,12 +2,22 @@ import { useState, useCallback } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
+import { getCardLevel } from '@/lib/cardLevels';
 import { HomeNavigator } from './HomeNavigator';
 import { LoadingScreen } from './LoadingScreen';
 import { MatchmakingScreen } from './MatchmakingScreen';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { PlayerProfile } from './PlayerProfile';
+
+// Convert cardCopies to cardLevels
+function getCardLevelsFromCopies(cardCopies: Record<string, number>): Record<string, number> {
+  const levels: Record<string, number> = {};
+  for (const [cardId, copies] of Object.entries(cardCopies)) {
+    levels[cardId] = getCardLevel(copies);
+  }
+  return levels;
+}
 
 type Screen = 'home' | 'loading' | 'matchmaking' | 'battle';
 
@@ -110,6 +120,7 @@ export function GameScreen() {
       {screen === 'battle' && (
         <GameUI
           playerDeck={progress.currentDeck}
+          cardLevels={getCardLevelsFromCopies(progress.cardCopies)}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
           onTrackDamage={trackDamage}
