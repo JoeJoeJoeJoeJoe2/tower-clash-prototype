@@ -1,11 +1,14 @@
+import { useState, useCallback } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { CardDefinition } from '@/types/game';
 import { Arena } from './Arena';
 import { Hand } from './Hand';
 import { ElixirBar } from './ElixirBar';
 import { BattleResults } from './BattleResults';
+import { EmotePanel } from './EmotePanel';
+import { EmoteDisplay, EmoteMessage } from './EmoteDisplay';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Zap, X } from 'lucide-react';
+import { ArrowLeft, Zap, X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GameUIProps {
@@ -51,6 +54,39 @@ export function GameUI({
   isFriendlyBattle = false
 }: GameUIProps) {
   const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
+  
+  // Emote state
+  const [showEmotePanel, setShowEmotePanel] = useState(false);
+  const [emoteMessages, setEmoteMessages] = useState<EmoteMessage[]>([]);
+
+  // Handle emote selection
+  const handleEmoteSelect = useCallback((content: string, isText: boolean) => {
+    const newMessage: EmoteMessage = {
+      id: `${Date.now()}-player`,
+      content,
+      isText,
+      isPlayer: true,
+      timestamp: Date.now(),
+    };
+    setEmoteMessages(prev => [...prev, newMessage]);
+    setShowEmotePanel(false);
+
+    // Simulate AI responding with an emote after a delay (in friendly battles or AI games)
+    if (Math.random() > 0.5) {
+      setTimeout(() => {
+        const aiEmotes = ['😂', '😢', '👍', '🙄', 'Well played!', 'Wow!', 'Thanks!'];
+        const randomEmote = aiEmotes[Math.floor(Math.random() * aiEmotes.length)];
+        const aiMessage: EmoteMessage = {
+          id: `${Date.now()}-enemy`,
+          content: randomEmote,
+          isText: randomEmote.length > 2,
+          isPlayer: false,
+          timestamp: Date.now(),
+        };
+        setEmoteMessages(prev => [...prev, aiMessage]);
+      }, 1000 + Math.random() * 2000);
+    }
+  }, []);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
@@ -168,11 +204,25 @@ export function GameUI({
               cardLevels={cardLevels}
             />
             
-            {/* Elixir bar */}
-            <ElixirBar 
-              elixir={gameState.playerElixir} 
-              isSuddenDeath={gameState.isSuddenDeath}
-            />
+            {/* Emote button + Elixir bar row */}
+            <div className="flex items-center gap-2 w-full justify-center">
+              {/* Emote button */}
+              <button
+                onClick={() => setShowEmotePanel(true)}
+                className="w-8 h-8 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 rounded-lg flex items-center justify-center border-2 border-amber-400 shadow-md transition-all hover:scale-105 active:scale-95"
+                title="Emotes"
+              >
+                <MessageCircle className="w-4 h-4 text-white" />
+              </button>
+              
+              {/* Elixir bar */}
+              <div className="flex-1 max-w-[200px]">
+                <ElixirBar 
+                  elixir={gameState.playerElixir} 
+                  isSuddenDeath={gameState.isSuddenDeath}
+                />
+              </div>
+            </div>
 
             {gameState.selectedCardIndex !== null && (
               <p className={cn(
@@ -193,6 +243,16 @@ export function GameUI({
           </div>
         </div>
       </div>
+
+      {/* Emote display overlay */}
+      <EmoteDisplay messages={emoteMessages} />
+
+      {/* Emote panel */}
+      <EmotePanel 
+        isOpen={showEmotePanel} 
+        onClose={() => setShowEmotePanel(false)} 
+        onEmoteSelect={handleEmoteSelect}
+      />
 
       {/* Right sidebar - Crown scores */}
       <div className="w-12 flex flex-col items-center justify-center gap-6 bg-card/50 border-l border-border/30 py-4">
