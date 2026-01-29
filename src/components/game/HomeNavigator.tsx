@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PlayerProgress } from '@/types/game';
+import { User } from '@supabase/supabase-js';
+import { OnlinePlayer } from '@/hooks/useOnlinePresence';
+import { BattleRequest } from '@/hooks/useBattleRequests';
 import { MainMenu } from './MainMenu';
 import { CardsPage } from './CardsPage';
 import { CardBalanceInfo } from './DeckBuilder';
@@ -24,6 +27,17 @@ interface HomeNavigatorProps {
   cardBalanceInfo?: CardBalanceInfo[];
   onSpendGold: (amount: number) => boolean;
   onAddCard: (cardId: string) => void;
+  // Multiplayer props
+  user: User | null;
+  onlinePlayers: OnlinePlayer[];
+  incomingRequests: BattleRequest[];
+  outgoingRequests: BattleRequest[];
+  onSendRequest: (userId: string, playerName: string) => Promise<boolean>;
+  onAcceptRequest: (requestId: string) => Promise<boolean>;
+  onDeclineRequest: (requestId: string) => Promise<boolean>;
+  onCancelRequest: (requestId: string) => Promise<boolean>;
+  onSignOut: () => void;
+  onSignIn: () => void;
 }
 
 export function HomeNavigator({
@@ -38,6 +52,17 @@ export function HomeNavigator({
   cardBalanceInfo = [],
   onSpendGold,
   onAddCard,
+  // Multiplayer props
+  user,
+  onlinePlayers,
+  incomingRequests,
+  outgoingRequests,
+  onSendRequest,
+  onAcceptRequest,
+  onDeclineRequest,
+  onCancelRequest,
+  onSignOut,
+  onSignIn,
 }: HomeNavigatorProps) {
   const [currentIndex, setCurrentIndex] = useState(2); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
@@ -132,6 +157,7 @@ export function HomeNavigator({
             onOpenChest={onOpenChest}
             onReset={onReset}
             onOpenProfile={onOpenProfile}
+            incomingRequestCount={incomingRequests.length}
           />
         </div>
 
@@ -141,6 +167,15 @@ export function HomeNavigator({
             playerName={progress.playerName}
             trophies={progress.wins * 30}
             onBack={() => goToScreen('battle')}
+            user={user}
+            onlinePlayers={onlinePlayers}
+            incomingRequests={incomingRequests}
+            outgoingRequests={outgoingRequests}
+            onSendRequest={onSendRequest}
+            onAcceptRequest={onAcceptRequest}
+            onDeclineRequest={onDeclineRequest}
+            onCancelRequest={onCancelRequest}
+            onSignOut={onSignOut}
           />
         </div>
       </div>
