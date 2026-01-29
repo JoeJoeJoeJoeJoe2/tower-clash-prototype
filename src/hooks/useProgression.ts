@@ -10,6 +10,7 @@ import { TOWER_TROOPS } from '@/data/towerTroops';
 export interface ExtendedPlayerProgress extends PlayerProgress {
   selectedTowerTroopId: string; // Currently equipped tower troop
   unlockedTowerTroopIds: string[]; // Tower troops unlocked
+  claimedTrophyRewards: number[]; // Trophy milestones already claimed
 }
 
 const STORAGE_KEY = 'clash-game-progress';
@@ -51,6 +52,8 @@ const initialProgress: ExtendedPlayerProgress = {
   // Tower Troops - default is always available
   selectedTowerTroopId: 'default',
   unlockedTowerTroopIds: ['default'],
+  // Trophy Road claimed rewards
+  claimedTrophyRewards: [],
 };
 
 function getTodayDateString(): string {
@@ -139,6 +142,9 @@ export function useProgression() {
         }
         if (!parsed.unlockedTowerTroopIds) {
           parsed.unlockedTowerTroopIds = ['default'];
+        }
+        if (!parsed.claimedTrophyRewards) {
+          parsed.claimedTrophyRewards = [];
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -503,6 +509,24 @@ export function useProgression() {
     return true;
   }, [progress.unlockedTowerTroopIds]);
 
+  // Claim a trophy road reward
+  const claimTrophyReward = useCallback((trophyMilestone: number): boolean => {
+    const currentTrophies = progress.wins * 30;
+    
+    // Check if already claimed or not yet reached
+    if (progress.claimedTrophyRewards.includes(trophyMilestone)) return false;
+    if (currentTrophies < trophyMilestone) return false;
+    
+    // Award a chest
+    setProgress(prev => ({
+      ...prev,
+      chestsAvailable: prev.chestsAvailable + 1,
+      claimedTrophyRewards: [...prev.claimedTrophyRewards, trophyMilestone]
+    }));
+    
+    return true;
+  }, [progress.wins, progress.claimedTrophyRewards]);
+
   return {
     progress,
     updateDeck,
@@ -520,6 +544,7 @@ export function useProgression() {
     addCard,
     unlockEvolution,
     selectTowerTroop,
-    unlockTowerTroop
+    unlockTowerTroop,
+    claimTrophyReward
   };
 }
