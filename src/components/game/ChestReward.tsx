@@ -23,24 +23,29 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
   const handleChestClick = useCallback(() => {
     if (stage !== 'clicking') return;
     
-    const newClicks = clicks + 1;
-    setClicks(newClicks);
-    
-    // First click always gives a star
-    if (newClicks === 1) {
-      setStars(1);
-    } else if (stars < 5) {
-      // 50% chance for additional stars
-      if (Math.random() < 0.5) {
-        setStars(prev => Math.min(prev + 1, 5));
+    setClicks(prevClicks => {
+      const newClicks = prevClicks + 1;
+      
+      // First click always gives a star
+      if (newClicks === 1) {
+        setStars(1);
+      } else {
+        setStars(prevStars => {
+          if (prevStars < 5 && Math.random() < 0.5) {
+            return prevStars + 1;
+          }
+          return prevStars;
+        });
       }
-    }
-    
-    // After 5 clicks, start opening
-    if (newClicks >= maxClicks) {
-      setTimeout(() => setStage('opening'), 300);
-    }
-  }, [stage, clicks, stars]);
+      
+      // After 5 clicks, start opening
+      if (newClicks >= maxClicks) {
+        setTimeout(() => setStage('opening'), 300);
+      }
+      
+      return newClicks;
+    });
+  }, [stage, maxClicks]);
 
   // Generate reward when opening stage starts
   useEffect(() => {
