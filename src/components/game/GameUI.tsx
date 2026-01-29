@@ -10,6 +10,7 @@ import { EmoteDisplay, EmoteMessage } from './EmoteDisplay';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Zap, X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCurrentArena } from '@/data/arenas';
 
 interface GameUIProps {
   playerDeck: string[];
@@ -18,6 +19,7 @@ interface GameUIProps {
   playerName: string;
   playerBannerEmoji: string;
   playerLevel: number;
+  trophies?: number; // Player's current trophies for arena theme
   onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
   onBack: () => void;
   onTrackDamage?: (cardId: string, damage: number) => void;
@@ -47,6 +49,7 @@ export function GameUI({
   playerName,
   playerBannerEmoji,
   playerLevel,
+  trophies = 0,
   onGameEnd, 
   onBack, 
   onTrackDamage, 
@@ -54,6 +57,9 @@ export function GameUI({
   isFriendlyBattle = false
 }: GameUIProps) {
   const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
+  
+  // Get current arena theme based on trophies
+  const currentArena = getCurrentArena(trophies);
   
   // Emote state
   const [showEmotePanel, setShowEmotePanel] = useState(false);
@@ -185,6 +191,7 @@ export function GameUI({
             arenaWidth={ARENA_WIDTH}
             arenaHeight={ARENA_HEIGHT}
             onArenaClick={handleArenaClick}
+            arenaTheme={currentArena}
           />
         </div>
 
