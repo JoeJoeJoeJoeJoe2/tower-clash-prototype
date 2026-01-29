@@ -38,7 +38,9 @@ const initialProgress: PlayerProgress = {
   towerCopies: { princess: 1, king: 1 },
   // Evolution system
   evolutionShards: 0,
-  unlockedEvolutions: []
+  unlockedEvolutions: [],
+  // Wild Cards - start with 0 of each
+  wildCardCounts: { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 }
 };
 
 function getTodayDateString(): string {
@@ -114,6 +116,11 @@ export function useProgression() {
         }
         if (!parsed.unlockedEvolutions) {
           parsed.unlockedEvolutions = [];
+        }
+        
+        // Migration: add wild card counts if missing
+        if (!parsed.wildCardCounts) {
+          parsed.wildCardCounts = { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 };
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -239,7 +246,7 @@ export function useProgression() {
     if (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0) return null;
     
     const prog = currentProgress as PlayerProgress;
-    const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount, evolutionShards: 0 };
+    const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount, evolutionShards: 0, wildCards: [] };
     const unownedCards = allCards.filter(c => 
       !prog.ownedCardIds.includes(c.id) && 
       c.elixirCost > 0 // Filter out tower troops (0 elixir cost)
@@ -248,6 +255,29 @@ export function useProgression() {
     // EVOLUTION SHARDS: Only from 5-star chests - guaranteed 1-3 shards
     if (starCount === 5) {
       rewards.evolutionShards = 1 + Math.floor(Math.random() * 3); // 1-3 shards
+    }
+    
+    // WILD CARDS: Chance to get wild cards based on stars
+    // Higher stars = more wild cards and higher rarity possible
+    const wildCardChance = 0.15 + (starCount * 0.1); // 25% to 65% based on stars
+    if (Math.random() < wildCardChance) {
+      const rarities: ('common' | 'rare' | 'epic' | 'legendary' | 'champion')[] = ['common', 'rare', 'epic', 'legendary', 'champion'];
+      // Determine rarity based on stars
+      let maxRarityIndex = Math.min(starCount - 1, 4); // 1 star = common max, 5 star = champion possible
+      const rarityIndex = Math.floor(Math.random() * (maxRarityIndex + 1));
+      const selectedRarity = rarities[rarityIndex];
+      
+      // Count based on rarity (common = 5-10, rare = 3-6, epic = 1-3, legendary = 1-2, champion = 1)
+      let count = 1;
+      switch (selectedRarity) {
+        case 'common': count = 5 + Math.floor(Math.random() * 6); break;
+        case 'rare': count = 3 + Math.floor(Math.random() * 4); break;
+        case 'epic': count = 1 + Math.floor(Math.random() * 3); break;
+        case 'legendary': count = 1 + Math.floor(Math.random() * 2); break;
+        case 'champion': count = 1; break;
+      }
+      
+      rewards.wildCards!.push({ rarity: selectedRarity, count });
     }
     
     // Base new card chance increases with stars: 30% base + 10% per star
@@ -344,6 +374,14 @@ export function useProgression() {
         newTowerCopies[tc.towerId] = (newTowerCopies[tc.towerId] || 0) + tc.count;
       });
     }
+    
+    // Update wild card counts
+    const newWildCardCounts = { ...prog.wildCardCounts };
+    if (rewards.wildCards && rewards.wildCards.length > 0) {
+      rewards.wildCards.forEach(wc => {
+        newWildCardCounts[wc.rarity] = (newWildCardCounts[wc.rarity] || 0) + wc.count;
+      });
+    }
 
     setProgress(prev => ({
       ...prev,
@@ -351,6 +389,7 @@ export function useProgression() {
       cardCopies: newCardCopies,
       ownedBannerIds: newOwnedBanners,
       towerCopies: newTowerCopies,
+      wildCardCounts: newWildCardCounts,
       gold: prev.gold + (rewards.goldEarned || 0),
       evolutionShards: prev.evolutionShards + (rewards.evolutionShards || 0),
       chestsAvailable: prev.chestsAvailable - 1

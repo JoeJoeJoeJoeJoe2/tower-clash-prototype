@@ -1,5 +1,6 @@
 // Evolution data for all cards that have evolutions in Clash Royale
 // 6 evolution shards unlock an evolution for any card
+// Based on official Clash Royale evolutions (excludes Mega Knight per user request)
 
 export interface Evolution {
   cardId: string;
@@ -7,275 +8,404 @@ export interface Evolution {
   emoji: string;
   description: string;
   // Evolution bonuses (applied as multipliers or flat bonuses)
-  healthBonus: number; // Percentage increase (e.g., 0.15 = +15%)
+  healthBonus: number; // Percentage increase (e.g., 0.10 = +10%)
   damageBonus: number;
-  specialEffect?: string; // Description of special ability
+  specialEffect: string; // Description of special ability
+  cycles: number; // Number of cycles needed to evolve (1 or 2)
 }
 
-// All Clash Royale evolutions except Mega Knight
+// All official Clash Royale evolutions (33 total, excluding Mega Knight)
 export const evolutions: Evolution[] = [
   // Common evolutions
   {
-    cardId: 'knight',
-    name: 'Evolved Knight',
+    cardId: 'barbarians',
+    name: 'Evolved Barbarians',
     emoji: '⚔️✨',
-    description: 'Gains a shield that blocks one hit',
+    description: 'Rage when attacking',
     healthBonus: 0.10,
-    damageBonus: 0.10,
-    specialEffect: 'Shield blocks first hit'
-  },
-  {
-    cardId: 'archers',
-    name: 'Evolved Archers',
-    emoji: '🏹✨',
-    description: 'Faster fire rate and split on death',
-    healthBonus: 0.10,
-    damageBonus: 0.15,
-    specialEffect: 'Faster attack speed'
-  },
-  {
-    cardId: 'goblins',
-    name: 'Evolved Goblins',
-    emoji: '👺✨',
-    description: 'Spawns an extra goblin with more HP',
-    healthBonus: 0.15,
-    damageBonus: 0.10,
-    specialEffect: '+1 goblin spawned'
+    damageBonus: 0,
+    specialEffect: '+35% attack speed and movement speed for 3s every time they attack',
+    cycles: 1
   },
   {
     cardId: 'skeletons',
     name: 'Evolved Skeletons',
     emoji: '💀✨',
-    description: 'More skeletons and they deal more damage',
-    healthBonus: 0.10,
-    damageBonus: 0.20,
-    specialEffect: '+1 skeleton spawned'
+    description: 'Replicate when attacking',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Each attack spawns another Skeleton (max 8 Skeletons)',
+    cycles: 2
+  },
+  {
+    cardId: 'knight',
+    name: 'Evolved Knight',
+    emoji: '⚔️✨',
+    description: 'Shield while moving',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '60% damage reduction shield while moving or deploying until first hit',
+    cycles: 2
+  },
+  {
+    cardId: 'archers',
+    name: 'Evolved Archers',
+    emoji: '🏹✨',
+    description: 'Bonus damage at range',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '+20% range, +50% damage to enemies 4-6 tiles away',
+    cycles: 2
   },
   {
     cardId: 'bomber',
     name: 'Evolved Bomber',
     emoji: '💣✨',
-    description: 'Bombs have larger splash radius',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Larger splash radius'
+    description: 'Bouncing bombs',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Bombs bounce twice after initial hit (2.5 tiles apart each)',
+    cycles: 2
   },
   {
-    cardId: 'minions',
-    name: 'Evolved Minions',
+    cardId: 'bats',
+    name: 'Evolved Bats',
     emoji: '🦇✨',
-    description: 'Faster and more durable',
-    healthBonus: 0.20,
-    damageBonus: 0.10,
-    specialEffect: 'Increased speed'
+    description: 'Heal when attacking',
+    healthBonus: 0.50,
+    damageBonus: 0,
+    specialEffect: 'Heal on attack, can overheal to double max HP',
+    cycles: 2
   },
-  
+
   // Rare evolutions
   {
-    cardId: 'giant',
-    name: 'Evolved Giant',
+    cardId: 'royal-giant',
+    name: 'Evolved Royal Giant',
     emoji: '🗿✨',
-    description: 'Regenerates health over time',
-    healthBonus: 0.15,
-    damageBonus: 0.10,
-    specialEffect: 'Slowly regenerates HP'
-  },
-  {
-    cardId: 'wizard',
-    name: 'Evolved Wizard',
-    emoji: '🔥✨',
-    description: 'Fireballs leave burning ground',
-    healthBonus: 0.10,
-    damageBonus: 0.15,
-    specialEffect: 'Leaves fire trail'
+    description: 'Shockwave attacks',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Each attack creates a 2.5-tile knockback shockwave',
+    cycles: 1
   },
   {
     cardId: 'valkyrie',
     name: 'Evolved Valkyrie',
     emoji: '🪓✨',
-    description: 'Spin attack hits faster',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Faster spin attacks'
+    description: 'Tornado on attack',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Each attack summons a Tornado pulling enemies in 5.5-tile radius',
+    cycles: 2
   },
   {
     cardId: 'musketeer',
     name: 'Evolved Musketeer',
     emoji: '🎯✨',
-    description: 'Bullets pierce through enemies',
-    healthBonus: 0.10,
-    damageBonus: 0.20,
-    specialEffect: 'Piercing shots'
+    description: 'Sniper shots',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '3 sniper shots dealing +80% damage with infinite vertical range',
+    cycles: 2
+  },
+  {
+    cardId: 'wizard',
+    name: 'Evolved Wizard',
+    emoji: '🔥✨',
+    description: 'Spawns with shield',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Shield that deals damage and knockback in 3-tile radius when destroyed',
+    cycles: 1
   },
   {
     cardId: 'baby-dragon',
     name: 'Evolved Baby Dragon',
     emoji: '🐉✨',
-    description: 'Fire breath deals more splash damage',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Enhanced splash'
+    description: 'Wind burst aura',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Creates wind burst: -30% enemy speed, +50% ally speed for 5s',
+    cycles: 2
   },
   {
-    cardId: 'hog-rider',
-    name: 'Evolved Hog Rider',
-    emoji: '🐗✨',
-    description: 'Jumps over the river, faster charge',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Jump ability'
+    cardId: 'battle-ram',
+    name: 'Evolved Battle Ram',
+    emoji: '🐏✨',
+    description: 'Repeated ramming',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Knockback on charge, double damage, repeatedly rams until destroyed. Spawns Evolved Barbarians',
+    cycles: 2
   },
-  
+
   // Epic evolutions
   {
-    cardId: 'prince',
-    name: 'Evolved Prince',
-    emoji: '🏇✨',
-    description: 'Charge deals even more damage',
-    healthBonus: 0.15,
-    damageBonus: 0.20,
-    specialEffect: 'Enhanced charge damage'
+    cardId: 'goblin-barrel',
+    name: 'Evolved Goblin Barrel',
+    emoji: '🛢️✨',
+    description: 'Decoy barrel',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Spawns 2 barrels mirrored. One has real Goblins, other has weaker decoys',
+    cycles: 2
+  },
+  {
+    cardId: 'goblin-giant',
+    name: 'Evolved Goblin Giant',
+    emoji: '🧌✨',
+    description: 'Spawns Goblins at 50% HP',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'At 50% HP, spawns a Goblin every 2.2s behind him',
+    cycles: 1
+  },
+  {
+    cardId: 'pekka',
+    name: 'Evolved P.E.K.K.A',
+    emoji: '🦾✨',
+    description: 'Butterfly healing',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Defeating units spawns healing butterfly. Can overheal to +66% max HP',
+    cycles: 1
   },
   {
     cardId: 'witch',
     name: 'Evolved Witch',
     emoji: '🧙‍♀️✨',
-    description: 'Spawns more powerful skeletons',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Stronger spawned units'
-  },
-  {
-    cardId: 'mini-pekka',
-    name: 'Evolved Mini P.E.K.K.A',
-    emoji: '🤖✨',
-    description: 'Even deadlier attacks with rage effect',
-    healthBonus: 0.15,
-    damageBonus: 0.25,
-    specialEffect: 'Rage when damaged'
-  },
-  {
-    cardId: 'balloon',
-    name: 'Evolved Balloon',
-    emoji: '🎈✨',
-    description: 'Death bomb is even more powerful',
-    healthBonus: 0.20,
-    damageBonus: 0.20,
-    specialEffect: 'Larger death bomb'
-  },
-  
-  // Legendary evolutions
-  {
-    cardId: 'pekka',
-    name: 'Evolved P.E.K.K.A',
-    emoji: '🦾✨',
-    description: 'Ultimate destruction machine',
-    healthBonus: 0.20,
-    damageBonus: 0.20,
-    specialEffect: 'Armor piercing attacks'
-  },
-  {
-    cardId: 'electro-wizard',
-    name: 'Evolved Electro Wizard',
-    emoji: '⚡✨',
-    description: 'Chain lightning between enemies',
-    healthBonus: 0.15,
-    damageBonus: 0.20,
-    specialEffect: 'Chain lightning'
-  },
-  {
-    cardId: 'princess',
-    name: 'Evolved Princess',
-    emoji: '👸✨',
-    description: 'Arrows split on impact',
-    healthBonus: 0.15,
-    damageBonus: 0.20,
-    specialEffect: 'Splitting arrows'
-  },
-  
-  // Spell evolutions (apply to the spell effect)
-  {
-    cardId: 'fireball',
-    name: 'Evolved Fireball',
-    emoji: '☄️✨',
-    description: 'Leaves burning ground after impact',
+    description: 'Heals from Skeleton deaths',
     healthBonus: 0,
-    damageBonus: 0.25,
-    specialEffect: 'Fire ground effect'
+    damageBonus: 0,
+    specialEffect: 'When her Skeletons die, Witch heals. Can overheal to 124% HP',
+    cycles: 1
   },
   {
-    cardId: 'arrows',
-    name: 'Evolved Arrows',
-    emoji: '🎯✨',
-    description: 'Three waves of arrows',
+    cardId: 'electro-dragon',
+    name: 'Evolved Electro Dragon',
+    emoji: '🐲✨',
+    description: 'Infinite chain lightning',
     healthBonus: 0,
-    damageBonus: 0.20,
-    specialEffect: 'Triple wave'
+    damageBonus: 0,
+    specialEffect: 'Lightning chains infinitely. After 3rd chain: no stun, -33% damage',
+    cycles: 1
   },
   {
-    cardId: 'freeze',
-    name: 'Evolved Freeze',
-    emoji: '❄️✨',
-    description: 'Longer freeze duration and slows after',
+    cardId: 'lumberjack',
+    name: 'Evolved Lumberjack',
+    emoji: '🪓✨',
+    description: 'Ghost on death',
     healthBonus: 0,
-    damageBonus: 0.15,
-    specialEffect: 'Extended freeze'
+    damageBonus: 0,
+    specialEffect: 'Death spawns invincible Ghost that attacks until Rage expires',
+    cycles: 2
   },
   {
-    cardId: 'zap',
-    name: 'Evolved Zap',
-    emoji: '⚡✨',
-    description: 'Larger radius and resets charges',
-    healthBonus: 0,
-    damageBonus: 0.20,
-    specialEffect: 'Reset effect'
-  },
-  {
-    cardId: 'poison',
-    name: 'Evolved Poison',
-    emoji: '☠️✨',
-    description: 'Slows enemies caught in the poison',
-    healthBonus: 0,
-    damageBonus: 0.20,
-    specialEffect: 'Slow effect'
-  },
-  
-  // Building evolutions
-  {
-    cardId: 'cannon',
-    name: 'Evolved Cannon',
+    cardId: 'hunter',
+    name: 'Evolved Hunter',
     emoji: '🔫✨',
-    description: 'Faster fire rate and longer lifetime',
-    healthBonus: 0.20,
-    damageBonus: 0.15,
-    specialEffect: 'Extended lifetime'
+    description: 'Net trap ability',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Throws net immobilizing troops for 3s. Grounds flying units. 5s cooldown',
+    cycles: 2
+  },
+  {
+    cardId: 'executioner',
+    name: 'Evolved Executioner',
+    emoji: '🪓✨',
+    description: 'Close-range knockback',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Axe deals extra damage and 1.5-tile knockback within 3.5 tiles',
+    cycles: 1
+  },
+  {
+    cardId: 'inferno-dragon',
+    name: 'Evolved Inferno Dragon',
+    emoji: '🔥🐉✨',
+    description: 'Retains damage stage',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Keeps damage stage between targets for 9s. 4th stage at 20s deals 2x damage',
+    cycles: 2
+  },
+  {
+    cardId: 'skeleton-barrel',
+    name: 'Evolved Skeleton Barrel',
+    emoji: '🎈💀✨',
+    description: 'Double barrel drop',
+    healthBonus: 0.25,
+    damageBonus: 0.61,
+    specialEffect: '+1 barrel. Drops at 75% HP and on death. Each spawns 7 Skeletons',
+    cycles: 2
+  },
+
+  // Buildings evolutions
+  {
+    cardId: 'mortar',
+    name: 'Evolved Mortar',
+    emoji: '💥✨',
+    description: 'Spawns Goblins',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '-20% attack period. Each shot spawns a Goblin where it lands',
+    cycles: 2
   },
   {
     cardId: 'tesla',
     name: 'Evolved Tesla',
     emoji: '⚡✨',
-    description: 'Chain lightning to nearby enemies',
-    healthBonus: 0.15,
-    damageBonus: 0.20,
-    specialEffect: 'Chain attacks'
+    description: 'Stun pulse on deploy',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Surfaces with 6-tile radius electric pulse dealing damage and 0.5s stun',
+    cycles: 2
   },
   {
-    cardId: 'tombstone',
-    name: 'Evolved Tombstone',
-    emoji: '🪦✨',
-    description: 'Spawns more skeletons on death',
-    healthBonus: 0.15,
-    damageBonus: 0.15,
-    specialEffect: 'Extra death spawn'
+    cardId: 'cannon',
+    name: 'Evolved Cannon',
+    emoji: '🔫✨',
+    description: 'Bomb rain on deploy',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Deploys with 9 bombs raining from sky dealing damage and knockback',
+    cycles: 2
   },
   {
-    cardId: 'goblin-hut',
-    name: 'Evolved Goblin Hut',
-    emoji: '🛖✨',
-    description: 'Spawns goblins faster',
-    healthBonus: 0.20,
-    damageBonus: 0.15,
-    specialEffect: 'Faster spawn'
+    cardId: 'goblin-cage',
+    name: 'Evolved Goblin Cage',
+    emoji: '🗡️✨',
+    description: 'Traps enemies',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Drags ground troops into cage. Brawler hits trapped troop every 1s, immune to damage',
+    cycles: 1
+  },
+  {
+    cardId: 'goblin-drill',
+    name: 'Evolved Goblin Drill',
+    emoji: '⛏️✨',
+    description: 'Rotates around tower',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'At 66% and 33% HP, rotates 90° around Crown Tower spawning Goblins',
+    cycles: 2
+  },
+  {
+    cardId: 'furnace',
+    name: 'Evolved Furnace',
+    emoji: '🔥✨',
+    description: 'Faster spawns while attacking',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'While attacking, spawn period reduced to 2.4s, alternating left/right',
+    cycles: 2
+  },
+
+  // Spell evolutions
+  {
+    cardId: 'zap',
+    name: 'Evolved Zap',
+    emoji: '⚡✨',
+    description: 'Expanding radius',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'After initial Zap, radius stays and grows 0.5 tiles with same stun and damage',
+    cycles: 2
+  },
+  {
+    cardId: 'giant-snowball',
+    name: 'Evolved Giant Snowball',
+    emoji: '❄️✨',
+    description: 'Pulls instead of pushes',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '+25% slow duration. Rolls 4.5 tiles pulling all troops in its path',
+    cycles: 2
+  },
+
+  // Other troop evolutions
+  {
+    cardId: 'firecracker',
+    name: 'Evolved Firecracker',
+    emoji: '🧨✨',
+    description: 'Spark trail effect',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Attack leaves sparks dealing damage every 0.25s for 3s. -15% enemy speed',
+    cycles: 2
+  },
+  {
+    cardId: 'royal-recruits',
+    name: 'Evolved Royal Recruits',
+    emoji: '🛡️✨',
+    description: 'Charge after shield breaks',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'When shield is knocked off after 2.5 tiles, charges at Very Fast with 2x damage',
+    cycles: 1
+  },
+  {
+    cardId: 'ice-spirit',
+    name: 'Evolved Ice Spirit',
+    emoji: '❄️✨',
+    description: 'Double freeze',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '+33% splash radius. Freezes 1.1s, then again after 3s. Leaves freeze zone on death',
+    cycles: 2
+  },
+  {
+    cardId: 'wall-breakers',
+    name: 'Evolved Wall Breakers',
+    emoji: '💣✨',
+    description: 'Continue after barrel breaks',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Barrel break deals damage. Continue running Very Fast, deal 50% damage on impact',
+    cycles: 2
+  },
+  {
+    cardId: 'dart-goblin',
+    name: 'Evolved Dart Goblin',
+    emoji: '🎯✨',
+    description: 'Poison darts',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Attacks apply stacking poison. Level 2 at 4 hits, Level 3 at 7 hits. Poison trail',
+    cycles: 2
+  },
+  {
+    cardId: 'skeleton-army',
+    name: 'Evolved Skeleton Army',
+    emoji: '💀⚔️✨',
+    description: 'Skeleton General',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: '+1 Skeleton. Includes General with shield. Dead Skeletons become invisible until General dies',
+    cycles: 2
+  },
+  {
+    cardId: 'royal-ghost',
+    name: 'Evolved Royal Ghost',
+    emoji: '👻✨',
+    description: 'Spawns Souldiers',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Invisible attacks spawn 2 Souldiers with 51% damage and 6.7% HP',
+    cycles: 2
+  },
+  {
+    cardId: 'royal-hogs',
+    name: 'Evolved Royal Hogs',
+    emoji: '🐗✨',
+    description: 'Flying start',
+    healthBonus: 0,
+    damageBonus: 0,
+    specialEffect: 'Spawn flying. Fall damage deals 155% of normal damage on first attack',
+    cycles: 2
   }
 ];
 

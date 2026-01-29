@@ -208,6 +208,8 @@ export interface PlayerProgress {
   // Evolution system
   evolutionShards: number; // Shards collected (6 unlocks one evolution)
   unlockedEvolutions: string[]; // Card IDs with unlocked evolutions
+  // Wild Cards - can be used to upgrade any card of the same rarity
+  wildCardCounts: Record<string, number>; // 'common' | 'rare' | 'epic' | 'legendary' | 'champion' -> count
 }
 
 // Shop item for daily refreshing shop
@@ -239,6 +241,7 @@ export interface ChestReward {
   goldEarned?: number; // Gold earned from chest
   stars?: number; // Number of stars earned during chest opening (1-5)
   evolutionShards?: number; // Evolution shards (only from 5-star chests)
+  wildCards?: { rarity: string; count: number }[]; // Wild cards earned from chest
 }
 
 // Available banners in the game

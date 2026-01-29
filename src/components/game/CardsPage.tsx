@@ -5,6 +5,7 @@ import { Swords, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeckBuilder, CardBalanceInfo } from './DeckBuilder';
 import { CardCollection } from './CardCollection';
+import { WildCardRarity } from '@/data/wildCards';
 
 interface CardsPageProps {
   progress: PlayerProgress;
@@ -13,6 +14,7 @@ interface CardsPageProps {
   onAddDeck: () => void;
   onStartBattle: () => void;
   cardBalanceInfo?: CardBalanceInfo[];
+  onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
 }
 
 type TabType = 'decks' | 'collection';
@@ -23,7 +25,8 @@ export function CardsPage({
   onSetActiveDeck,
   onAddDeck,
   onStartBattle,
-  cardBalanceInfo = []
+  cardBalanceInfo = [],
+  onUseWildCard
 }: CardsPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('decks');
 
@@ -76,8 +79,10 @@ export function CardsPage({
           <CardCollection
             ownedCardIds={progress.ownedCardIds}
             cardCopies={progress.cardCopies}
+            wildCardCounts={progress.wildCardCounts as Record<WildCardRarity, number>}
             evolutionShards={progress.evolutionShards}
             unlockedEvolutions={progress.unlockedEvolutions}
+            onUseWildCard={onUseWildCard}
           />
         )}
       </div>

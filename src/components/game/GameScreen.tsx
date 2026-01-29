@@ -9,6 +9,7 @@ import { MatchmakingScreen } from './MatchmakingScreen';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { PlayerProfile } from './PlayerProfile';
+import { getBannerById } from '@/data/banners';
 
 // Convert cardCopies to cardLevels
 function getCardLevelsFromCopies(cardCopies: Record<string, number>): Record<string, number> {
@@ -130,6 +131,9 @@ export function GameScreen() {
           playerDeck={progress.currentDeck}
           cardLevels={getCardLevelsFromCopies(progress.cardCopies)}
           towerLevels={getTowerLevelsFromCopies(progress.towerCopies)}
+          playerName={progress.playerName}
+          playerBannerEmoji={getBannerById(progress.bannerId)?.emoji || '🛡️'}
+          playerLevel={Math.max(1, Math.floor(progress.wins / 5) + 1)}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
           onTrackDamage={trackDamage}
