@@ -21,6 +21,7 @@ interface ClanScreenProps {
   onDeclineRequest: (requestId: string) => Promise<boolean>;
   onCancelRequest: (requestId: string) => Promise<boolean>;
   onSignOut: () => void;
+  onSignIn: () => void;
 }
 
 interface ChatMessage {
@@ -51,7 +52,8 @@ export function ClanScreen({
   onAcceptRequest,
   onDeclineRequest,
   onCancelRequest,
-  onSignOut
+  onSignOut,
+  onSignIn
 }: ClanScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('online');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
@@ -149,12 +151,54 @@ export function ClanScreen({
                 onCancelRequest={onCancelRequest}
               />
             ) : (
-              <div className="text-center py-12">
-                <WifiOff className="w-12 h-12 mx-auto text-gray-600 mb-4" />
-                <h3 className="text-white font-semibold mb-2">Sign in to play with friends</h3>
-                <p className="text-gray-500 text-sm mb-4">
-                  Create an account to see online players and send battle requests!
+              <div className="text-center py-8 px-4">
+                <WifiOff className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+                <h3 className="text-white text-xl font-bold mb-3">Sign in to play with friends!</h3>
+                <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+                  Create an account to see online players and challenge them to friendly battles!
                 </p>
+                
+                {/* Sign In Button */}
+                <Button
+                  onClick={onSignIn}
+                  className="w-full max-w-xs mx-auto mb-6 h-12 text-lg font-bold bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900"
+                >
+                  Sign In / Create Account
+                </Button>
+                
+                {/* How it works section */}
+                <div className="bg-gray-800/50 rounded-xl p-4 max-w-sm mx-auto text-left border border-gray-700/50">
+                  <h4 className="text-cyan-400 font-semibold mb-3 text-center">📋 How to Play with Friends</h4>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">1</span>
+                      <span className="text-gray-300">
+                        <strong className="text-white">Create an account</strong> using your email and a password (minimum 6 characters)
+                      </span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">2</span>
+                      <span className="text-gray-300">
+                        <strong className="text-white">Find your friend</strong> in the online players list
+                      </span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">3</span>
+                      <span className="text-gray-300">
+                        <strong className="text-white">Send a battle request</strong> by tapping the ⚔️ button next to their name
+                      </span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">4</span>
+                      <span className="text-gray-300">
+                        <strong className="text-white">Wait for them to accept</strong> and the battle will begin!
+                      </span>
+                    </li>
+                  </ol>
+                  <p className="text-gray-500 text-xs mt-4 text-center">
+                    💡 Tip: Both players need to be signed in and online at the same time!
+                  </p>
+                </div>
               </div>
             )}
           </div>

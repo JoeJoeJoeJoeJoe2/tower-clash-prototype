@@ -186,6 +186,7 @@ export function HomeNavigator({
             onDeclineRequest={onDeclineRequest}
             onCancelRequest={onCancelRequest}
             onSignOut={onSignOut}
+            onSignIn={onSignIn}
           />
         </div>
       </div>
