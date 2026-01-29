@@ -49,7 +49,7 @@ export function GameCard({
         rarityGlow[card.rarity],
         onClick && 'cursor-pointer hover:scale-105 hover:-translate-y-1'
       )}
-      onClick={() => canAfford && onClick?.()}
+      onClick={() => onClick?.()}
     >
       {/* Elixir cost */}
       <div className="card-cost text-white font-bold text-xs">

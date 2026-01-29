@@ -180,8 +180,8 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
         </div>
       )}
 
-      {/* Arena - fills available space */}
-      <div className="flex-1 flex items-start justify-center min-h-0 pt-1 relative">
+      {/* Arena - fills available space with extra bottom margin for card bar */}
+      <div className="flex-1 flex items-start justify-center min-h-0 pt-1 relative mb-2">
         <Arena
           gameState={gameState}
           projectiles={projectiles}
@@ -194,10 +194,11 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
         />
       </div>
 
-      {/* Controls - fixed at bottom, lower position */}
-      <div className="w-full max-w-md px-2 pb-2 shrink-0">
+      {/* Controls - compact bar at very bottom */}
+      <div className="w-full max-w-md px-1 shrink-0">
         <div 
-          className="bg-card/95 backdrop-blur-md border border-border rounded-t-xl p-2 pb-3 flex flex-col items-center gap-2 shadow-lg"
+          className="bg-card/90 backdrop-blur-sm border-t border-border/50 px-2 py-1.5 flex flex-col items-center gap-1"
+          style={{ paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}
         >
           {/* Cards */}
           <Hand
@@ -208,7 +209,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
             nextCard={gameState.playerDeck[0]}
           />
           
-          {/* Elixir bar */}
+          {/* Elixir bar - more compact */}
           <ElixirBar 
             elixir={gameState.playerElixir} 
             isSuddenDeath={gameState.isSuddenDeath}
@@ -216,12 +217,18 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
 
           {gameState.selectedCardIndex !== null && (
             <p className={cn(
-              "text-xs",
-              hasBonusZones ? "text-emerald-400" : "text-muted-foreground"
+              "text-[10px]",
+              gameState.playerElixir < (gameState.playerHand[gameState.selectedCardIndex]?.elixirCost || 0) 
+                ? "text-destructive" 
+                : hasBonusZones 
+                  ? "text-emerald-400" 
+                  : "text-muted-foreground"
             )}>
-              {hasBonusZones 
-                ? "🎯 New zones unlocked!" 
-                : "Tap arena to deploy!"}
+              {gameState.playerElixir < (gameState.playerHand[gameState.selectedCardIndex]?.elixirCost || 0)
+                ? "⚡ Not enough elixir!"
+                : hasBonusZones 
+                  ? "🎯 New zones unlocked!" 
+                  : "Tap arena to deploy!"}
             </p>
           )}
         </div>
