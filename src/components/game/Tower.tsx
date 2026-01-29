@@ -91,11 +91,23 @@ export function Tower({ tower }: TowerProps) {
       
       {!isDestroyed && (
         <div className="w-full mt-1 px-1">
-          <div className="health-bar-container h-2">
+          <div className="health-bar-container h-2 relative">
             <div
               className={cn('health-bar-fill', healthClass)}
               style={{ width: `${healthPercent}%` }}
             />
+          </div>
+          {/* Health number */}
+          <div className="text-center mt-0.5">
+            <span 
+              className={cn(
+                "text-[10px] font-bold px-1 rounded",
+                tower.owner === 'player' ? "text-blue-200" : "text-red-200"
+              )}
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+            >
+              {Math.max(0, Math.floor(tower.health))}
+            </span>
           </div>
         </div>
       )}

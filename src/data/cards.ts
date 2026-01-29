@@ -21,6 +21,8 @@ export const SIZE_SCALE = {
 export const allCards: CardDefinition[] = [
   // ==================== COMMON TROOPS ====================
   // Low cost, basic stats, starter-friendly
+  // Size-based damage: tiny ~150, small ~200, medium ~300, large ~450, huge ~600
+  // Health: around 500 base, scaled by role
   
   {
     id: 'knight',
@@ -28,8 +30,8 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 3,
     emoji: '⚔️',
-    health: 1452,
-    damage: 167,
+    health: 600,
+    damage: 300,
     attackSpeed: 0.77,
     moveSpeed: 35,
     range: 30,
@@ -41,7 +43,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'medium' // Reference size - Witch-like
+    size: 'medium'
   },
   {
     id: 'archers',
@@ -49,8 +51,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🏹',
-    health: 304,
-    damage: 107,
+    health: 250,
+    damage: 180,
     attackSpeed: 0.83,
     moveSpeed: 35,
     range: 150,
@@ -62,7 +64,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'both',
     count: 2,
-    size: 'small' // Smaller than Witch
+    size: 'small'
   },
   {
     id: 'goblins',
@@ -70,8 +72,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 2,
     emoji: '👺',
-    health: 202,
-    damage: 120,
+    health: 180,
+    damage: 170,
     attackSpeed: 0.91,
     moveSpeed: 50,
     range: 30,
@@ -83,7 +85,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 3,
-    size: 'small' // Small creatures
+    size: 'small'
   },
   {
     id: 'skeletons',
@@ -91,8 +93,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 1,
     emoji: '💀',
-    health: 81,
-    damage: 81,
+    health: 80,
+    damage: 150,
     attackSpeed: 1.0,
     moveSpeed: 42,
     range: 30,
@@ -104,7 +106,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 3,
-    size: 'tiny' // Smallest units
+    size: 'tiny'
   },
   {
     id: 'bomber',
@@ -112,8 +114,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 2,
     emoji: '💣',
-    health: 332,
-    damage: 233,
+    health: 280,
+    damage: 220,
     attackSpeed: 0.56,
     moveSpeed: 35,
     range: 100,
@@ -126,7 +128,7 @@ export const allCards: CardDefinition[] = [
     targetType: 'ground',
     splashRadius: 40,
     count: 1,
-    size: 'small' // Smaller skeleton with bomb
+    size: 'small'
   },
   {
     id: 'minions',
@@ -134,8 +136,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '🦇',
-    health: 216,
-    damage: 84,
+    health: 150,
+    damage: 160,
     attackSpeed: 1.0,
     moveSpeed: 50,
     range: 35,
@@ -147,7 +149,7 @@ export const allCards: CardDefinition[] = [
     isFlying: true,
     targetType: 'both',
     count: 3,
-    size: 'tiny' // Small flying units
+    size: 'tiny'
   },
 
   // ==================== RARE TROOPS ====================
@@ -159,8 +161,8 @@ export const allCards: CardDefinition[] = [
     type: 'tank',
     elixirCost: 5,
     emoji: '🗿',
-    health: 2800, // Reduced from 4091
-    damage: 180, // Reduced from 254
+    health: 1800,
+    damage: 450,
     attackSpeed: 0.67,
     moveSpeed: 28,
     range: 30,
@@ -172,7 +174,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'buildings',
     count: 1,
-    size: 'huge' // Very large tank
+    size: 'huge'
   },
   {
     id: 'wizard',
@@ -180,8 +182,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🔥',
-    health: 720,
-    damage: 281,
+    health: 450,
+    damage: 350,
     attackSpeed: 0.59,
     moveSpeed: 35,
     range: 130,
@@ -194,7 +196,7 @@ export const allCards: CardDefinition[] = [
     targetType: 'both',
     splashRadius: 50,
     count: 1,
-    size: 'medium' // Standard human size
+    size: 'medium'
   },
   {
     id: 'valkyrie',
@@ -202,8 +204,8 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 4,
     emoji: '🪓',
-    health: 1908,
-    damage: 221,
+    health: 700,
+    damage: 320,
     attackSpeed: 0.67,
     moveSpeed: 35,
     range: 35,
@@ -216,7 +218,7 @@ export const allCards: CardDefinition[] = [
     targetType: 'ground',
     splashRadius: 60,
     count: 1,
-    size: 'medium' // Standard warrior size
+    size: 'medium'
   },
   {
     id: 'musketeer',
@@ -224,8 +226,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🎯',
-    health: 720,
-    damage: 208,
+    health: 400,
+    damage: 280,
     attackSpeed: 0.91,
     moveSpeed: 35,
     range: 180,
@@ -237,7 +239,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'both',
     count: 1,
-    size: 'medium' // Standard human size
+    size: 'medium'
   },
   {
     id: 'baby-dragon',
@@ -245,8 +247,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🐉',
-    health: 1152,
-    damage: 160,
+    health: 600,
+    damage: 280,
     attackSpeed: 0.67,
     moveSpeed: 42,
     range: 100,
@@ -259,7 +261,7 @@ export const allCards: CardDefinition[] = [
     targetType: 'both',
     splashRadius: 45,
     count: 1,
-    size: 'medium' // Medium dragon
+    size: 'medium'
   },
   {
     id: 'hog-rider',
@@ -267,8 +269,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '🐗',
-    health: 1696,
-    damage: 264,
+    health: 800,
+    damage: 400,
     attackSpeed: 0.63,
     moveSpeed: 60,
     range: 30,
@@ -280,7 +282,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'buildings',
     count: 1,
-    size: 'large' // Rider on hog
+    size: 'large'
   },
 
   // ==================== EPIC TROOPS ====================
@@ -292,8 +294,8 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 5,
     emoji: '🏇',
-    health: 1920,
-    damage: 392,
+    health: 750,
+    damage: 480,
     attackSpeed: 0.71,
     moveSpeed: 45,
     range: 35,
@@ -305,7 +307,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'large' // Knight on horse
+    size: 'large'
   },
   {
     id: 'witch',
@@ -313,8 +315,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🧙‍♀️',
-    health: 880,
-    damage: 138,
+    health: 500,
+    damage: 250,
     attackSpeed: 0.71,
     moveSpeed: 35,
     range: 130,
@@ -327,7 +329,11 @@ export const allCards: CardDefinition[] = [
     targetType: 'both',
     splashRadius: 35,
     count: 1,
-    size: 'medium' // REFERENCE SIZE - Normal speed
+    size: 'medium',
+    // Witch spawns skeletons every 5 seconds
+    spawnInterval: 5,
+    spawnCardId: 'skeletons',
+    spawnCount: 3
   },
   {
     id: 'mini-pekka',
@@ -335,8 +341,8 @@ export const allCards: CardDefinition[] = [
     type: 'mini-tank',
     elixirCost: 4,
     emoji: '🤖',
-    health: 1129,
-    damage: 598,
+    health: 550,
+    damage: 550, // Exception: high damage dealer
     attackSpeed: 0.56,
     moveSpeed: 42,
     range: 30,
@@ -348,7 +354,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'small' // Smaller than PEKKA - faster
+    size: 'small'
   },
   {
     id: 'balloon',
@@ -356,8 +362,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 5,
     emoji: '🎈',
-    health: 1680,
-    damage: 798,
+    health: 700,
+    damage: 600, // Large unit - high damage
     attackSpeed: 0.33,
     moveSpeed: 30,
     range: 35,
@@ -369,7 +375,7 @@ export const allCards: CardDefinition[] = [
     isFlying: true,
     targetType: 'buildings',
     count: 1,
-    size: 'large' // Big balloon
+    size: 'large'
   },
 
   // ==================== LEGENDARY TROOPS ====================
@@ -381,8 +387,8 @@ export const allCards: CardDefinition[] = [
     type: 'tank',
     elixirCost: 7,
     emoji: '🦾',
-    health: 3760,
-    damage: 816,
+    health: 1500,
+    damage: 600, // Huge unit - max damage
     attackSpeed: 0.56,
     moveSpeed: 28,
     range: 35,
@@ -394,7 +400,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'huge' // Massive robot
+    size: 'huge'
   },
   {
     id: 'electro-wizard',
@@ -402,8 +408,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 4,
     emoji: '⚡',
-    health: 649,
-    damage: 110,
+    health: 400,
+    damage: 200,
     attackSpeed: 0.56,
     moveSpeed: 35,
     range: 130,
@@ -415,7 +421,7 @@ export const allCards: CardDefinition[] = [
     isFlying: false,
     targetType: 'both',
     count: 1,
-    size: 'medium' // Standard wizard size
+    size: 'medium'
   },
   {
     id: 'princess',
@@ -423,8 +429,8 @@ export const allCards: CardDefinition[] = [
     type: 'troop',
     elixirCost: 3,
     emoji: '👸',
-    health: 280,
-    damage: 186,
+    health: 200,
+    damage: 200,
     attackSpeed: 0.33,
     moveSpeed: 35,
     range: 250,
@@ -437,7 +443,7 @@ export const allCards: CardDefinition[] = [
     targetType: 'both',
     splashRadius: 40,
     count: 1,
-    size: 'small' // Petite princess
+    size: 'small'
   },
 
   // ==================== SPELLS ====================

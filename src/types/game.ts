@@ -94,6 +94,12 @@ export interface Unit {
   
   // Status effects
   statusEffects: StatusEffect[];
+  
+  // Spawning properties (for units like Witch)
+  spawnInterval?: number; // Seconds between spawns
+  spawnCardId?: string; // Card ID of unit to spawn
+  spawnCount?: number; // Number of units to spawn
+  lastSpawnTime: number; // Last spawn timestamp
 }
 
 export interface StatusEffect {
