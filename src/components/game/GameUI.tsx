@@ -181,7 +181,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
       )}
 
       {/* Arena - fills available space */}
-      <div className="flex-1 flex items-center justify-center min-h-0 py-1 relative">
+      <div className="flex-1 flex items-start justify-center min-h-0 pt-1 relative">
         <Arena
           gameState={gameState}
           projectiles={projectiles}
@@ -194,10 +194,10 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
         />
       </div>
 
-      {/* Controls - fixed at bottom */}
-      <div className="w-full max-w-md px-2 shrink-0">
+      {/* Controls - fixed at bottom, lower position */}
+      <div className="w-full max-w-md px-2 pb-2 shrink-0">
         <div 
-          className="bg-card/95 backdrop-blur-md border border-border rounded-t-xl p-2 flex flex-col items-center gap-2 shadow-lg"
+          className="bg-card/95 backdrop-blur-md border border-border rounded-t-xl p-2 pb-3 flex flex-col items-center gap-2 shadow-lg"
         >
           {/* Cards */}
           <Hand
