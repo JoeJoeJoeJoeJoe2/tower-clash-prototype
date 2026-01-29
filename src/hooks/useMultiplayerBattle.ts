@@ -39,6 +39,12 @@ export function useMultiplayerBattle(
   const [isConnected, setIsConnected] = useState(false);
   const lastProcessedTimestampRef = useRef<number>(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const battleStateRef = useRef<MultiplayerBattleState | null>(null);
+  
+  // Keep ref in sync with state to avoid stale closures
+  useEffect(() => {
+    battleStateRef.current = battleState;
+  }, [battleState]);
 
   // Create a new battle when both players accept
   const createBattle = useCallback(async (
@@ -173,7 +179,7 @@ export function useMultiplayerBattle(
     // First, join the battle
     joinBattle(battleId);
 
-    // Subscribe to game state changes
+    // Subscribe to game state changes using Realtime
     const channel = supabase
       .channel(`battle:${battleId}`)
       .on(
@@ -188,10 +194,12 @@ export function useMultiplayerBattle(
           const newData = payload.new as Record<string, unknown>;
           const gameState = newData.game_state as unknown as MultiplayerGameState | null;
           
-          if (!battleState || !gameState) return;
+          // Use ref to get current state (avoids stale closure)
+          const currentBattleState = battleStateRef.current;
+          if (!currentBattleState || !gameState) return;
 
           // Get opponent's new placements
-          const opponentPlacements = battleState.isPlayer1 
+          const opponentPlacements = currentBattleState.isPlayer1 
             ? gameState.player2Placements || []
             : gameState.player1Placements || [];
 
@@ -229,7 +237,7 @@ export function useMultiplayerBattle(
     return () => {
       channel.unsubscribe();
     };
-  }, [battleId, user, joinBattle, battleState]);
+  }, [battleId, user, joinBattle]);
 
   // Clear a processed placement
   const consumePlacement = useCallback(() => {
