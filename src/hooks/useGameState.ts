@@ -827,24 +827,28 @@ export function useGameState(
           if (!currentTarget) {
             let closestDist = Infinity;
             
-            // First priority: closest enemy unit (for troop-targeting units)
-            for (const enemy of validEnemyUnits) {
-              const dist = getDistance(unit.position, enemy.position);
+            // FIRST PRIORITY: Closest enemy BUILDING (buildings attract troops)
+            for (const building of validEnemyBuildings) {
+              const dist = getDistance(unit.position, building.position);
               if (dist < closestDist) {
                 closestDist = dist;
-                currentTarget = enemy;
+                currentTarget = building;
               }
             }
             
-            // If no enemy units found, target closest building/tower
+            // SECOND PRIORITY: If no buildings, target closest enemy unit
             if (!currentTarget) {
-              for (const building of validEnemyBuildings) {
-                const dist = getDistance(unit.position, building.position);
+              for (const enemy of validEnemyUnits) {
+                const dist = getDistance(unit.position, enemy.position);
                 if (dist < closestDist) {
                   closestDist = dist;
-                  currentTarget = building;
+                  currentTarget = enemy;
                 }
               }
+            }
+            
+            // THIRD PRIORITY: If no buildings or units, target closest tower
+            if (!currentTarget) {
               for (const tower of validEnemyTowers) {
                 const dist = getDistance(unit.position, tower.position);
                 if (dist < closestDist) {
@@ -1014,24 +1018,28 @@ export function useGameState(
           if (!currentTarget) {
             let closestDist = Infinity;
             
-            // First priority: closest enemy unit
-            for (const enemy of validPlayerUnits) {
-              const dist = getDistance(unit.position, enemy.position);
+            // FIRST PRIORITY: Closest player BUILDING (buildings attract troops)
+            for (const building of validPlayerBuildings) {
+              const dist = getDistance(unit.position, building.position);
               if (dist < closestDist) {
                 closestDist = dist;
-                currentTarget = enemy;
+                currentTarget = building;
               }
             }
             
-            // If no enemy units found, target closest building/tower
+            // SECOND PRIORITY: If no buildings, target closest player unit
             if (!currentTarget) {
-              for (const building of validPlayerBuildings) {
-                const dist = getDistance(unit.position, building.position);
+              for (const enemy of validPlayerUnits) {
+                const dist = getDistance(unit.position, enemy.position);
                 if (dist < closestDist) {
                   closestDist = dist;
-                  currentTarget = building;
+                  currentTarget = enemy;
                 }
               }
+            }
+            
+            // THIRD PRIORITY: If no buildings or units, target closest tower
+            if (!currentTarget) {
               for (const tower of validPlayerTowers) {
                 const dist = getDistance(unit.position, tower.position);
                 if (dist < closestDist) {

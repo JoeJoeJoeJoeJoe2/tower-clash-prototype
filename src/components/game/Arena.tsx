@@ -44,6 +44,7 @@ function BuildingComponent({ building }: { building: BuildingType }) {
   const card = getCardById(building.cardId);
   const healthPercent = (building.health / building.maxHealth) * 100;
   const lifetimePercent = (building.lifetime / building.maxLifetime) * 100;
+  const healthClass = healthPercent > 60 ? 'bg-green-500' : healthPercent > 30 ? 'bg-yellow-500' : 'bg-red-500';
   
   return (
     <div
@@ -67,14 +68,24 @@ function BuildingComponent({ building }: { building: BuildingType }) {
       </div>
       
       {/* Health bar */}
-      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-800 rounded-full overflow-hidden">
+      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
         <div 
-          className={cn(
-            "h-full transition-all",
-            building.owner === 'player' ? "bg-blue-400" : "bg-red-400"
-          )}
+          className={cn("h-full transition-all", healthClass)}
           style={{ width: `${healthPercent}%` }}
         />
+      </div>
+      
+      {/* Numeric health display */}
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
+        <span 
+          className={cn(
+            "text-[9px] font-bold px-1 rounded",
+            building.owner === 'player' ? "text-blue-200" : "text-red-200"
+          )}
+          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+        >
+          {Math.max(0, Math.floor(building.health))}
+        </span>
       </div>
       
       {/* Lifetime indicator (circular) */}
