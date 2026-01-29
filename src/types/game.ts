@@ -39,7 +39,7 @@ export interface CardDefinition {
   moveSpeed: number; // Movement speed (higher = faster)
   range: number; // Attack range in pixels
   description: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'champion';
   color: string;
   deployCooldown: number; // Cooldown in seconds before unit can act after spawn
   
@@ -246,6 +246,6 @@ export interface Banner {
   id: string;
   name: string;
   emoji: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'champion';
   color: string;
 }

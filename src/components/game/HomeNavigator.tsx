@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PlayerProgress } from '@/types/game';
 import { MainMenu } from './MainMenu';
-import { DeckBuilder, CardBalanceInfo } from './DeckBuilder';
+import { CardsPage } from './CardsPage';
+import { CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
 import { ShopScreen } from './ShopScreen';
 import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
-type HomeScreen = 'shop' | 'deck-builder' | 'battle' | 'clan';
+type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan';
 
-const SCREENS: HomeScreen[] = ['shop', 'deck-builder', 'battle', 'clan'];
+const SCREENS: HomeScreen[] = ['shop', 'cards', 'battle', 'clan'];
 
 interface HomeNavigatorProps {
   progress: PlayerProgress;
@@ -102,23 +103,19 @@ export function HomeNavigator({
             ownedCardIds={progress.ownedCardIds}
             onPurchase={handleShopPurchase}
             onClaimFreebie={handleClaimFreebie}
-            onBack={() => goToScreen('deck-builder')}
+            onBack={() => goToScreen('cards')}
             timeUntilRefresh={getTimeUntilRefresh()}
           />
         </div>
 
-        {/* Deck Builder Screen */}
+        {/* Cards Screen */}
         <div className="w-full h-full flex-shrink-0" style={{ width: `${100 / SCREENS.length}%` }}>
-          <DeckBuilder
-            ownedCardIds={progress.ownedCardIds}
-            cardCopies={progress.cardCopies}
-            deckSlots={progress.deckSlots}
-            activeDeckId={progress.activeDeckId}
+          <CardsPage
+            progress={progress}
             onSaveDeck={onSaveDeck}
             onSetActiveDeck={onSetActiveDeck}
             onAddDeck={onAddDeck}
             onStartBattle={onBattle}
-            onBack={() => goToScreen('battle')}
             cardBalanceInfo={cardBalanceInfo}
           />
         </div>
@@ -128,8 +125,8 @@ export function HomeNavigator({
           <MainMenu
             progress={progress}
             onBattle={onBattle}
-            onDeckBuilder={() => goToScreen('deck-builder')}
-            onCollection={() => goToScreen('deck-builder')}
+            onDeckBuilder={() => goToScreen('cards')}
+            onCollection={() => goToScreen('cards')}
             onClan={() => goToScreen('clan')}
             onShop={() => goToScreen('shop')}
             onOpenChest={onOpenChest}

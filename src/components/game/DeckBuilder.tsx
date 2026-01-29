@@ -24,7 +24,7 @@ interface DeckBuilderProps {
   onSetActiveDeck: (deckId: string) => void;
   onAddDeck: () => void;
   onStartBattle: () => void;
-  onBack: () => void;
+  onBack?: () => void;
   cardBalanceInfo?: CardBalanceInfo[];
 }
 
@@ -111,18 +111,8 @@ export function DeckBuilder({
   return (
     <div 
       ref={containerRef}
-      className="h-screen overflow-y-auto bg-background flex flex-col items-center p-4 gap-4 pb-8"
+      className="h-full overflow-y-auto bg-background flex flex-col items-center p-4 gap-4 pb-8"
     >
-      {/* Header */}
-      <div className="flex items-center gap-4 w-full max-w-md">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1 text-center">
-          <h1 className="game-title text-3xl text-primary">Battle Decks</h1>
-        </div>
-        <div className="w-10" />
-      </div>
 
       {/* Deck Tabs */}
       <ScrollArea className="w-full max-w-md">
@@ -335,7 +325,8 @@ export function DeckBuilder({
                   selectedCard.rarity === 'common' && 'text-slate-400',
                   selectedCard.rarity === 'rare' && 'text-blue-400',
                   selectedCard.rarity === 'epic' && 'text-purple-400',
-                  selectedCard.rarity === 'legendary' && 'text-amber-400'
+                  selectedCard.rarity === 'legendary' && 'text-amber-400',
+                  selectedCard.rarity === 'champion' && 'text-pink-400'
                 )}>
                   {selectedCard.rarity}
                 </span>

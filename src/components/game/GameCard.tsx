@@ -16,14 +16,16 @@ const rarityStyles = {
   common: 'from-slate-500 to-slate-700 border-slate-400',
   rare: 'from-blue-500 to-blue-700 border-blue-400',
   epic: 'from-purple-500 to-purple-700 border-purple-400',
-  legendary: 'from-amber-500 to-orange-600 border-amber-400'
+  legendary: 'from-amber-500 to-orange-600 border-amber-400',
+  champion: 'from-pink-500 to-rose-600 border-pink-400'
 };
 
 const rarityGlow = {
   common: '',
   rare: 'shadow-blue-500/30',
   epic: 'shadow-purple-500/40',
-  legendary: 'shadow-amber-500/50 animate-pulse'
+  legendary: 'shadow-amber-500/50 animate-pulse',
+  champion: 'shadow-pink-500/60 animate-pulse'
 };
 
 export function GameCard({ 
@@ -92,7 +94,8 @@ export function GameCard({
         card.rarity === 'common' && 'bg-slate-400',
         card.rarity === 'rare' && 'bg-blue-400',
         card.rarity === 'epic' && 'bg-purple-400',
-        card.rarity === 'legendary' && 'bg-amber-400'
+        card.rarity === 'legendary' && 'bg-amber-400',
+        card.rarity === 'champion' && 'bg-pink-400'
       )} />
 
       {/* Level indicator */}
