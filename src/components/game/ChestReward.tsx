@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChestReward as ChestRewardType } from '@/types/game';
 import { getCardById } from '@/data/cards';
 import { GameCard } from './GameCard';
@@ -17,6 +17,10 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
   const [stars, setStars] = useState(0);
   const [reward, setReward] = useState<ChestRewardType | null>(null);
   const [revealedCards, setRevealedCards] = useState<number>(0);
+  
+  // Use ref to track stars for reliable access in callbacks
+  const starsRef = useRef(0);
+  const hasGeneratedReward = useRef(false);
 
   const maxClicks = 5;
 
@@ -28,34 +32,36 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
       
       // First click always gives a star
       if (newClicks === 1) {
+        starsRef.current = 1;
         setStars(1);
-      } else {
-        setStars(prevStars => {
-          if (prevStars < 5 && Math.random() < 0.5) {
-            return prevStars + 1;
-          }
-          return prevStars;
-        });
+      } else if (starsRef.current < 5 && Math.random() < 0.5) {
+        starsRef.current = starsRef.current + 1;
+        setStars(starsRef.current);
       }
       
-      // After 5 clicks, start opening
-      if (newClicks >= maxClicks) {
-        setTimeout(() => setStage('opening'), 300);
+      // After 5 clicks, generate reward and start opening
+      if (newClicks >= maxClicks && !hasGeneratedReward.current) {
+        hasGeneratedReward.current = true;
+        // Generate reward immediately with current stars
+        const finalStars = Math.max(1, starsRef.current);
+        const generatedReward = onGenerateReward(finalStars);
+        setReward(generatedReward);
+        
+        // Transition to opening stage
+        setTimeout(() => setStage('opening'), 100);
       }
       
       return newClicks;
     });
-  }, [stage, maxClicks]);
+  }, [stage, maxClicks, onGenerateReward]);
 
-  // Generate reward when opening stage starts
+  // Transition from opening to open after animation
   useEffect(() => {
-    if (stage === 'opening' && !reward) {
-      const generatedReward = onGenerateReward(stars);
-      setReward(generatedReward);
+    if (stage === 'opening') {
       const timer = setTimeout(() => setStage('open'), 1500);
       return () => clearTimeout(timer);
     }
-  }, [stage, reward, stars, onGenerateReward]);
+  }, [stage]);
 
   useEffect(() => {
     if (stage === 'open' && reward && revealedCards < reward.cards.length) {
