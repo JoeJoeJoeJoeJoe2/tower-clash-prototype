@@ -194,11 +194,11 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
         />
       </div>
 
-      {/* Controls - compact bar at very bottom */}
-      <div className="w-full max-w-md px-1 shrink-0">
+      {/* Controls - ultra compact bar at very bottom */}
+      <div className="w-full max-w-md shrink-0">
         <div 
-          className="bg-card/90 backdrop-blur-sm border-t border-border/50 px-2 py-1.5 flex flex-col items-center gap-1"
-          style={{ paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}
+          className="bg-card/80 backdrop-blur-sm border-t border-border/30 px-1 py-1 flex flex-col items-center gap-0.5"
+          style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
         >
           {/* Cards */}
           <Hand
@@ -209,7 +209,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
             nextCard={gameState.playerDeck[0]}
           />
           
-          {/* Elixir bar - more compact */}
+          {/* Elixir bar - ultra compact */}
           <ElixirBar 
             elixir={gameState.playerElixir} 
             isSuddenDeath={gameState.isSuddenDeath}
@@ -217,7 +217,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
 
           {gameState.selectedCardIndex !== null && (
             <p className={cn(
-              "text-[10px]",
+              "text-[9px]",
               gameState.playerElixir < (gameState.playerHand[gameState.selectedCardIndex]?.elixirCost || 0) 
                 ? "text-destructive" 
                 : hasBonusZones 

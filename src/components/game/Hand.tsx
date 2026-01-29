@@ -12,16 +12,16 @@ interface HandProps {
 
 export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard }: HandProps) {
   return (
-    <div className="flex gap-2 justify-center items-end">
+    <div className="flex gap-1 justify-center items-end">
       {/* Next card preview */}
       {nextCard && (
-        <div className="flex flex-col items-center mr-1">
-          <span className="text-[8px] text-muted-foreground mb-0.5">NEXT</span>
+        <div className="flex flex-col items-center mr-0.5">
+          <span className="text-[6px] text-muted-foreground mb-0.5">NEXT</span>
           <div className={cn(
-            "w-10 h-12 rounded border border-border/50 bg-card/50 flex items-center justify-center",
+            "w-7 h-9 rounded border border-border/50 bg-card/50 flex items-center justify-center",
             "opacity-70 scale-90"
           )}>
-            <span className="text-lg">{nextCard.emoji}</span>
+            <span className="text-sm">{nextCard.emoji}</span>
           </div>
         </div>
       )}
@@ -37,7 +37,7 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard }: H
               isSelected={selectedIndex === index}
               canAfford={elixir >= card.elixirCost}
               onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
-              size="medium"
+              size="small"
             />
           </div>
         );
