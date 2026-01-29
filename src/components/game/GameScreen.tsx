@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
-import { useBattleRequests } from '@/hooks/useBattleRequests';
+import { useBattleRequests, BattleRequest } from '@/hooks/useBattleRequests';
+import { useMultiplayerBattle } from '@/hooks/useMultiplayerBattle';
 import { getCardLevel } from '@/lib/cardLevels';
 import { HomeNavigator } from './HomeNavigator';
 import { LoadingScreen } from './LoadingScreen';
@@ -40,6 +41,13 @@ export function GameScreen() {
   const [showChestModal, setShowChestModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isFriendlyBattle, setIsFriendlyBattle] = useState(false);
+  const [activeBattleId, setActiveBattleId] = useState<string | null>(null);
+  const [friendlyBattleData, setFriendlyBattleData] = useState<{
+    opponentName: string;
+    opponentBannerId: string;
+    opponentLevel: number;
+    isChallenger: boolean;
+  } | null>(null);
   
   // Auth and multiplayer hooks
   const { user, loading: authLoading, signOut } = useAuth();
@@ -86,6 +94,24 @@ export function GameScreen() {
     clearAcceptedBattle
   } = useBattleRequests(user, progress.playerName);
   
+  // Multiplayer battle hook
+  const {
+    battleState,
+    isConnected,
+    pendingOpponentPlacements,
+    createBattle,
+    sendCardPlacement,
+    reportGameEnd,
+    consumePlacement,
+    disconnect
+  } = useMultiplayerBattle(
+    user,
+    activeBattleId,
+    progress.playerName,
+    progress.bannerId,
+    playerLevel
+  );
+  
   const {
     balanceState,
     trackDamage,
@@ -109,6 +135,14 @@ export function GameScreen() {
       console.log(`🏆 Game MVP: ${mvpCard}`);
     }
     
+    // Report multiplayer game end
+    if (isFriendlyBattle && activeBattleId && user) {
+      const winnerId = result === 'win' ? user.id : 
+                       result === 'loss' ? (battleState?.isPlayer1 ? undefined : user.id) : 
+                       null;
+      reportGameEnd(winnerId || null);
+    }
+    
     // For friendly battles, don't record wins/losses
     if (!isFriendlyBattle) {
       if (result === 'win') {
@@ -118,7 +152,11 @@ export function GameScreen() {
       }
     }
     
+    // Cleanup
     setIsFriendlyBattle(false);
+    setActiveBattleId(null);
+    setFriendlyBattleData(null);
+    disconnect();
     setScreen('home');
   };
 
@@ -138,11 +176,68 @@ export function GameScreen() {
     }
   };
 
-  const handleStartFriendlyBattle = () => {
+  // Start friendly battle - create the active battle record
+  const handleStartFriendlyBattle = useCallback(async () => {
+    if (!acceptedBattle || !user) return;
+    
+    const isChallenger = acceptedBattle.from_user_id === user.id;
+    const opponentId = isChallenger ? acceptedBattle.to_user_id : acceptedBattle.from_user_id;
+    const opponentName = isChallenger ? acceptedBattle.to_player_name : acceptedBattle.from_player_name;
+    
+    // Find opponent in online players to get their banner and level
+    const opponent = onlinePlayers.find(p => p.user_id === opponentId);
+    const opponentBannerId = opponent?.banner_id || 'banner-blue';
+    const opponentLevel = opponent?.level || 1;
+    
+    // Store the battle data for matchmaking screen
+    setFriendlyBattleData({
+      opponentName,
+      opponentBannerId,
+      opponentLevel,
+      isChallenger
+    });
+    
+    // Only the challenger creates the battle
+    if (isChallenger) {
+      const newBattleId = await createBattle(
+        opponentId,
+        opponentName,
+        opponentBannerId,
+        opponentLevel,
+        true
+      );
+      
+      if (newBattleId) {
+        setActiveBattleId(newBattleId);
+      }
+    } else {
+      // Non-challenger waits for battle to be created and fetches it
+      // Poll for the battle to be created
+      const pollForBattle = async () => {
+        const { data } = await (await import('@/integrations/supabase/client')).supabase
+          .from('active_battles')
+          .select('id')
+          .eq('player1_id', opponentId)
+          .eq('player2_id', user.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (data) {
+          setActiveBattleId(data.id);
+        } else {
+          // Retry after a short delay
+          setTimeout(pollForBattle, 500);
+        }
+      };
+      pollForBattle();
+    }
+    
     setIsFriendlyBattle(true);
     clearAcceptedBattle();
     setScreen('loading');
-  };
+  }, [acceptedBattle, user, onlinePlayers, createBattle, clearAcceptedBattle]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -202,6 +297,7 @@ export function GameScreen() {
           progress={progress}
           onReady={() => setScreen('battle')}
           isFriendlyBattle={isFriendlyBattle}
+          friendlyBattleData={friendlyBattleData}
         />
       )}
 
@@ -215,10 +311,22 @@ export function GameScreen() {
           playerLevel={playerLevel}
           trophies={trophies}
           onGameEnd={handleGameEnd}
-          onBack={() => setScreen('home')}
+          onBack={() => {
+            setIsFriendlyBattle(false);
+            setActiveBattleId(null);
+            setFriendlyBattleData(null);
+            disconnect();
+            setScreen('home');
+          }}
           onTrackDamage={trackDamage}
           getBalancedCardStats={getBalancedCardStats}
           isFriendlyBattle={isFriendlyBattle}
+          // Multiplayer props
+          isMultiplayer={isFriendlyBattle && !!activeBattleId}
+          battleState={battleState}
+          pendingOpponentPlacements={pendingOpponentPlacements}
+          onSendCardPlacement={sendCardPlacement}
+          onConsumePlacement={consumePlacement}
         />
       )}
 

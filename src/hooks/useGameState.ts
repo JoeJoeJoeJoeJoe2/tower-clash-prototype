@@ -334,7 +334,8 @@ export function useGameState(
   playerCardLevels: Record<string, number>,
   towerLevels: { princess: number; king: number } = { princess: 1, king: 1 },
   onTrackDamage?: (cardId: string, damage: number) => void,
-  getBalancedCardStats?: (cardId: string) => CardDefinition | null
+  getBalancedCardStats?: (cardId: string) => CardDefinition | null,
+  isMultiplayer: boolean = false
 ) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -356,6 +357,7 @@ export function useGameState(
   const damageIdCounter = useRef(0);
   const crownIdCounter = useRef(0);
   const aiLastPlayTime = useRef(0);
+  const isMultiplayerRef = useRef(isMultiplayer);
   const trackDamageRef = useRef(onTrackDamage);
   const getBalancedStatsRef = useRef(getBalancedCardStats);
   
@@ -363,7 +365,8 @@ export function useGameState(
   useEffect(() => {
     trackDamageRef.current = onTrackDamage;
     getBalancedStatsRef.current = getBalancedCardStats;
-  }, [onTrackDamage, getBalancedCardStats]);
+    isMultiplayerRef.current = isMultiplayer;
+  }, [onTrackDamage, getBalancedCardStats, isMultiplayer]);
 
   const addDamageNumber = useCallback((position: Position, damage: number, isCritical = false) => {
     const num: DamageNumber = {
@@ -567,6 +570,51 @@ export function useGameState(
     });
   }, [spawnUnit, spawnBuilding, castSpell, addSpawnEffect]);
 
+  // Play a card as the enemy (for multiplayer - receiving opponent's card placement)
+  const playEnemyCard = useCallback((cardId: string, position: Position) => {
+    setGameState(prev => {
+      const card = getCardById(cardId);
+      if (!card) return prev;
+
+      // Mirror the position for the enemy (their bottom is our top)
+      const mirroredPosition = {
+        x: ARENA_WIDTH - position.x,
+        y: ARENA_HEIGHT - position.y
+      };
+
+      addSpawnEffect(mirroredPosition, 'enemy', card.emoji);
+
+      const newState = { ...prev };
+
+      // Handle different card types
+      if (card.type === 'spell') {
+        const newSpell = castSpell(card, mirroredPosition, 'enemy');
+        newState.activeSpells = [...prev.activeSpells, newSpell];
+      } else if (card.type === 'building') {
+        const newBuilding = spawnBuilding(card, mirroredPosition, 'enemy');
+        newState.enemyBuildings = [...prev.enemyBuildings, newBuilding];
+      } else {
+        // Troop/tank/mini-tank - spawn units
+        const unitCount = card.count || 1;
+        const newUnits: Unit[] = [];
+        for (let i = 0; i < unitCount; i++) {
+          const offset = unitCount > 1 ? {
+            x: (i - (unitCount - 1) / 2) * 15,
+            y: (i % 2) * 10
+          } : { x: 0, y: 0 };
+          const unitPos = { x: mirroredPosition.x + offset.x, y: mirroredPosition.y + offset.y };
+          const unit = spawnUnit(card, unitPos, 'enemy', 1);
+          unit.health = card.health;
+          unit.maxHealth = card.health;
+          newUnits.push(unit);
+        }
+        newState.enemyUnits = [...prev.enemyUnits, ...newUnits];
+      }
+
+      return newState;
+    });
+  }, [spawnUnit, spawnBuilding, castSpell, addSpawnEffect]);
+
   const selectCard = useCallback((index: number | null) => {
     setGameState(prev => ({
       ...prev,
@@ -740,27 +788,30 @@ export function useGameState(
         state.enemyPlacementZones = updatePlacementZonesForEnemy();
 
         // AI decision making with adjusted timing for sudden death
-        const aiDecision = makeAIDecision(state, aiLastPlayTime.current);
-        if (aiDecision.shouldPlay && aiDecision.card && aiDecision.position !== undefined && aiDecision.cardIndex !== undefined) {
-          // Check AI cooldown
-          if (state.enemyCardCooldowns[aiDecision.cardIndex] <= 0) {
-            // Validate AI placement against their zones
-            if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
-              // Enemy gets random level 1-5 for variety
-              const enemyLevel = Math.floor(Math.random() * 5) + 1;
-              const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy', enemyLevel);
-              addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
-              state.enemyUnits = [...state.enemyUnits, newUnit];
-              state.enemyElixir -= aiDecision.card.elixirCost;
-              aiLastPlayTime.current = performance.now();
+        // Only run AI in single-player mode
+        if (!isMultiplayerRef.current) {
+          const aiDecision = makeAIDecision(state, aiLastPlayTime.current);
+          if (aiDecision.shouldPlay && aiDecision.card && aiDecision.position !== undefined && aiDecision.cardIndex !== undefined) {
+            // Check AI cooldown
+            if (state.enemyCardCooldowns[aiDecision.cardIndex] <= 0) {
+              // Validate AI placement against their zones
+              if (isPositionInZones(aiDecision.position, state.enemyPlacementZones)) {
+                // Enemy gets random level 1-5 for variety
+                const enemyLevel = Math.floor(Math.random() * 5) + 1;
+                const newUnit = spawnUnit(aiDecision.card, aiDecision.position, 'enemy', enemyLevel);
+                addSpawnEffect(aiDecision.position, 'enemy', aiDecision.card.emoji);
+                state.enemyUnits = [...state.enemyUnits, newUnit];
+                state.enemyElixir -= aiDecision.card.elixirCost;
+                aiLastPlayTime.current = performance.now();
 
-              const newHand = [...state.enemyHand];
-              const nextCard = state.enemyDeck[0];
-              if (nextCard) {
-                newHand[aiDecision.cardIndex] = nextCard;
-                state.enemyHand = newHand;
-                state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
-                state.enemyCardCooldowns[aiDecision.cardIndex] = nextCard.deployCooldown;
+                const newHand = [...state.enemyHand];
+                const nextCard = state.enemyDeck[0];
+                if (nextCard) {
+                  newHand[aiDecision.cardIndex] = nextCard;
+                  state.enemyHand = newHand;
+                  state.enemyDeck = [...state.enemyDeck.slice(1), aiDecision.card];
+                  state.enemyCardCooldowns[aiDecision.cardIndex] = nextCard.deployCooldown;
+                }
               }
             }
           }
@@ -1862,6 +1913,7 @@ export function useGameState(
     damageNumbers,
     crownAnimations,
     playCard,
+    playEnemyCard,
     selectCard,
     resetGame,
     ARENA_WIDTH,
