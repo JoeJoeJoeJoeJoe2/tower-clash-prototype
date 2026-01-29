@@ -14,9 +14,10 @@ interface MainMenuProps {
   onOpenChest: () => void;
   onReset: () => void;
   onOpenProfile: () => void;
+  incomingRequestCount?: number;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile, incomingRequestCount = 0 }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const trophies = progress.wins * 30;
   const currentBanner = getBannerById(progress.bannerId);
@@ -179,7 +180,12 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
           <NavButton icon={<ShoppingBag className="w-5 h-5" />} label="Shop" onClick={onShop} />
           <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Cards" onClick={onDeckBuilder} />
           <NavButton icon={<Swords className="w-5 h-5" />} label="Battle" onClick={onBattle} active />
-          <NavButton icon={<Users className="w-5 h-5" />} label="Clan" onClick={onClan} />
+          <NavButton 
+            icon={<Users className="w-5 h-5" />} 
+            label="Clan" 
+            onClick={onClan} 
+            badge={incomingRequestCount > 0 ? incomingRequestCount : undefined}
+          />
         </div>
       </div>
     </div>
@@ -190,17 +196,19 @@ function NavButton({
   icon, 
   label, 
   onClick, 
-  active = false 
+  active = false,
+  badge
 }: { 
   icon: React.ReactNode; 
   label: string; 
   onClick: () => void;
   active?: boolean;
+  badge?: number;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
+      className={`relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
         active 
           ? 'bg-cyan-600/30 text-cyan-400' 
           : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
@@ -208,6 +216,11 @@ function NavButton({
     >
       {icon}
       <span className="text-[9px] font-semibold">{label}</span>
+      {badge && badge > 0 && (
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-bounce">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }

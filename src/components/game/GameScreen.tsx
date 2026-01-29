@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
+import { useAuth } from '@/hooks/useAuth';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
+import { useBattleRequests } from '@/hooks/useBattleRequests';
 import { getCardLevel } from '@/lib/cardLevels';
 import { HomeNavigator } from './HomeNavigator';
 import { LoadingScreen } from './LoadingScreen';
@@ -9,6 +12,8 @@ import { MatchmakingScreen } from './MatchmakingScreen';
 import { GameUI } from './GameUI';
 import { ChestReward as ChestRewardModal } from './ChestReward';
 import { PlayerProfile } from './PlayerProfile';
+import { AuthScreen } from './AuthScreen';
+import { BattleRequestModal } from './BattleRequestModal';
 import { getBannerById } from '@/data/banners';
 
 // Convert cardCopies to cardLevels
@@ -28,12 +33,17 @@ function getTowerLevelsFromCopies(towerCopies: Record<string, number>): { prince
   };
 }
 
-type Screen = 'home' | 'loading' | 'matchmaking' | 'battle';
+type Screen = 'auth' | 'home' | 'loading' | 'matchmaking' | 'battle';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('home');
   const [showChestModal, setShowChestModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [isFriendlyBattle, setIsFriendlyBattle] = useState(false);
+  
+  // Auth and multiplayer hooks
+  const { user, loading: authLoading, signOut } = useAuth();
+  
   const { 
     progress, 
     updateDeck, 
@@ -49,6 +59,30 @@ export function GameScreen() {
     spendGold,
     addCard
   } = useProgression();
+  
+  const playerLevel = Math.max(1, Math.floor(progress.wins / 5) + 1);
+  const trophies = progress.wins * 30;
+  
+  // Online presence - only active when authenticated
+  const { onlinePlayers } = useOnlinePresence(
+    user,
+    progress.playerName,
+    progress.bannerId,
+    trophies,
+    playerLevel
+  );
+  
+  // Battle requests
+  const {
+    incomingRequests,
+    outgoingRequests,
+    acceptedBattle,
+    sendBattleRequest,
+    acceptRequest,
+    declineRequest,
+    cancelRequest,
+    clearAcceptedBattle
+  } = useBattleRequests(user, progress.playerName);
   
   const {
     balanceState,
@@ -73,11 +107,16 @@ export function GameScreen() {
       console.log(`🏆 Game MVP: ${mvpCard}`);
     }
     
-    if (result === 'win') {
-      recordWin();
-    } else if (result === 'loss') {
-      recordLoss();
+    // For friendly battles, don't record wins/losses
+    if (!isFriendlyBattle) {
+      if (result === 'win') {
+        recordWin();
+      } else if (result === 'loss') {
+        recordLoss();
+      }
     }
+    
+    setIsFriendlyBattle(false);
     setScreen('home');
   };
 
@@ -97,8 +136,32 @@ export function GameScreen() {
     }
   };
 
+  const handleStartFriendlyBattle = () => {
+    setIsFriendlyBattle(true);
+    clearAcceptedBattle();
+    setScreen('loading');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  // Show auth screen if user wants to sign in
+  if (screen === 'auth') {
+    return <AuthScreen onSuccess={() => setScreen('home')} />;
+  }
+
   return (
     <>
+      {/* Battle Request Modal */}
+      {acceptedBattle && (
+        <BattleRequestModal
+          battle={acceptedBattle}
+          isChallenger={acceptedBattle.from_user_id === user?.id}
+          onStartBattle={handleStartFriendlyBattle}
+        />
+      )}
+
       {screen === 'home' && (
         <HomeNavigator
           progress={progress}
@@ -112,6 +175,17 @@ export function GameScreen() {
           cardBalanceInfo={cardBalanceInfo}
           onSpendGold={spendGold}
           onAddCard={addCard}
+          // Multiplayer props
+          user={user}
+          onlinePlayers={onlinePlayers}
+          incomingRequests={incomingRequests}
+          outgoingRequests={outgoingRequests}
+          onSendRequest={sendBattleRequest}
+          onAcceptRequest={acceptRequest}
+          onDeclineRequest={declineRequest}
+          onCancelRequest={cancelRequest}
+          onSignOut={handleSignOut}
+          onSignIn={() => setScreen('auth')}
         />
       )}
 
@@ -123,6 +197,7 @@ export function GameScreen() {
         <MatchmakingScreen
           progress={progress}
           onReady={() => setScreen('battle')}
+          isFriendlyBattle={isFriendlyBattle}
         />
       )}
 
@@ -133,11 +208,12 @@ export function GameScreen() {
           towerLevels={getTowerLevelsFromCopies(progress.towerCopies)}
           playerName={progress.playerName}
           playerBannerEmoji={getBannerById(progress.bannerId)?.emoji || '🛡️'}
-          playerLevel={Math.max(1, Math.floor(progress.wins / 5) + 1)}
+          playerLevel={playerLevel}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
           onTrackDamage={trackDamage}
           getBalancedCardStats={getBalancedCardStats}
+          isFriendlyBattle={isFriendlyBattle}
         />
       )}
 

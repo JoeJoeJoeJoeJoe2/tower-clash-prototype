@@ -19,6 +19,7 @@ interface GameUIProps {
   onBack: () => void;
   onTrackDamage?: (cardId: string, damage: number) => void;
   getBalancedCardStats?: (cardId: string) => CardDefinition | null;
+  isFriendlyBattle?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -46,7 +47,8 @@ export function GameUI({
   onGameEnd, 
   onBack, 
   onTrackDamage, 
-  getBalancedCardStats 
+  getBalancedCardStats,
+  isFriendlyBattle = false
 }: GameUIProps) {
   const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
 

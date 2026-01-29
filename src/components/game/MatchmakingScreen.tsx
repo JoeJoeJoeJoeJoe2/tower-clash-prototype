@@ -6,6 +6,7 @@ import { Trophy } from 'lucide-react';
 interface MatchmakingScreenProps {
   progress: PlayerProgress;
   onReady: () => void;
+  isFriendlyBattle?: boolean;
 }
 
 // Random enemy names for variety

@@ -14,13 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      active_battles: {
+        Row: {
+          created_at: string
+          game_state: Json | null
+          id: string
+          player1_banner_id: string
+          player1_id: string
+          player1_level: number
+          player1_name: string
+          player2_banner_id: string
+          player2_id: string
+          player2_level: number
+          player2_name: string
+          status: string
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          game_state?: Json | null
+          id?: string
+          player1_banner_id?: string
+          player1_id: string
+          player1_level?: number
+          player1_name: string
+          player2_banner_id?: string
+          player2_id: string
+          player2_level?: number
+          player2_name: string
+          status?: string
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          game_state?: Json | null
+          id?: string
+          player1_banner_id?: string
+          player1_id?: string
+          player1_level?: number
+          player1_name?: string
+          player2_banner_id?: string
+          player2_id?: string
+          player2_level?: number
+          player2_name?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
+      battle_requests: {
+        Row: {
+          created_at: string
+          expires_at: string
+          from_player_name: string
+          from_user_id: string
+          id: string
+          status: string
+          to_player_name: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          from_player_name: string
+          from_user_id: string
+          id?: string
+          status?: string
+          to_player_name: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          from_player_name?: string
+          from_user_id?: string
+          id?: string
+          status?: string
+          to_player_name?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
+      online_players: {
+        Row: {
+          banner_id: string
+          created_at: string
+          id: string
+          is_online: boolean
+          last_seen: string
+          level: number
+          player_name: string
+          trophies: number
+          user_id: string
+        }
+        Insert: {
+          banner_id?: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          level?: number
+          player_name: string
+          trophies?: number
+          user_id: string
+        }
+        Update: {
+          banner_id?: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          level?: number
+          player_name?: string
+          trophies?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_requests: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
