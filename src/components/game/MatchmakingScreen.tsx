@@ -33,8 +33,8 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
       className={`
         absolute flex flex-col items-center transition-all duration-700 ease-out
         ${isPlayer 
-          ? 'bottom-24 left-4 sm:bottom-28 sm:left-8' 
-          : 'top-24 right-4 sm:top-28 sm:right-8'
+          ? 'bottom-8 left-2 sm:bottom-12 sm:left-4' 
+          : 'top-8 right-2 sm:top-12 sm:right-4'
         }
         ${isVisible 
           ? 'opacity-100 translate-x-0 translate-y-0' 
