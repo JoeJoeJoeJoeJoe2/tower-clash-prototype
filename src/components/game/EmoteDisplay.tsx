@@ -14,56 +14,60 @@ interface EmoteDisplayProps {
 }
 
 export function EmoteDisplay({ messages }: EmoteDisplayProps) {
-  const [visibleMessages, setVisibleMessages] = useState<EmoteMessage[]>([]);
+  const [playerEmote, setPlayerEmote] = useState<EmoteMessage | null>(null);
+  const [enemyEmote, setEnemyEmote] = useState<EmoteMessage | null>(null);
 
   useEffect(() => {
-    // Add new messages
-    const newMessages = messages.filter(
-      m => !visibleMessages.some(vm => vm.id === m.id)
-    );
-    
-    if (newMessages.length > 0) {
-      setVisibleMessages(prev => [...prev, ...newMessages]);
+    // Get the latest message for each side
+    const latestPlayer = messages.filter(m => m.isPlayer).slice(-1)[0];
+    const latestEnemy = messages.filter(m => !m.isPlayer).slice(-1)[0];
+
+    // Update player emote if new
+    if (latestPlayer && (!playerEmote || latestPlayer.id !== playerEmote.id)) {
+      setPlayerEmote(latestPlayer);
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setPlayerEmote(prev => prev?.id === latestPlayer.id ? null : prev);
+      }, 5000);
     }
 
-    // Remove old messages after 3 seconds
-    const timeout = setTimeout(() => {
-      const now = Date.now();
-      setVisibleMessages(prev => 
-        prev.filter(m => now - m.timestamp < 3000)
-      );
-    }, 100);
-
-    return () => clearTimeout(timeout);
+    // Update enemy emote if new
+    if (latestEnemy && (!enemyEmote || latestEnemy.id !== enemyEmote.id)) {
+      setEnemyEmote(latestEnemy);
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setEnemyEmote(prev => prev?.id === latestEnemy.id ? null : prev);
+      }, 5000);
+    }
   }, [messages]);
 
   return (
     <>
-      {/* Player emote (bottom) */}
-      {visibleMessages.filter(m => m.isPlayer).slice(-1).map(message => (
+      {/* Player emote (bottom) - only one at a time */}
+      {playerEmote && (
         <div
-          key={message.id}
+          key={playerEmote.id}
           className={cn(
             "absolute bottom-24 left-1/2 -translate-x-1/2 z-40",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
         >
-          <EmoteBubble content={message.content} isText={message.isText} isPlayer={true} />
+          <EmoteBubble content={playerEmote.content} isText={playerEmote.isText} isPlayer={true} />
         </div>
-      ))}
+      )}
 
-      {/* Enemy emote (top) */}
-      {visibleMessages.filter(m => !m.isPlayer).slice(-1).map(message => (
+      {/* Enemy emote (top) - only one at a time */}
+      {enemyEmote && (
         <div
-          key={message.id}
+          key={enemyEmote.id}
           className={cn(
             "absolute top-12 left-1/2 -translate-x-1/2 z-40",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
         >
-          <EmoteBubble content={message.content} isText={message.isText} isPlayer={false} />
+          <EmoteBubble content={enemyEmote.content} isText={enemyEmote.isText} isPlayer={false} />
         </div>
-      ))}
+      )}
     </>
   );
 }
