@@ -17,6 +17,7 @@ interface CardsPageProps {
   cardBalanceInfo?: CardBalanceInfo[];
   onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
   onSelectTowerTroop?: (troopId: string) => void;
+  onUseWildCards?: (cardId: string, amount: number) => boolean;
 }
 
 type TabType = 'decks' | 'collection';
@@ -29,7 +30,8 @@ export function CardsPage({
   onStartBattle,
   cardBalanceInfo = [],
   onUseWildCard,
-  onSelectTowerTroop
+  onSelectTowerTroop,
+  onUseWildCards
 }: CardsPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('decks');
 
@@ -80,6 +82,8 @@ export function CardsPage({
             selectedTowerTroopId={progress.selectedTowerTroopId}
             unlockedTowerTroopIds={progress.unlockedTowerTroopIds}
             onSelectTowerTroop={onSelectTowerTroop}
+            wildCardCounts={progress.wildCardCounts}
+            onUseWildCards={onUseWildCards}
           />
         ) : (
           <CardCollection

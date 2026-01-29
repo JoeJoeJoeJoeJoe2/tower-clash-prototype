@@ -527,6 +527,36 @@ export function useProgression() {
     return true;
   }, [progress.wins, progress.claimedTrophyRewards]);
 
+  // Use wild cards to add copies to a card
+  const useWildCards = useCallback((cardId: string, amount: number): boolean => {
+    // Get the card to determine its rarity
+    const card = allCards.find(c => c.id === cardId);
+    if (!card) return false;
+    
+    const rarity = card.rarity;
+    const availableWildCards = progress.wildCardCounts[rarity] || 0;
+    
+    // Check if player has enough wild cards
+    if (availableWildCards < amount) return false;
+    
+    // Check if player owns the card
+    if (!progress.ownedCardIds.includes(cardId)) return false;
+    
+    setProgress(prev => ({
+      ...prev,
+      cardCopies: {
+        ...prev.cardCopies,
+        [cardId]: (prev.cardCopies[cardId] || 0) + amount
+      },
+      wildCardCounts: {
+        ...prev.wildCardCounts,
+        [rarity]: (prev.wildCardCounts[rarity] || 0) - amount
+      }
+    }));
+    
+    return true;
+  }, [progress.wildCardCounts, progress.ownedCardIds]);
+
   return {
     progress,
     updateDeck,
@@ -545,6 +575,7 @@ export function useProgression() {
     unlockEvolution,
     selectTowerTroop,
     unlockTowerTroop,
-    claimTrophyReward
+    claimTrophyReward,
+    useWildCards
   };
 }

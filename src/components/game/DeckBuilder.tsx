@@ -3,6 +3,7 @@ import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { TowerTroopSelector } from './TowerTroopSelector';
+import { WildCardUpgradeModal } from './WildCardUpgradeModal';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,9 @@ interface DeckBuilderProps {
   selectedTowerTroopId?: string;
   unlockedTowerTroopIds?: string[];
   onSelectTowerTroop?: (troopId: string) => void;
+  // Wild card props
+  wildCardCounts?: Record<string, number>;
+  onUseWildCards?: (cardId: string, amount: number) => boolean;
 }
 
 export function DeckBuilder({ 
@@ -46,12 +50,15 @@ export function DeckBuilder({
   cardBalanceInfo = [],
   selectedTowerTroopId = 'default',
   unlockedTowerTroopIds = ['default'],
-  onSelectTowerTroop
+  onSelectTowerTroop,
+  wildCardCounts = {},
+  onUseWildCards
 }: DeckBuilderProps) {
   const [editingDeckId, setEditingDeckId] = useState<string>(activeDeckId);
   const currentSlot = deckSlots.find(s => s.id === editingDeckId);
   const [selectedDeck, setSelectedDeck] = useState<string[]>(currentSlot?.cardIds || []);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
+  const [upgradeModalCard, setUpgradeModalCard] = useState<CardDefinition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation for scrolling
@@ -271,6 +278,12 @@ export function DeckBuilder({
                 className="relative cursor-pointer bg-transparent border-none p-0"
                 onMouseEnter={() => setSelectedCard(card)}
                 onMouseLeave={() => setSelectedCard(null)}
+                onClick={() => {
+                  // Single click opens upgrade modal
+                  if (onUseWildCards) {
+                    setUpgradeModalCard(card);
+                  }
+                }}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -313,7 +326,7 @@ export function DeckBuilder({
           })}
         </div>
         <p className="text-xs text-muted-foreground text-center mt-3">
-          {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Double-click to add/remove cards • Use ↑↓ arrows to scroll'}
+          {selectedDeck.length >= 8 ? 'Deck full! Remove a card first.' : 'Click to upgrade • Double-click to add/remove'}
         </p>
       </div>
 
@@ -422,6 +435,18 @@ export function DeckBuilder({
           <Info className="w-4 h-4" />
           Select {8 - selectedDeck.length} more card{8 - selectedDeck.length !== 1 ? 's' : ''}
         </p>
+      )}
+
+      {/* Wild Card Upgrade Modal */}
+      {onUseWildCards && (
+        <WildCardUpgradeModal
+          card={upgradeModalCard}
+          isOpen={!!upgradeModalCard}
+          onClose={() => setUpgradeModalCard(null)}
+          cardCopies={cardCopies}
+          wildCardCounts={wildCardCounts}
+          onUseWildCards={onUseWildCards}
+        />
       )}
     </div>
   );
