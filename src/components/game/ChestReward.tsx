@@ -186,6 +186,30 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
                 <span className="text-lg">✨</span>
               </div>
             )}
+            {reward.wildCards && reward.wildCards.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                {reward.wildCards.map((wc, idx) => {
+                  const rarityColors: Record<string, string> = {
+                    common: 'from-slate-400/20 to-slate-500/20 text-slate-300',
+                    rare: 'from-orange-400/20 to-orange-500/20 text-orange-300',
+                    epic: 'from-purple-400/20 to-purple-500/20 text-purple-300',
+                    legendary: 'from-amber-400/20 to-amber-500/20 text-amber-300',
+                    champion: 'from-pink-400/20 to-rose-500/20 text-pink-300'
+                  };
+                  return (
+                    <div key={idx} className={cn(
+                      "flex items-center gap-2 bg-gradient-to-r rounded-full px-4 py-1",
+                      rarityColors[wc.rarity]
+                    )}>
+                      <span className="text-lg">🃏</span>
+                      <span className="font-bold capitalize">
+                        +{wc.count} {wc.rarity} Wild Card{wc.count > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

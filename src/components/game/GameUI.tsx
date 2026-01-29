@@ -3,6 +3,7 @@ import { CardDefinition } from '@/types/game';
 import { Arena } from './Arena';
 import { Hand } from './Hand';
 import { ElixirBar } from './ElixirBar';
+import { BattleResults } from './BattleResults';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,9 @@ interface GameUIProps {
   playerDeck: string[];
   cardLevels: Record<string, number>; // Card ID -> level
   towerLevels: { princess: number; king: number }; // Tower levels
+  playerName: string;
+  playerBannerEmoji: string;
+  playerLevel: number;
   onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
   onBack: () => void;
   onTrackDamage?: (cardId: string, damage: number) => void;
@@ -23,7 +27,27 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function GameUI({ playerDeck, cardLevels, towerLevels, onGameEnd, onBack, onTrackDamage, getBalancedCardStats }: GameUIProps) {
+// Generate random enemy name
+function generateEnemyName(): string {
+  const prefixes = ['Dark', 'Shadow', 'Storm', 'Fire', 'Ice', 'Thunder', 'Swift', 'Iron', 'Golden', 'Silver'];
+  const suffixes = ['Knight', 'Warrior', 'Mage', 'Hunter', 'Slayer', 'Master', 'King', 'Lord', 'Crusher', 'Striker'];
+  return `${prefixes[Math.floor(Math.random() * prefixes.length)]}${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+}
+
+const enemyEmojis = ['⚔️', '🛡️', '🗡️', '🏹', '🔥', '❄️', '⚡', '💀', '👹', '🐲'];
+
+export function GameUI({ 
+  playerDeck, 
+  cardLevels, 
+  towerLevels, 
+  playerName,
+  playerBannerEmoji,
+  playerLevel,
+  onGameEnd, 
+  onBack, 
+  onTrackDamage, 
+  getBalancedCardStats 
+}: GameUIProps) {
   const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
@@ -39,63 +63,29 @@ export function GameUI({ playerDeck, cardLevels, towerLevels, onGameEnd, onBack,
   const playerCrowns = 3 - gameState.enemyTowers.filter(t => t.health > 0).length;
   const enemyCrowns = 3 - gameState.playerTowers.filter(t => t.health > 0).length;
 
-  // Handle game end
+  // Handle game end with new BattleResults screen
   if (gameState.gameStatus !== 'playing') {
+    const enemyName = generateEnemyName();
+    const enemyEmoji = enemyEmojis[Math.floor(Math.random() * enemyEmojis.length)];
+    const enemyLevel = Math.floor(Math.random() * 5) + 1;
+
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="winner-overlay">
-          <div className="flex flex-col items-center gap-6">
-            <div
-              className={`winner-banner ${
-                gameState.gameStatus === 'player-wins'
-                  ? 'bg-primary text-primary-foreground'
-                  : gameState.gameStatus === 'enemy-wins'
-                  ? 'bg-secondary text-secondary-foreground'
-                  : 'bg-muted text-foreground'
-              }`}
-            >
-              {gameState.gameStatus === 'player-wins' && '🏆 Victory!'}
-              {gameState.gameStatus === 'enemy-wins' && '💀 Defeat'}
-              {gameState.gameStatus === 'draw' && '🤝 Draw'}
-            </div>
-            
-            <div className="flex gap-8 text-center">
-              <div>
-                <span className="text-muted-foreground text-sm">Crowns Won</span>
-                <div className="flex justify-center gap-1 mt-1">
-                  {[0, 1, 2].map(i => (
-                    <span key={i} className={cn("text-2xl", i < playerCrowns ? "opacity-100" : "opacity-30")}>
-                      👑
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground text-sm">Crowns Lost</span>
-                <div className="flex justify-center gap-1 mt-1">
-                  {[0, 1, 2].map(i => (
-                    <span key={i} className={cn("text-2xl", i < enemyCrowns ? "opacity-100" : "opacity-30")}>
-                      👑
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <Button
-              onClick={() => onGameEnd(
-                gameState.gameStatus === 'player-wins' ? 'win' 
-                : gameState.gameStatus === 'enemy-wins' ? 'loss' 
-                : 'draw'
-              )}
-              size="lg"
-              className="text-xl px-8 py-6"
-            >
-              Continue
-            </Button>
-          </div>
-        </div>
-      </div>
+      <BattleResults
+        gameStatus={gameState.gameStatus}
+        playerCrowns={playerCrowns}
+        enemyCrowns={enemyCrowns}
+        playerName={playerName}
+        playerBannerEmoji={playerBannerEmoji}
+        playerLevel={playerLevel}
+        enemyName={enemyName}
+        enemyBannerEmoji={enemyEmoji}
+        enemyLevel={enemyLevel}
+        onContinue={() => onGameEnd(
+          gameState.gameStatus === 'player-wins' ? 'win' 
+          : gameState.gameStatus === 'enemy-wins' ? 'loss' 
+          : 'draw'
+        )}
+      />
     );
   }
 
