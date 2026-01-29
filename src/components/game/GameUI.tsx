@@ -103,7 +103,7 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
   return (
     <div className="h-[100dvh] bg-background flex overflow-hidden">
       {/* Main game area */}
-      <div className="flex-1 flex flex-col items-center">
+      <div className="flex-1 flex flex-col items-center min-h-0">
         {/* Minimal header - just timer and controls */}
         <div className="flex items-center justify-between w-full max-w-md px-2 py-1 shrink-0">
           <Button variant="ghost" size="sm" onClick={() => onGameEnd('loss')} title="Forfeit match" className="h-7 w-7 p-0">
@@ -144,8 +144,8 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
           </div>
         )}
 
-        {/* Arena - pushed to top */}
-        <div className="flex items-start justify-center">
+        {/* Arena - fills remaining space but respects card bar */}
+        <div className="flex-1 flex items-start justify-center min-h-0 overflow-hidden">
           <Arena
             gameState={gameState}
             projectiles={projectiles}
@@ -158,14 +158,11 @@ export function GameUI({ playerDeck, onGameEnd, onBack, onTrackDamage, getBalanc
           />
         </div>
 
-        {/* Spacer to push cards to bottom */}
-        <div className="flex-1" />
-
-        {/* Controls - at absolute bottom */}
+        {/* Controls - always visible at bottom */}
         <div className="w-full max-w-md shrink-0">
           <div 
-            className="bg-card/80 backdrop-blur-sm border-t border-border/30 px-1 py-1 flex flex-col items-center gap-0.5"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            className="bg-card/80 backdrop-blur-sm border-t border-border/30 px-1 py-1.5 flex flex-col items-center gap-1"
+            style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
           >
             {/* Cards */}
             <Hand
