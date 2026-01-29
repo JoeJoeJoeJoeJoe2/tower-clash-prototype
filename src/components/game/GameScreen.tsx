@@ -26,7 +26,9 @@ export function GameScreen() {
     openChest, 
     updatePlayerName,
     updateBanner,
-    resetProgress 
+    resetProgress,
+    spendGold,
+    addCard
   } = useProgression();
   
   const {
@@ -86,6 +88,8 @@ export function GameScreen() {
           onSetActiveDeck={setActiveDeck}
           onAddDeck={addDeckSlot}
           cardBalanceInfo={cardBalanceInfo}
+          onSpendGold={spendGold}
+          onAddCard={addCard}
         />
       )}
 

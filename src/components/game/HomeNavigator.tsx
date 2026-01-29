@@ -3,11 +3,13 @@ import { PlayerProgress } from '@/types/game';
 import { MainMenu } from './MainMenu';
 import { DeckBuilder, CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
+import { ShopScreen } from './ShopScreen';
+import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
-type HomeScreen = 'deck-builder' | 'battle' | 'clan';
+type HomeScreen = 'shop' | 'deck-builder' | 'battle' | 'clan';
 
-const SCREENS: HomeScreen[] = ['deck-builder', 'battle', 'clan'];
+const SCREENS: HomeScreen[] = ['shop', 'deck-builder', 'battle', 'clan'];
 
 interface HomeNavigatorProps {
   progress: PlayerProgress;
@@ -19,6 +21,8 @@ interface HomeNavigatorProps {
   onSetActiveDeck: (deckId: string) => void;
   onAddDeck: () => void;
   cardBalanceInfo?: CardBalanceInfo[];
+  onSpendGold: (amount: number) => boolean;
+  onAddCard: (cardId: string) => void;
 }
 
 export function HomeNavigator({
@@ -31,9 +35,13 @@ export function HomeNavigator({
   onSetActiveDeck,
   onAddDeck,
   cardBalanceInfo = [],
+  onSpendGold,
+  onAddCard,
 }: HomeNavigatorProps) {
-  const [currentIndex, setCurrentIndex] = useState(1); // Start at battle (center)
+  const [currentIndex, setCurrentIndex] = useState(2); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
+  
+  const { shopState, purchaseItem, getTimeUntilRefresh } = useShop(progress.ownedCardIds);
 
   const navigateTo = useCallback((index: number) => {
     if (isAnimating || index < 0 || index >= SCREENS.length) return;
@@ -62,6 +70,18 @@ export function HomeNavigator({
     }
   };
 
+  const handleShopPurchase = (itemId: string, price: number, cardId: string) => {
+    if (onSpendGold(price)) {
+      purchaseItem(itemId);
+      onAddCard(cardId);
+    }
+  };
+
+  const handleClaimFreebie = (itemId: string, cardId: string) => {
+    purchaseItem(itemId);
+    onAddCard(cardId);
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden relative">
       {/* Sliding container */}
@@ -74,6 +94,19 @@ export function HomeNavigator({
           transform: `translateX(-${currentIndex * (100 / SCREENS.length)}%)`
         }}
       >
+        {/* Shop Screen */}
+        <div className="w-full h-full flex-shrink-0" style={{ width: `${100 / SCREENS.length}%` }}>
+          <ShopScreen
+            shopState={shopState}
+            gold={progress.gold}
+            ownedCardIds={progress.ownedCardIds}
+            onPurchase={handleShopPurchase}
+            onClaimFreebie={handleClaimFreebie}
+            onBack={() => goToScreen('deck-builder')}
+            timeUntilRefresh={getTimeUntilRefresh()}
+          />
+        </div>
+
         {/* Deck Builder Screen */}
         <div className="w-full h-full flex-shrink-0" style={{ width: `${100 / SCREENS.length}%` }}>
           <DeckBuilder
@@ -97,6 +130,7 @@ export function HomeNavigator({
             onDeckBuilder={() => goToScreen('deck-builder')}
             onCollection={() => goToScreen('deck-builder')}
             onClan={() => goToScreen('clan')}
+            onShop={() => goToScreen('shop')}
             onOpenChest={onOpenChest}
             onReset={onReset}
             onOpenProfile={onOpenProfile}

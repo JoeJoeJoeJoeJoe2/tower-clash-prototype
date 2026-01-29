@@ -192,6 +192,22 @@ export interface PlayerProgress {
   playerName: string;
   bannerId: string; // ID of currently equipped banner
   ownedBannerIds: string[]; // Banners unlocked from chests
+  // Currency
+  gold: number;
+}
+
+// Shop item for daily refreshing shop
+export interface ShopItem {
+  id: string;
+  cardId: string;
+  price: number;
+  isFreebie: boolean;
+  isPurchased: boolean;
+}
+
+export interface ShopState {
+  items: ShopItem[];
+  lastRefreshDate: string; // ISO date string for daily refresh
 }
 
 // Card balance tracking for dynamic nerfs
@@ -205,6 +221,7 @@ export interface CardBalanceData {
 export interface ChestReward {
   cards: { cardId: string; isNew: boolean }[];
   bannerId?: string; // Optional banner unlock from chest
+  goldEarned?: number; // Gold earned from chest
 }
 
 // Available banners in the game

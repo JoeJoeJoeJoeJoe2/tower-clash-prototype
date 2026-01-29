@@ -1,6 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Trophy, LayoutGrid, Crown, Users } from 'lucide-react';
+import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getBannerById } from '@/data/banners';
 
@@ -10,12 +10,13 @@ interface MainMenuProps {
   onDeckBuilder: () => void;
   onCollection: () => void;
   onClan: () => void;
+  onShop: () => void;
   onOpenChest: () => void;
   onReset: () => void;
   onOpenProfile: () => void;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onOpenChest, onReset, onOpenProfile }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const trophies = progress.wins * 30;
   const currentBanner = getBannerById(progress.bannerId);

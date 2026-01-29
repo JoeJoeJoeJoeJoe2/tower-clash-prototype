@@ -4,7 +4,7 @@ import { getCardById } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Sparkles, Gift } from 'lucide-react';
+import { Sparkles, Gift, Coins } from 'lucide-react';
 
 interface ChestRewardProps {
   reward: ChestRewardType;
@@ -73,6 +73,12 @@ export function ChestReward({ reward, onClose }: ChestRewardProps) {
         )}>
           <h2 className="game-title text-4xl text-amber-400 mb-2">Victory Chest!</h2>
           <p className="text-amber-200/70 text-sm">You earned {reward.cards.length} cards</p>
+          {reward.goldEarned && reward.goldEarned > 0 && (
+            <div className="flex items-center justify-center gap-2 mt-2 bg-amber-500/20 rounded-full px-4 py-1">
+              <Coins className="w-5 h-5 text-amber-400" />
+              <span className="text-amber-300 font-bold">+{reward.goldEarned} Gold</span>
+            </div>
+          )}
         </div>
 
         {/* Cards */}
