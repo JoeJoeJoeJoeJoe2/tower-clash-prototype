@@ -404,6 +404,16 @@ export function useGameState(
     const scaledHealth = Math.floor(balancedCard.health * levelMultiplier);
     const scaledDamage = Math.floor(balancedCard.damage * levelMultiplier);
     
+    // Initialize champion ability state if applicable
+    const abilityState = balancedCard.championAbility ? {
+      type: balancedCard.championAbility,
+      lastActivationTime: 0,
+      isActive: false,
+      stacks: 0,
+      remainingDuration: 0,
+      hasTriggered: false
+    } : undefined;
+    
     return {
       id: `unit-${unitIdCounter.current++}`,
       cardId: balancedCard.id,
@@ -433,7 +443,9 @@ export function useGameState(
       spawnInterval: balancedCard.spawnInterval,
       spawnCardId: balancedCard.spawnCardId,
       spawnCount: balancedCard.spawnCount,
-      lastSpawnTime: 0
+      lastSpawnTime: 0,
+      // Champion ability state
+      abilityState
     };
   }, [getCardWithBalance]);
 
@@ -775,6 +787,8 @@ export function useGameState(
             if (unit.targetType === 'ground' && u.isFlying) return false;
             if (unit.targetType === 'air' && !u.isFlying) return false;
             if (unit.targetType === 'buildings') return false; // Buildings-only units don't attack units
+            // Cloaked units (Archer Queen) can't be targeted
+            if (u.abilityState?.type === 'cloak' && u.abilityState.isActive) return false;
             return true; // 'both' targets everything
           });
 
@@ -968,6 +982,8 @@ export function useGameState(
             if (unit.targetType === 'ground' && u.isFlying) return false;
             if (unit.targetType === 'air' && !u.isFlying) return false;
             if (unit.targetType === 'buildings') return false;
+            // Cloaked units (Archer Queen) can't be targeted
+            if (u.abilityState?.type === 'cloak' && u.abilityState.isActive) return false;
             return true;
           });
 
@@ -1512,6 +1528,189 @@ export function useGameState(
           });
           return currentProjectiles;
         });
+
+        // ==================== CHAMPION ABILITIES ====================
+        // Process champion unit abilities before removing dead units
+        
+        const processChampionAbilities = (units: Unit[], owner: 'player' | 'enemy', enemyUnits: Unit[]) => {
+          const unitsToAdd: Unit[] = [];
+          const deadEnemies = enemyUnits.filter(u => u.health <= 0);
+          
+          units.forEach(unit => {
+            if (unit.health <= 0 || !unit.abilityState) return;
+            
+            const ability = unit.abilityState;
+            const healthPercent = unit.health / unit.maxHealth;
+            
+            switch (ability.type) {
+              case 'dash-chain': {
+                // Golden Knight: Dash to next enemy when killing an enemy
+                // Check if we just killed someone (we're attacking and there are new dead enemies)
+                if (unit.state === 'attacking' && deadEnemies.length > 0) {
+                  // Find next closest alive enemy
+                  const aliveEnemies = enemyUnits.filter(e => e.health > 0 && e.id !== unit.targetId);
+                  if (aliveEnemies.length > 0) {
+                    let closestEnemy: Unit | null = null;
+                    let closestDist = 200; // Max dash range
+                    
+                    aliveEnemies.forEach(enemy => {
+                      const dist = getDistance(unit.position, enemy.position);
+                      if (dist < closestDist) {
+                        closestDist = dist;
+                        closestEnemy = enemy;
+                      }
+                    });
+                    
+                    if (closestEnemy) {
+                      // Dash to the enemy (instant teleport + damage)
+                      unit.position = { 
+                        x: closestEnemy.position.x + 20, 
+                        y: closestEnemy.position.y 
+                      };
+                      unit.targetId = closestEnemy.id;
+                      // Deal bonus dash damage
+                      const dashDamage = Math.round(unit.damage * 0.5 * DAMAGE_MULTIPLIER);
+                      closestEnemy.health -= dashDamage;
+                      addDamageNumber(closestEnemy.position, dashDamage, true);
+                      addSpawnEffect(unit.position, owner, '⚡');
+                    }
+                  }
+                }
+                break;
+              }
+              
+              case 'cloak': {
+                // Archer Queen: Become invisible when below 70% HP (cooldown: 10s)
+                if (!ability.isActive && healthPercent < 0.7 && now - ability.lastActivationTime > 10000) {
+                  ability.isActive = true;
+                  ability.remainingDuration = 4; // 4 seconds of invisibility
+                  ability.lastActivationTime = now;
+                  // Visual effect
+                  addSpawnEffect(unit.position, owner, '👻');
+                  // Make untargetable by removing from enemy targeting (handled in targeting logic)
+                }
+                
+                // Update cloak duration
+                if (ability.isActive) {
+                  ability.remainingDuration -= delta;
+                  if (ability.remainingDuration <= 0) {
+                    ability.isActive = false;
+                    addSpawnEffect(unit.position, owner, '👑🏹');
+                  }
+                }
+                break;
+              }
+              
+              case 'soul-summon': {
+                // Skeleton King: Gain souls from nearby deaths, summon skeletons
+                // Count nearby dead enemies
+                const SOUL_RANGE = 100;
+                const soulsGained = deadEnemies.filter(e => 
+                  getDistance(unit.position, e.position) <= SOUL_RANGE
+                ).length;
+                
+                ability.stacks += soulsGained;
+                
+                // Summon skeletons when enough souls (4 souls = 4 skeletons)
+                if (ability.stacks >= 4 && now - ability.lastActivationTime > 3000) {
+                  const skeletonCard = getCardById('skeletons');
+                  if (skeletonCard) {
+                    const numToSpawn = Math.min(ability.stacks, 8); // Max 8 at once
+                    for (let i = 0; i < numToSpawn; i++) {
+                      const offsetX = (i % 4 - 1.5) * 15;
+                      const offsetY = Math.floor(i / 4) * 15;
+                      const spawnPos = {
+                        x: unit.position.x + offsetX,
+                        y: unit.position.y + (owner === 'player' ? -25 : 25) + offsetY
+                      };
+                      unitsToAdd.push(spawnUnit(skeletonCard, spawnPos, owner, unit.level));
+                      addSpawnEffect(spawnPos, owner, '💀');
+                    }
+                    ability.stacks -= numToSpawn;
+                    ability.lastActivationTime = now;
+                  }
+                }
+                break;
+              }
+              
+              case 'drill': {
+                // Mighty Miner: Burrow to safety at 30% HP (one-time use)
+                if (!ability.hasTriggered && healthPercent <= 0.3) {
+                  ability.hasTriggered = true;
+                  // Burrow damage to enemies in path
+                  const BURROW_DAMAGE = Math.round(unit.damage * 0.8 * DAMAGE_MULTIPLIER);
+                  enemyUnits.filter(e => e.health > 0 && getDistance(unit.position, e.position) <= 60).forEach(enemy => {
+                    enemy.health -= BURROW_DAMAGE;
+                    addDamageNumber(enemy.position, BURROW_DAMAGE, false);
+                  });
+                  
+                  // Teleport to king tower area
+                  const escapeY = owner === 'player' ? ARENA_HEIGHT - 80 : 80;
+                  unit.position = { x: ARENA_WIDTH / 2, y: escapeY };
+                  unit.targetId = null;
+                  addSpawnEffect(unit.position, owner, '⛏️');
+                }
+                break;
+              }
+              
+              case 'guardian': {
+                // Little Prince: Summon guardian knight at 50% HP (cooldown: 12s)
+                if (!ability.hasTriggered && healthPercent <= 0.5 && now - ability.lastActivationTime > 12000) {
+                  ability.hasTriggered = true;
+                  ability.lastActivationTime = now;
+                  
+                  // Spawn a knight as guardian
+                  const knightCard = getCardById('knight');
+                  if (knightCard) {
+                    const guardianPos = {
+                      x: unit.position.x + 20,
+                      y: unit.position.y + (owner === 'player' ? -15 : 15)
+                    };
+                    const guardian = spawnUnit(knightCard, guardianPos, owner, unit.level);
+                    // Guardian has boosted stats
+                    guardian.health = Math.floor(guardian.health * 1.2);
+                    guardian.maxHealth = guardian.health;
+                    guardian.damage = Math.floor(guardian.damage * 1.2);
+                    unitsToAdd.push(guardian);
+                    addSpawnEffect(guardianPos, owner, '🛡️');
+                  }
+                }
+                break;
+              }
+              
+              case 'reflect': {
+                // Monk: Activate reflect mode periodically (every 8s, lasts 2s)
+                if (!ability.isActive && now - ability.lastActivationTime > 8000) {
+                  ability.isActive = true;
+                  ability.remainingDuration = 2;
+                  ability.lastActivationTime = now;
+                  addSpawnEffect(unit.position, owner, '🧘');
+                }
+                
+                if (ability.isActive) {
+                  ability.remainingDuration -= delta;
+                  if (ability.remainingDuration <= 0) {
+                    ability.isActive = false;
+                  }
+                }
+                break;
+              }
+            }
+          });
+          
+          return unitsToAdd;
+        };
+        
+        // Process abilities for both sides
+        const newPlayerUnits = processChampionAbilities(state.playerUnits, 'player', state.enemyUnits);
+        const newEnemyUnits = processChampionAbilities(state.enemyUnits, 'enemy', state.playerUnits);
+        
+        if (newPlayerUnits.length > 0) {
+          state.playerUnits = [...state.playerUnits, ...newPlayerUnits];
+        }
+        if (newEnemyUnits.length > 0) {
+          state.enemyUnits = [...state.enemyUnits, ...newEnemyUnits];
+        }
 
         // Remove dead units
         state.playerUnits = state.playerUnits.filter(u => u.health > 0);

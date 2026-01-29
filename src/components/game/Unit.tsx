@@ -25,6 +25,11 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
   const cooldownRemaining = unit.deployCooldown ?? 0;
   const isOnCooldown = cooldownRemaining > 0;
   
+  // Champion ability states
+  const isCloaked = unit.abilityState?.type === 'cloak' && unit.abilityState.isActive;
+  const isReflecting = unit.abilityState?.type === 'reflect' && unit.abilityState.isActive;
+  const hasSoulStacks = unit.abilityState?.type === 'soul-summon' && (unit.abilityState.stacks || 0) > 0;
+  
   // Get size-based dimensions
   const size = unit.size || 'medium';
   const dimensions = SIZE_DIMENSIONS[size];
@@ -83,17 +88,23 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
           dimensions.body,
           dimensions.text,
           isPlayer ? 'ring-2 ring-blue-400' : 'ring-2 ring-red-400',
-          isOnCooldown && 'opacity-70'
+          isOnCooldown && 'opacity-70',
+          isCloaked && 'opacity-40',
+          isReflecting && 'ring-4 ring-yellow-400'
         )}
         style={{
           transform: getTransformStyle(),
-          background: `linear-gradient(145deg, ${card.color}dd, ${card.color}99)`,
+          background: isCloaked 
+            ? `linear-gradient(145deg, #ffffff44, #ffffff22)`
+            : `linear-gradient(145deg, ${card.color}dd, ${card.color}99)`,
           boxShadow: isOnCooldown
             ? `0 0 30px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)`
-            : unit.state === 'attacking' 
-              ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
-              : `0 4px 8px rgba(0,0,0,0.4)`,
-          transition: 'box-shadow 0.15s ease, transform 0.1s ease'
+            : isReflecting
+              ? `0 0 25px #fbbf2480, 0 4px 8px rgba(0,0,0,0.4)`
+              : unit.state === 'attacking' 
+                ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
+                : `0 4px 8px rgba(0,0,0,0.4)`,
+          transition: 'box-shadow 0.15s ease, transform 0.1s ease, opacity 0.3s ease'
         }}
       >
         {/* Cooldown overlay */}
@@ -135,6 +146,13 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
           />
         )}
       </div>
+      
+      {/* Soul stacks indicator for Skeleton King */}
+      {hasSoulStacks && (
+        <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-purple-600 border border-purple-400 flex items-center justify-center text-[8px] text-white font-bold">
+          {unit.abilityState?.stacks || 0}
+        </div>
+      )}
       
       {/* Health bar - scales with size */}
       <div className={cn("mt-1", dimensions.health)}>
