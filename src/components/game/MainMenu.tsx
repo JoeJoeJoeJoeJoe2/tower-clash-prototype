@@ -1,6 +1,6 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag } from 'lucide-react';
+import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getBannerById } from '@/data/banners';
 
@@ -24,7 +24,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-3 py-2 flex items-center border-b border-cyan-900/50">
+      <div className="bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-3 py-2 flex items-center justify-between border-b border-cyan-900/50">
         {/* Player Level & Info - Clickable for profile */}
         <button 
           onClick={onOpenProfile}
@@ -50,6 +50,12 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
             </div>
           </div>
         </button>
+        
+        {/* Gold Display */}
+        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-yellow-500 px-3 py-1.5 rounded-lg shadow-md border border-amber-400">
+          <Coins className="w-5 h-5 text-yellow-200" />
+          <span className="text-white font-black text-sm">{progress.gold}</span>
+        </div>
       </div>
 
       {/* Game Title */}
@@ -170,6 +176,7 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
       {/* Bottom Navigation */}
       <div className="bg-[#0a1525] border-t border-cyan-900/40 px-2 py-1.5 safe-area-inset-bottom">
         <div className="flex justify-around max-w-md mx-auto">
+          <NavButton icon={<ShoppingBag className="w-5 h-5" />} label="Shop" onClick={onShop} />
           <NavButton icon={<LayoutGrid className="w-5 h-5" />} label="Cards" onClick={onDeckBuilder} />
           <NavButton icon={<Swords className="w-5 h-5" />} label="Battle" onClick={onBattle} active />
           <NavButton icon={<Users className="w-5 h-5" />} label="Clan" onClick={onClan} />
