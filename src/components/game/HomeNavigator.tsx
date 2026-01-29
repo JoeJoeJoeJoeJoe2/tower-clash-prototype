@@ -30,6 +30,7 @@ interface HomeNavigatorProps {
   onAddCard: (cardId: string) => void;
   onSelectTowerTroop?: (troopId: string) => void;
   onClaimTrophyReward?: (trophyMilestone: number) => boolean;
+  onUseWildCards?: (cardId: string, amount: number) => boolean;
   // Multiplayer props
   user: User | null;
   onlinePlayers: OnlinePlayer[];
@@ -57,6 +58,7 @@ export function HomeNavigator({
   onAddCard,
   onSelectTowerTroop,
   onClaimTrophyReward,
+  onUseWildCards,
   // Multiplayer props
   user,
   onlinePlayers,
@@ -151,6 +153,7 @@ export function HomeNavigator({
             onStartBattle={onBattle}
             cardBalanceInfo={cardBalanceInfo}
             onSelectTowerTroop={onSelectTowerTroop}
+            onUseWildCards={onUseWildCards}
           />
         </div>
 

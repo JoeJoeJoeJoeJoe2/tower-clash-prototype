@@ -67,7 +67,8 @@ export function GameScreen() {
     spendGold,
     addCard,
     selectTowerTroop,
-    claimTrophyReward
+    claimTrophyReward,
+    useWildCards
   } = useProgression();
   
   const playerLevel = Math.max(1, Math.floor(progress.wins / 5) + 1);
@@ -274,6 +275,7 @@ export function GameScreen() {
           onAddCard={addCard}
           onSelectTowerTroop={selectTowerTroop}
           onClaimTrophyReward={claimTrophyReward}
+          onUseWildCards={useWildCards}
           // Multiplayer props
           user={user}
           onlinePlayers={onlinePlayers}
