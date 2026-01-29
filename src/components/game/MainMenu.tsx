@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getBannerById } from '@/data/banners';
+import { getCurrentArena } from '@/data/arenas';
 
 interface MainMenuProps {
   progress: PlayerProgress;
@@ -14,13 +15,15 @@ interface MainMenuProps {
   onOpenChest: () => void;
   onReset: () => void;
   onOpenProfile: () => void;
+  onOpenTrophyRoad: () => void;
   incomingRequestCount?: number;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile, incomingRequestCount = 0 }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile, onOpenTrophyRoad, incomingRequestCount = 0 }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const trophies = progress.wins * 30;
   const currentBanner = getBannerById(progress.bannerId);
+  const currentArena = getCurrentArena(trophies);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
@@ -89,16 +92,22 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
         </h1>
       </div>
 
-      {/* Arena Display Area */}
+      {/* Arena Display Area - Clickable to open Trophy Road */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
-        {/* Arena Background */}
-        <div className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border-4 border-emerald-700/50 shadow-2xl">
-          {/* Arena grass field */}
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-600">
+        {/* Arena Background - Clickable */}
+        <button 
+          onClick={onOpenTrophyRoad}
+          className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border-4 border-amber-500/50 shadow-2xl transition-all hover:scale-[1.02] hover:border-amber-400 active:scale-[0.98] group"
+        >
+          {/* Arena themed background */}
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-b",
+            currentArena.bgGradient
+          )}>
             {/* Grid lines for arena feel */}
             <div className="absolute inset-0 opacity-20">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="absolute w-full h-px bg-emerald-900" style={{ top: `${(i + 1) * 16}%` }} />
+                <div key={i} className="absolute w-full h-px bg-black/30" style={{ top: `${(i + 1) * 16}%` }} />
               ))}
             </div>
             
@@ -108,6 +117,11 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
             {/* Bridges */}
             <div className="absolute top-1/2 -translate-y-1/2 left-[15%] w-8 h-5 bg-amber-700 rounded" />
             <div className="absolute top-1/2 -translate-y-1/2 right-[15%] w-8 h-5 bg-amber-700 rounded" />
+          </div>
+
+          {/* Arena emoji in center */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-7xl opacity-30 group-hover:opacity-50 transition-opacity">{currentArena.emoji}</span>
           </div>
 
           {/* Towers */}
@@ -123,15 +137,23 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
           <div className="absolute bottom-8 left-4 w-7 h-7 rounded bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400" />
           <div className="absolute bottom-8 right-4 w-7 h-7 rounded bg-gradient-to-b from-blue-500 to-blue-700 border-2 border-blue-400" />
 
-          {/* Decorative trees */}
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-3xl">🌲</div>
-          <div className="absolute top-16 left-2 text-xl">🌳</div>
-          <div className="absolute top-16 right-2 text-xl">🌳</div>
-        </div>
+          {/* Tap indicator */}
+          <div className="absolute bottom-2 right-2 bg-black/40 px-2 py-0.5 rounded text-[10px] text-white/70">
+            Tap for Trophy Road
+          </div>
+        </button>
 
         {/* Arena Name Badge */}
-        <div className="mt-3 bg-gradient-to-r from-blue-900/80 to-cyan-900/80 px-4 py-1 rounded-full border border-cyan-500/40">
-          <span className="text-cyan-300 font-semibold text-sm">Arena 1</span>
+        <div 
+          className={cn(
+            "mt-3 px-4 py-1 rounded-full border border-amber-500/40",
+            `bg-gradient-to-r ${currentArena.bgGradient}`
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{currentArena.emoji}</span>
+            <span className="text-white font-semibold text-sm">{currentArena.name}</span>
+          </div>
         </div>
       </div>
 

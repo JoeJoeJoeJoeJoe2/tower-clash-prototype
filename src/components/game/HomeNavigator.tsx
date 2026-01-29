@@ -8,6 +8,7 @@ import { CardsPage } from './CardsPage';
 import { CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
 import { ShopScreen } from './ShopScreen';
+import { TrophyRoad } from './TrophyRoad';
 import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
@@ -66,8 +67,11 @@ export function HomeNavigator({
 }: HomeNavigatorProps) {
   const [currentIndex, setCurrentIndex] = useState(2); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showTrophyRoad, setShowTrophyRoad] = useState(false);
   
   const { shopState, purchaseItem, getTimeUntilRefresh } = useShop(progress.ownedCardIds);
+  
+  const trophies = progress.wins * 30;
 
   const navigateTo = useCallback((index: number) => {
     if (isAnimating || index < 0 || index >= SCREENS.length) return;
@@ -157,6 +161,7 @@ export function HomeNavigator({
             onOpenChest={onOpenChest}
             onReset={onReset}
             onOpenProfile={onOpenProfile}
+            onOpenTrophyRoad={() => setShowTrophyRoad(true)}
             incomingRequestCount={incomingRequests.length}
           />
         </div>
@@ -165,7 +170,7 @@ export function HomeNavigator({
         <div className="w-full h-full flex-shrink-0" style={{ width: `${100 / SCREENS.length}%` }}>
           <ClanScreen
             playerName={progress.playerName}
-            trophies={progress.wins * 30}
+            trophies={trophies}
             onBack={() => goToScreen('battle')}
             user={user}
             onlinePlayers={onlinePlayers}
@@ -180,6 +185,15 @@ export function HomeNavigator({
         </div>
       </div>
 
+      {/* Trophy Road Overlay */}
+      {showTrophyRoad && (
+        <div className="absolute inset-0 z-50">
+          <TrophyRoad
+            trophies={trophies}
+            onClose={() => setShowTrophyRoad(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
