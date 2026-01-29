@@ -56,7 +56,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
       health: 450,
       maxHealth: 450,
-      attackDamage: 25,
+      attackDamage: 50, // Cannonball deals much more damage than arrows
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
@@ -96,7 +96,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       position: { x: ARENA_WIDTH / 2, y: 50 },
       health: 450,
       maxHealth: 450,
-      attackDamage: 25,
+      attackDamage: 50, // Cannonball deals much more damage than arrows
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
@@ -1276,9 +1276,19 @@ export function useGameState(
           if (tower.type === 'king' && !tower.isActivated) return;
           
           if (now - tower.lastAttackTime > tower.attackCooldown) {
-            const enemies = state.enemyUnits.filter(u => 
-              u.health > 0 && getDistance(tower.position, u.position) <= tower.attackRange
-            );
+            const enemies = state.enemyUnits.filter(u => {
+              if (u.health <= 0) return false;
+              if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+              
+              // Princess towers cannot fire at units on/past the bridge (enemy's side)
+              if (tower.type === 'princess') {
+                // Check if enemy unit is on the bridge or past it (in enemy territory)
+                const isOnOrPastBridge = u.position.y <= RIVER_Y + RIVER_HALF_WIDTH;
+                if (isOnOrPastBridge) return false;
+              }
+              
+              return true;
+            });
             if (enemies.length > 0) {
               const target = enemies[0];
               tower.lastAttackTime = now;
@@ -1302,9 +1312,19 @@ export function useGameState(
           if (tower.type === 'king' && !tower.isActivated) return;
           
           if (now - tower.lastAttackTime > tower.attackCooldown) {
-            const enemies = state.playerUnits.filter(u => 
-              u.health > 0 && getDistance(tower.position, u.position) <= tower.attackRange
-            );
+            const enemies = state.playerUnits.filter(u => {
+              if (u.health <= 0) return false;
+              if (getDistance(tower.position, u.position) > tower.attackRange) return false;
+              
+              // Princess towers cannot fire at units on/past the bridge (player's side)
+              if (tower.type === 'princess') {
+                // Check if player unit is on the bridge or past it (in player territory)
+                const isOnOrPastBridge = u.position.y >= RIVER_Y - RIVER_HALF_WIDTH;
+                if (isOnOrPastBridge) return false;
+              }
+              
+              return true;
+            });
             if (enemies.length > 0) {
               const target = enemies[0];
               tower.lastAttackTime = now;

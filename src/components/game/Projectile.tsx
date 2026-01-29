@@ -27,40 +27,61 @@ export const ProjectileComponent = memo(function ProjectileComponent({ projectil
       }}
     >
       {type === 'arrow' ? (
-        <div className={cn(
-          'w-6 h-1 rounded-full relative',
-          owner === 'player' ? 'bg-amber-400' : 'bg-blue-400'
-        )}>
-          {/* Arrow head */}
+        // Arrow projectile - thin, pointy, with fletching
+        <div className="relative">
+          {/* Arrow shaft */}
           <div className={cn(
-            'absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0',
-            'border-l-[6px] border-y-[3px] border-y-transparent',
-            owner === 'player' ? 'border-l-amber-300' : 'border-l-blue-300'
+            'w-8 h-0.5 rounded-full',
+            owner === 'player' ? 'bg-amber-700' : 'bg-gray-600'
           )} />
-          {/* Trail */}
+          {/* Arrow head (triangle) */}
+          <div 
+            className="absolute right-0 top-1/2 -translate-y-1/2"
+            style={{
+              width: 0,
+              height: 0,
+              borderTop: '4px solid transparent',
+              borderBottom: '4px solid transparent',
+              borderLeft: owner === 'player' ? '8px solid #92400e' : '8px solid #374151',
+            }}
+          />
+          {/* Fletching (feathers at back) */}
           <div className={cn(
-            'absolute left-0 top-1/2 -translate-y-1/2 w-3 h-0.5 -ml-2 opacity-50',
-            owner === 'player' ? 'bg-amber-300' : 'bg-blue-300'
-          )} />
+            'absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 -ml-1',
+            owner === 'player' ? 'bg-red-500' : 'bg-blue-500'
+          )} 
+          style={{
+            clipPath: 'polygon(100% 50%, 0 0, 0 100%)'
+          }}
+          />
         </div>
       ) : (
+        // Cannonball projectile - large, heavy, with smoke trail
         <div className="relative">
           <div className={cn(
-            'w-4 h-4 rounded-full animate-pulse',
-            owner === 'player' ? 'bg-orange-500' : 'bg-purple-500'
+            'w-5 h-5 rounded-full border-2',
+            owner === 'player' ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-700'
           )} 
           style={{
             boxShadow: owner === 'player' 
-              ? '0 0 12px #f97316, 0 0 24px #ea580c' 
-              : '0 0 12px #a855f7, 0 0 24px #7c3aed'
+              ? '0 0 8px #1f2937, inset 2px -2px 4px rgba(255,255,255,0.2)' 
+              : '0 0 8px #111827, inset 2px -2px 4px rgba(255,255,255,0.2)'
           }}
           />
-          {/* Fire trail */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full opacity-30"
+          {/* Smoke trail */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -ml-4"
             style={{
-              background: owner === 'player' 
-                ? 'radial-gradient(circle, #fbbf24, transparent)' 
-                : 'radial-gradient(circle, #c084fc, transparent)'
+              width: 16,
+              height: 8,
+              background: 'radial-gradient(ellipse at right, rgba(156,163,175,0.6), transparent)',
+              filter: 'blur(2px)'
+            }}
+          />
+          {/* Fire glow at front */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, #f97316, #ea580c, transparent)',
+              filter: 'blur(1px)'
             }}
           />
         </div>
