@@ -3,6 +3,7 @@ import { PlayerProgress, ChestReward, DeckSlot } from '@/types/game';
 import { allCards, starterCardIds } from '@/data/cards';
 import { starterBannerIds, getRandomBanner } from '@/data/banners';
 import { getCardLevel } from '@/lib/cardLevels';
+import { EVOLUTION_SHARDS_REQUIRED, hasEvolution } from '@/data/evolutions';
 
 const STORAGE_KEY = 'clash-game-progress';
 
@@ -34,7 +35,10 @@ const initialProgress: PlayerProgress = {
   ownedBannerIds: [...starterBannerIds],
   gold: 100, // Starting gold
   // Tower levels - start with 1 copy each (level 1)
-  towerCopies: { princess: 1, king: 1 }
+  towerCopies: { princess: 1, king: 1 },
+  // Evolution system
+  evolutionShards: 0,
+  unlockedEvolutions: []
 };
 
 function getTodayDateString(): string {
@@ -102,6 +106,14 @@ export function useProgression() {
         // Migration: add towerCopies if missing
         if (!parsed.towerCopies) {
           parsed.towerCopies = { princess: 1, king: 1 };
+        }
+        
+        // Migration: add evolution system if missing
+        if (parsed.evolutionShards === undefined) {
+          parsed.evolutionShards = 0;
+        }
+        if (!parsed.unlockedEvolutions) {
+          parsed.unlockedEvolutions = [];
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -227,11 +239,16 @@ export function useProgression() {
     if (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0) return null;
     
     const prog = currentProgress as PlayerProgress;
-    const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount };
+    const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount, evolutionShards: 0 };
     const unownedCards = allCards.filter(c => 
       !prog.ownedCardIds.includes(c.id) && 
       c.elixirCost > 0 // Filter out tower troops (0 elixir cost)
     );
+    
+    // EVOLUTION SHARDS: Only from 5-star chests - guaranteed 1-3 shards
+    if (starCount === 5) {
+      rewards.evolutionShards = 1 + Math.floor(Math.random() * 3); // 1-3 shards
+    }
     
     // Base new card chance increases with stars: 30% base + 10% per star
     const newCardChance = 0.3 + (starCount * 0.1);
@@ -335,6 +352,7 @@ export function useProgression() {
       ownedBannerIds: newOwnedBanners,
       towerCopies: newTowerCopies,
       gold: prev.gold + (rewards.goldEarned || 0),
+      evolutionShards: prev.evolutionShards + (rewards.evolutionShards || 0),
       chestsAvailable: prev.chestsAvailable - 1
     }));
 
@@ -385,6 +403,26 @@ export function useProgression() {
     });
   }, []);
 
+  // Unlock evolution for a card (costs 6 shards)
+  const unlockEvolution = useCallback((cardId: string): boolean => {
+    // Check if card has an evolution available
+    if (!hasEvolution(cardId)) return false;
+    
+    // Check if already unlocked
+    if (progress.unlockedEvolutions.includes(cardId)) return false;
+    
+    // Check if player has enough shards
+    if (progress.evolutionShards < EVOLUTION_SHARDS_REQUIRED) return false;
+    
+    setProgress(prev => ({
+      ...prev,
+      evolutionShards: prev.evolutionShards - EVOLUTION_SHARDS_REQUIRED,
+      unlockedEvolutions: [...prev.unlockedEvolutions, cardId]
+    }));
+    
+    return true;
+  }, [progress.evolutionShards, progress.unlockedEvolutions]);
+
   return {
     progress,
     updateDeck,
@@ -399,6 +437,7 @@ export function useProgression() {
     resetProgress,
     addGold,
     spendGold,
-    addCard
+    addCard,
+    unlockEvolution
   };
 }
