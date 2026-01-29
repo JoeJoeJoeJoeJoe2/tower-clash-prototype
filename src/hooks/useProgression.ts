@@ -4,6 +4,13 @@ import { allCards, starterCardIds } from '@/data/cards';
 import { starterBannerIds, getRandomBanner } from '@/data/banners';
 import { getCardLevel } from '@/lib/cardLevels';
 import { EVOLUTION_SHARDS_REQUIRED, hasEvolution } from '@/data/evolutions';
+import { TOWER_TROOPS } from '@/data/towerTroops';
+
+// Extended progress type with tower troop support
+export interface ExtendedPlayerProgress extends PlayerProgress {
+  selectedTowerTroopId: string; // Currently equipped tower troop
+  unlockedTowerTroopIds: string[]; // Tower troops unlocked
+}
 
 const STORAGE_KEY = 'clash-game-progress';
 
@@ -19,7 +26,7 @@ const defaultDeckSlots: DeckSlot[] = [
   { id: 'C', name: 'Deck C', cardIds: [] }
 ];
 
-const initialProgress: PlayerProgress = {
+const initialProgress: ExtendedPlayerProgress = {
   ownedCardIds: [...starterCardIds],
   cardCopies: { ...initialCardCopies },
   currentDeck: starterCardIds.slice(0, 8),
@@ -40,7 +47,10 @@ const initialProgress: PlayerProgress = {
   evolutionShards: 0,
   unlockedEvolutions: [],
   // Wild Cards - start with 0 of each
-  wildCardCounts: { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 }
+  wildCardCounts: { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 },
+  // Tower Troops - default is always available
+  selectedTowerTroopId: 'default',
+  unlockedTowerTroopIds: ['default'],
 };
 
 function getTodayDateString(): string {
@@ -53,7 +63,7 @@ function canClaimFreeChest(lastDate: string | null): boolean {
 }
 
 export function useProgression() {
-  const [progress, setProgress] = useState<PlayerProgress>(() => {
+  const [progress, setProgress] = useState<ExtendedPlayerProgress>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -123,6 +133,14 @@ export function useProgression() {
           parsed.wildCardCounts = { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 };
         }
         
+        // Migration: add tower troop fields if missing
+        if (!parsed.selectedTowerTroopId) {
+          parsed.selectedTowerTroopId = 'default';
+        }
+        if (!parsed.unlockedTowerTroopIds) {
+          parsed.unlockedTowerTroopIds = ['default'];
+        }
+        
         // Ensure currentDeck syncs with active deck slot
         const activeSlot = parsed.deckSlots.find((s: DeckSlot) => s.id === parsed.activeDeckId);
         if (activeSlot && activeSlot.cardIds.length === 8) {
@@ -143,7 +161,7 @@ export function useProgression() {
           parsed.lastFreeChestDate = getTodayDateString();
         }
         
-        return parsed;
+        return parsed as ExtendedPlayerProgress;
       }
     } catch (e) {
       console.error('Failed to load progress:', e);
@@ -462,6 +480,29 @@ export function useProgression() {
     return true;
   }, [progress.evolutionShards, progress.unlockedEvolutions]);
 
+  // Select a tower troop
+  const selectTowerTroop = useCallback((troopId: string) => {
+    // Check if unlocked
+    if (!progress.unlockedTowerTroopIds.includes(troopId)) return false;
+    
+    setProgress(prev => ({
+      ...prev,
+      selectedTowerTroopId: troopId
+    }));
+    return true;
+  }, [progress.unlockedTowerTroopIds]);
+
+  // Unlock a tower troop (called when player wins from chest, etc.)
+  const unlockTowerTroop = useCallback((troopId: string) => {
+    if (progress.unlockedTowerTroopIds.includes(troopId)) return false;
+    
+    setProgress(prev => ({
+      ...prev,
+      unlockedTowerTroopIds: [...prev.unlockedTowerTroopIds, troopId]
+    }));
+    return true;
+  }, [progress.unlockedTowerTroopIds]);
+
   return {
     progress,
     updateDeck,
@@ -477,6 +518,8 @@ export function useProgression() {
     addGold,
     spendGold,
     addCard,
-    unlockEvolution
+    unlockEvolution,
+    selectTowerTroop,
+    unlockTowerTroop
   };
 }

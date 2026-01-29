@@ -6,15 +6,17 @@ import { cn } from '@/lib/utils';
 import { DeckBuilder, CardBalanceInfo } from './DeckBuilder';
 import { CardCollection } from './CardCollection';
 import { WildCardRarity } from '@/data/wildCards';
+import { ExtendedPlayerProgress } from '@/hooks/useProgression';
 
 interface CardsPageProps {
-  progress: PlayerProgress;
+  progress: ExtendedPlayerProgress;
   onSaveDeck: (deckId: string, cardIds: string[]) => void;
   onSetActiveDeck: (deckId: string) => void;
   onAddDeck: () => void;
   onStartBattle: () => void;
   cardBalanceInfo?: CardBalanceInfo[];
   onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
+  onSelectTowerTroop?: (troopId: string) => void;
 }
 
 type TabType = 'decks' | 'collection';
@@ -26,7 +28,8 @@ export function CardsPage({
   onAddDeck,
   onStartBattle,
   cardBalanceInfo = [],
-  onUseWildCard
+  onUseWildCard,
+  onSelectTowerTroop
 }: CardsPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('decks');
 
@@ -74,6 +77,9 @@ export function CardsPage({
             onStartBattle={onStartBattle}
             onBack={() => setActiveTab('collection')}
             cardBalanceInfo={cardBalanceInfo}
+            selectedTowerTroopId={progress.selectedTowerTroopId}
+            unlockedTowerTroopIds={progress.unlockedTowerTroopIds}
+            onSelectTowerTroop={onSelectTowerTroop}
           />
         ) : (
           <CardCollection

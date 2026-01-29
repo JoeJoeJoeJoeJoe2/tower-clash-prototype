@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
+import { TowerTroopSelector } from './TowerTroopSelector';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,10 @@ interface DeckBuilderProps {
   onStartBattle: () => void;
   onBack?: () => void;
   cardBalanceInfo?: CardBalanceInfo[];
+  // Tower troop props
+  selectedTowerTroopId?: string;
+  unlockedTowerTroopIds?: string[];
+  onSelectTowerTroop?: (troopId: string) => void;
 }
 
 export function DeckBuilder({ 
@@ -38,7 +43,10 @@ export function DeckBuilder({
   onAddDeck,
   onStartBattle,
   onBack,
-  cardBalanceInfo = []
+  cardBalanceInfo = [],
+  selectedTowerTroopId = 'default',
+  unlockedTowerTroopIds = ['default'],
+  onSelectTowerTroop
 }: DeckBuilderProps) {
   const [editingDeckId, setEditingDeckId] = useState<string>(activeDeckId);
   const currentSlot = deckSlots.find(s => s.id === editingDeckId);
@@ -235,7 +243,16 @@ export function DeckBuilder({
         </div>
       </div>
 
-      {/* Card Collection - Now fully visible, no internal scroll */}
+      {/* Tower Troop Selector */}
+      {onSelectTowerTroop && (
+        <div className="w-full max-w-md">
+          <TowerTroopSelector
+            selectedTroopId={selectedTowerTroopId}
+            unlockedTroopIds={unlockedTowerTroopIds}
+            onSelect={onSelectTowerTroop}
+          />
+        </div>
+      )}
       <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md">
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-medium">Your Cards ({ownedCards.length})</span>
