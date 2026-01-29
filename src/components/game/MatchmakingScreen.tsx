@@ -52,20 +52,20 @@ function BannerCard({ name, bannerColor, bannerEmoji, trophies, level, isPlayer,
             : 'rotate(90deg) translateX(80px) translateY(-80px)',
       }}
     >
-      {/* Large Banner/Shield Container - Extended length */}
+      {/* Large Banner/Shield Container - Wide rectangle with pointy tip */}
       <div 
-        className="relative w-28 h-72 sm:w-36 sm:h-80 flex flex-col items-center justify-center"
+        className="relative w-20 h-80 sm:w-24 sm:h-96 flex flex-col items-center justify-center"
         style={{
           background: `linear-gradient(180deg, ${bannerColor}dd 0%, ${bannerColor} 30%, ${bannerColor}aa 70%, ${bannerColor}66 100%)`,
-          clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+          clipPath: 'polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%)',
           boxShadow: `0 0 40px ${bannerColor}88, inset 0 0 30px rgba(255,255,255,0.1)`,
         }}
       >
         {/* Inner border effect */}
         <div 
-          className="absolute inset-3 opacity-40 pointer-events-none"
+          className="absolute inset-2 opacity-40 pointer-events-none"
           style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%)',
             background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%)',
           }}
         />
