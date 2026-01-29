@@ -156,6 +156,27 @@ export const allCards: CardDefinition[] = [
   // Medium cost, stronger stats, specialized roles
   
   {
+    id: 'royal-recruits',
+    name: 'Royal Recruits',
+    type: 'mini-tank',
+    elixirCost: 7,
+    emoji: '🛡️',
+    health: 350,
+    damage: 180,
+    attackSpeed: 0.77,
+    moveSpeed: 30,
+    range: 30,
+    hitSpeed: 1.3,
+    description: 'Six recruits with shields form a defensive line',
+    rarity: 'common',
+    color: '#2563eb',
+    deployCooldown: 1.0,
+    isFlying: false,
+    targetType: 'ground',
+    count: 6,
+    size: 'small'
+  },
+  {
     id: 'giant',
     name: 'Giant',
     type: 'tank',
