@@ -147,8 +147,17 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
             style={{ width: `${healthPercent}%` }}
           />
         </div>
-        {/* Health number */}
-        <div className="text-center -mt-0.5">
+        {/* Level and Health number */}
+        <div className="text-center -mt-0.5 flex items-center justify-center gap-0.5">
+          <span 
+            className={cn(
+              "font-bold text-amber-400",
+              dimensions.name
+            )}
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+          >
+            Lv{unit.level}
+          </span>
           <span 
             className={cn(
               "font-bold",

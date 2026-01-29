@@ -111,6 +111,7 @@ export function HomeNavigator({
         <div className="w-full h-full flex-shrink-0" style={{ width: `${100 / SCREENS.length}%` }}>
           <DeckBuilder
             ownedCardIds={progress.ownedCardIds}
+            cardCopies={progress.cardCopies}
             deckSlots={progress.deckSlots}
             activeDeckId={progress.activeDeckId}
             onSaveDeck={onSaveDeck}

@@ -2,8 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { PlayerProgress, ChestReward, DeckSlot } from '@/types/game';
 import { allCards, starterCardIds } from '@/data/cards';
 import { starterBannerIds, getRandomBanner } from '@/data/banners';
+import { getCardLevel } from '@/lib/cardLevels';
 
 const STORAGE_KEY = 'clash-game-progress';
+
+// Initialize card copies with 1 copy for starter cards (to be at level 1)
+const initialCardCopies: Record<string, number> = {};
+starterCardIds.forEach(id => {
+  initialCardCopies[id] = 1;
+});
 
 const defaultDeckSlots: DeckSlot[] = [
   { id: 'A', name: 'Deck A', cardIds: starterCardIds.slice(0, 8) },
@@ -13,6 +20,7 @@ const defaultDeckSlots: DeckSlot[] = [
 
 const initialProgress: PlayerProgress = {
   ownedCardIds: [...starterCardIds],
+  cardCopies: { ...initialCardCopies },
   currentDeck: starterCardIds.slice(0, 8),
   deckSlots: defaultDeckSlots,
   activeDeckId: 'A',
@@ -76,6 +84,17 @@ export function useProgression() {
         // Migration: add gold if missing
         if (parsed.gold === undefined) {
           parsed.gold = 100;
+        }
+        
+        // Migration: add cardCopies if missing
+        if (!parsed.cardCopies) {
+          parsed.cardCopies = { ...initialCardCopies };
+          // Initialize all owned cards with 1 copy
+          mergedOwned.forEach((id: string) => {
+            if (!parsed.cardCopies[id]) {
+              parsed.cardCopies[id] = 1;
+            }
+          });
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -261,11 +280,17 @@ export function useProgression() {
       }
     }
 
-    // Update progress with new cards, banner, and gold
+    // Update progress with new cards, banner, gold, and card copies
     const newOwnedIds = [...prog.ownedCardIds];
+    const newCardCopies = { ...prog.cardCopies };
+    
     rewards.cards.forEach(reward => {
       if (reward.isNew && !newOwnedIds.includes(reward.cardId)) {
         newOwnedIds.push(reward.cardId);
+        newCardCopies[reward.cardId] = 1; // First copy
+      } else {
+        // Add a copy to existing card
+        newCardCopies[reward.cardId] = (newCardCopies[reward.cardId] || 0) + 1;
       }
     });
     
@@ -277,6 +302,7 @@ export function useProgression() {
     setProgress(prev => ({
       ...prev,
       ownedCardIds: newOwnedIds,
+      cardCopies: newCardCopies,
       ownedBannerIds: newOwnedBanners,
       gold: prev.gold + (rewards.goldEarned || 0),
       chestsAvailable: prev.chestsAvailable - 1

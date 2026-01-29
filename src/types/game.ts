@@ -82,6 +82,7 @@ export interface Unit {
   animationFrame: number;
   direction: 'up' | 'down';
   deployCooldown: number; // Remaining deploy cooldown before unit can act
+  level: number; // Card level (1-15)
   
   // Combat properties
   isFlying: boolean;
@@ -187,6 +188,7 @@ export interface DeckSlot {
 
 export interface PlayerProgress {
   ownedCardIds: string[];
+  cardCopies: Record<string, number>; // Track copies of each card for leveling
   currentDeck: string[];
   deckSlots: DeckSlot[];
   activeDeckId: string;

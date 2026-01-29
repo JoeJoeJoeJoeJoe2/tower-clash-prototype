@@ -2,15 +2,18 @@ import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lock } from 'lucide-react';
+import { getCardLevel, getLevelProgress, MAX_LEVEL } from '@/lib/cardLevels';
+import { Progress } from '@/components/ui/progress';
 
 interface CardGalleryProps {
   ownedCardIds: string[];
+  cardCopies: Record<string, number>;
   onBack: () => void;
 }
 
 const rarityOrder = ['common', 'rare', 'epic', 'legendary'] as const;
 
-export function CardGallery({ ownedCardIds, onBack }: CardGalleryProps) {
+export function CardGallery({ ownedCardIds, cardCopies, onBack }: CardGalleryProps) {
   const ownedCount = ownedCardIds.length;
   const totalCount = allCards.length;
 
@@ -47,15 +50,42 @@ export function CardGallery({ ownedCardIds, onBack }: CardGalleryProps) {
             <div className="grid grid-cols-4 gap-2">
               {cards.map((card) => {
                 const isLocked = !ownedCardIds.includes(card.id);
+                const copies = cardCopies[card.id] || 0;
+                const level = getCardLevel(copies);
+                const { current, required, progress } = getLevelProgress(copies);
+                const isMaxLevel = level >= MAX_LEVEL;
+                
                 return (
-                  <div key={card.id} className="relative">
-                    <GameCard card={card} size="small" canAfford={!isLocked} />
-                    {isLocked && (
+                  <div key={card.id} className="relative flex flex-col items-center">
+                    <GameCard 
+                      card={card} 
+                      size="small" 
+                      canAfford={!isLocked} 
+                      level={level}
+                      showLevel={!isLocked}
+                    />
+                    {isLocked ? (
                       <div className="absolute inset-0 rounded-lg bg-background/40 backdrop-blur-[1px] flex items-center justify-center">
                         <div className="flex items-center gap-1 text-xs font-semibold text-foreground bg-card/80 border border-border rounded-full px-2 py-1">
                           <Lock className="h-3 w-3" />
                           Locked
                         </div>
+                      </div>
+                    ) : (
+                      <div className="w-full mt-1">
+                        {isMaxLevel ? (
+                          <div className="text-[8px] text-center text-amber-400 font-semibold">MAX</div>
+                        ) : (
+                          <>
+                            <Progress 
+                              value={progress * 100} 
+                              className="h-1 bg-muted"
+                            />
+                            <div className="text-[7px] text-center text-muted-foreground mt-0.5">
+                              {current}/{required}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

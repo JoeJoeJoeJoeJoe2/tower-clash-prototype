@@ -8,9 +8,10 @@ interface HandProps {
   selectedIndex: number | null;
   onCardSelect: (index: number) => void;
   nextCard?: CardDefinition;
+  cardLevels: Record<string, number>; // Card ID -> level
 }
 
-export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard }: HandProps) {
+export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, cardLevels }: HandProps) {
   return (
     <div className="flex gap-1 justify-center items-end">
       {/* Next card preview */}
@@ -38,6 +39,8 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard }: H
               canAfford={elixir >= card.elixirCost}
               onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
               size="small"
+              level={cardLevels[card.id] || 1}
+              showLevel={true}
             />
           </div>
         );
