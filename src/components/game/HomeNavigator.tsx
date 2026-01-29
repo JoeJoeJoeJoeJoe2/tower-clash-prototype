@@ -29,6 +29,7 @@ interface HomeNavigatorProps {
   onSpendGold: (amount: number) => boolean;
   onAddCard: (cardId: string) => void;
   onSelectTowerTroop?: (troopId: string) => void;
+  onClaimTrophyReward?: (trophyMilestone: number) => boolean;
   // Multiplayer props
   user: User | null;
   onlinePlayers: OnlinePlayer[];
@@ -55,6 +56,7 @@ export function HomeNavigator({
   onSpendGold,
   onAddCard,
   onSelectTowerTroop,
+  onClaimTrophyReward,
   // Multiplayer props
   user,
   onlinePlayers,
@@ -194,6 +196,8 @@ export function HomeNavigator({
           <TrophyRoad
             trophies={trophies}
             onClose={() => setShowTrophyRoad(false)}
+            onClaimReward={onClaimTrophyReward}
+            claimedRewards={progress.claimedTrophyRewards || []}
           />
         </div>
       )}
