@@ -213,6 +213,7 @@ export function GameScreen() {
           playerName={progress.playerName}
           playerBannerEmoji={getBannerById(progress.bannerId)?.emoji || '🛡️'}
           playerLevel={playerLevel}
+          trophies={trophies}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
           onTrackDamage={trackDamage}

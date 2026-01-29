@@ -5,6 +5,7 @@ import { Unit } from './Unit';
 import { ProjectileComponent, SpawnEffectComponent } from './Projectile';
 import { cn } from '@/lib/utils';
 import { getCardById } from '@/data/cards';
+import { Arena as ArenaType } from '@/data/arenas';
 
 interface ArenaProps {
   gameState: GameState;
@@ -15,6 +16,7 @@ interface ArenaProps {
   arenaWidth: number;
   arenaHeight: number;
   onArenaClick: (position: Position) => void;
+  arenaTheme?: ArenaType; // Current arena theme
 }
 
 function DamageNumberComponent({ dmg }: { dmg: DamageNumber }) {
@@ -226,7 +228,8 @@ export function Arena({
   crownAnimations,
   arenaWidth, 
   arenaHeight, 
-  onArenaClick 
+  onArenaClick,
+  arenaTheme
 }: ArenaProps) {
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -234,6 +237,9 @@ export function Arena({
     const y = e.clientY - rect.top;
     onArenaClick({ x, y });
   };
+
+  // Parse arena color for theming
+  const arenaColor = arenaTheme?.color || '#1e3a5f';
 
   return (
     <div
@@ -243,9 +249,26 @@ export function Arena({
           ? "border-orange-500/80 shadow-orange-500/30" 
           : "border-muted"
       )}
-      style={{ width: arenaWidth, height: arenaHeight }}
+      style={{ 
+        width: arenaWidth, 
+        height: arenaHeight,
+        background: `linear-gradient(to bottom, ${arenaColor}dd, ${arenaColor}99, ${arenaColor}dd)`
+      }}
       onClick={handleClick}
     >
+      {/* Arena name badge */}
+      {arenaTheme && (
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+          <div 
+            className="px-2 py-0.5 rounded-full text-[8px] font-bold text-white/80 flex items-center gap-1"
+            style={{ backgroundColor: `${arenaColor}cc` }}
+          >
+            <span>{arenaTheme.emoji}</span>
+            <span className="uppercase tracking-wide">{arenaTheme.name}</span>
+          </div>
+        </div>
+      )}
+      
       {/* Grid pattern for depth */}
       <div 
         className="absolute inset-0 opacity-10"
