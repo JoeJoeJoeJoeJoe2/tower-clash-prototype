@@ -461,14 +461,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 45,
     range: 30,
     hitSpeed: 1.3,
-    description: 'Dashing knight that chains dashes between enemies',
+    description: 'Dashes to next enemy on kill!',
     rarity: 'champion',
     color: '#ffd700',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'medium'
+    size: 'medium',
+    championAbility: 'dash-chain'
   },
   {
     id: 'archer-queen',
@@ -482,14 +483,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 40,
     range: 180,
     hitSpeed: 1.2,
-    description: 'Royal archer who can turn invisible',
+    description: 'Cloaks when damaged below 70% HP!',
     rarity: 'champion',
     color: '#9d4edd',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'both',
     count: 1,
-    size: 'medium'
+    size: 'medium',
+    championAbility: 'cloak'
   },
   {
     id: 'skeleton-king',
@@ -503,14 +505,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 35,
     range: 30,
     hitSpeed: 1.6,
-    description: 'Summons skeletons from fallen enemies',
+    description: 'Summons skeletons from fallen enemies!',
     rarity: 'champion',
     color: '#6b21a8',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'large'
+    size: 'large',
+    championAbility: 'soul-summon'
   },
   {
     id: 'mighty-miner',
@@ -524,14 +527,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 38,
     range: 30,
     hitSpeed: 1.3,
-    description: 'Drills underground to escape or reposition',
+    description: 'Burrows to safety at 30% HP!',
     rarity: 'champion',
     color: '#854d0e',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'medium'
+    size: 'medium',
+    championAbility: 'drill'
   },
   {
     id: 'little-prince',
@@ -545,14 +549,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 42,
     range: 120,
     hitSpeed: 1.1,
-    description: 'Summons his royal guardian when in danger',
+    description: 'Summons guardian at 50% HP!',
     rarity: 'champion',
     color: '#3b82f6',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'both',
     count: 1,
-    size: 'small'
+    size: 'small',
+    championAbility: 'guardian'
   },
   {
     id: 'monk',
@@ -566,14 +571,15 @@ export const allCards: CardDefinition[] = [
     moveSpeed: 35,
     range: 30,
     hitSpeed: 1.8,
-    description: 'Reflects projectiles with his pork ability',
+    description: 'Reflects projectiles periodically!',
     rarity: 'champion',
     color: '#f97316',
     deployCooldown: 1.0,
     isFlying: false,
     targetType: 'ground',
     count: 1,
-    size: 'medium'
+    size: 'medium',
+    championAbility: 'reflect'
   },
   // Special troops that replace Princess Towers
   

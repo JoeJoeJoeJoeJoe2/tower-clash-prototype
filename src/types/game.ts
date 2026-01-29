@@ -64,6 +64,9 @@ export interface CardDefinition {
   spawnInterval?: number; // For spawner buildings - seconds between spawns
   spawnCardId?: string; // Card ID of unit to spawn
   spawnCount?: number; // Number of units to spawn each interval
+  
+  // Champion ability
+  championAbility?: string; // Ability type ID for champions
 }
 
 export interface Unit {
@@ -102,6 +105,16 @@ export interface Unit {
   spawnCardId?: string; // Card ID of unit to spawn
   spawnCount?: number; // Number of units to spawn
   lastSpawnTime: number; // Last spawn timestamp
+  
+  // Champion ability state
+  abilityState?: {
+    type: string;
+    lastActivationTime: number;
+    isActive: boolean;
+    stacks: number; // For soul summon
+    remainingDuration: number;
+    hasTriggered?: boolean; // For one-time triggers like guardian
+  };
 }
 
 export interface StatusEffect {
