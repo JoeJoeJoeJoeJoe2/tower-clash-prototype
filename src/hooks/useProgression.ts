@@ -190,35 +190,70 @@ export function useProgression() {
     }));
   }, []);
 
-  const openChest = useCallback((): ChestReward | null => {
+  const openChest = useCallback((starCount: number = 1): ChestReward | null => {
     if (progress.chestsAvailable <= 0) return null;
 
-    const rewards: ChestReward = { cards: [], goldEarned: 0 };
+    const rewards: ChestReward = { cards: [], goldEarned: 0, stars: starCount };
     const unownedCards = allCards.filter(c => !progress.ownedCardIds.includes(c.id));
     
-    // 20% chance to unlock a new banner
+    // Base new card chance increases with stars: 30% base + 10% per star
+    const newCardChance = 0.3 + (starCount * 0.1);
+    
+    // Banner chance increases with stars: 20% base + 15% per star
+    const bannerChance = 0.2 + (starCount * 0.15);
     const bannerReward = getRandomBanner(progress.ownedBannerIds);
-    if (bannerReward && Math.random() < 0.2) {
+    if (bannerReward && Math.random() < bannerChance) {
       rewards.bannerId = bannerReward.id;
     }
     
-    // Give 50-150 gold from chest
-    rewards.goldEarned = 50 + Math.floor(Math.random() * 101);
+    // Gold: 500-1125 range, stars increase the average
+    // Base range: 500-625, each star adds up to 125 more
+    const baseGold = 500;
+    const maxExtraGold = 625; // 500 + 625 = 1125 max
+    const starBonus = (starCount / 5) * maxExtraGold * 0.6; // Stars guarantee some extra gold
+    const randomGold = Math.floor(Math.random() * (maxExtraGold - starBonus));
+    rewards.goldEarned = Math.floor(baseGold + starBonus + randomGold);
     
-    // Give 2-4 random cards
-    const cardCount = 2 + Math.floor(Math.random() * 3);
+    // Card count: 2-4 base, +1 for 3+ stars, +1 for 5 stars
+    let cardCount = 2 + Math.floor(Math.random() * 3);
+    if (starCount >= 3) cardCount++;
+    if (starCount >= 5) cardCount++;
+    
+    // Filter cards by rarity based on stars
+    const getAvailableCards = (owned: boolean) => {
+      const pool = owned ? allCards.filter(c => progress.ownedCardIds.includes(c.id)) : unownedCards;
+      if (starCount >= 4) {
+        // 4+ stars: higher chance of epic/legendary
+        const rarePool = pool.filter(c => c.rarity === 'epic' || c.rarity === 'legendary');
+        if (rarePool.length > 0 && Math.random() < 0.5) return rarePool;
+      }
+      if (starCount >= 2) {
+        // 2+ stars: higher chance of rare+
+        const rarePool = pool.filter(c => c.rarity !== 'common');
+        if (rarePool.length > 0 && Math.random() < 0.3 + starCount * 0.1) return rarePool;
+      }
+      return pool;
+    };
     
     for (let i = 0; i < cardCount; i++) {
-      // 30% chance to unlock a new card if any available
-      if (unownedCards.length > 0 && Math.random() < 0.3) {
-        const randomIndex = Math.floor(Math.random() * unownedCards.length);
-        const newCard = unownedCards[randomIndex];
+      const availableUnowned = getAvailableCards(false);
+      if (availableUnowned.length > 0 && Math.random() < newCardChance) {
+        const randomIndex = Math.floor(Math.random() * availableUnowned.length);
+        const newCard = availableUnowned[randomIndex];
         rewards.cards.push({ cardId: newCard.id, isNew: true });
-        unownedCards.splice(randomIndex, 1);
+        // Remove from unownedCards to avoid duplicates
+        const unownedIdx = unownedCards.findIndex(c => c.id === newCard.id);
+        if (unownedIdx !== -1) unownedCards.splice(unownedIdx, 1);
       } else {
-        // Give a duplicate of owned card
-        const ownedIndex = Math.floor(Math.random() * progress.ownedCardIds.length);
-        rewards.cards.push({ cardId: progress.ownedCardIds[ownedIndex], isNew: false });
+        // Give a duplicate of owned card (prefer rarer cards with more stars)
+        const availableOwned = getAvailableCards(true);
+        if (availableOwned.length > 0) {
+          const ownedIndex = Math.floor(Math.random() * availableOwned.length);
+          rewards.cards.push({ cardId: availableOwned[ownedIndex].id, isNew: false });
+        } else {
+          const ownedIndex = Math.floor(Math.random() * progress.ownedCardIds.length);
+          rewards.cards.push({ cardId: progress.ownedCardIds[ownedIndex], isNew: false });
+        }
       }
     }
 

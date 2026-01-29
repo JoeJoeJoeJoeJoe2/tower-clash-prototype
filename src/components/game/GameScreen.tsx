@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
@@ -13,7 +13,7 @@ type Screen = 'home' | 'loading' | 'matchmaking' | 'battle';
 
 export function GameScreen() {
   const [screen, setScreen] = useState<Screen>('home');
-  const [chestReward, setChestReward] = useState<ChestReward | null>(null);
+  const [showChestModal, setShowChestModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const { 
     progress, 
@@ -63,11 +63,14 @@ export function GameScreen() {
   };
 
   const handleOpenChest = () => {
-    const reward = openChest();
-    if (reward) {
-      setChestReward(reward);
+    if (progress.chestsAvailable > 0) {
+      setShowChestModal(true);
     }
   };
+
+  const handleGenerateReward = useCallback((stars: number): ChestReward | null => {
+    return openChest(stars);
+  }, [openChest]);
 
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
@@ -114,10 +117,10 @@ export function GameScreen() {
         />
       )}
 
-      {chestReward && (
+      {showChestModal && (
         <ChestRewardModal
-          reward={chestReward}
-          onClose={() => setChestReward(null)}
+          onGenerateReward={handleGenerateReward}
+          onClose={() => setShowChestModal(false)}
         />
       )}
 

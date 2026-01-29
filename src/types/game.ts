@@ -228,6 +228,7 @@ export interface ChestReward {
   cards: { cardId: string; isNew: boolean }[];
   bannerId?: string; // Optional banner unlock from chest
   goldEarned?: number; // Gold earned from chest
+  stars?: number; // Number of stars earned during chest opening (1-5)
 }
 
 // Available banners in the game
