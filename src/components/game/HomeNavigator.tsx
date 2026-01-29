@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PlayerProgress } from '@/types/game';
 import { User } from '@supabase/supabase-js';
 import { OnlinePlayer } from '@/hooks/useOnlinePresence';
 import { BattleRequest } from '@/hooks/useBattleRequests';
+import { ExtendedPlayerProgress } from '@/hooks/useProgression';
 import { MainMenu } from './MainMenu';
 import { CardsPage } from './CardsPage';
 import { CardBalanceInfo } from './DeckBuilder';
@@ -17,7 +17,7 @@ type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan';
 const SCREENS: HomeScreen[] = ['shop', 'cards', 'battle', 'clan'];
 
 interface HomeNavigatorProps {
-  progress: PlayerProgress;
+  progress: ExtendedPlayerProgress;
   onBattle: () => void;
   onOpenChest: () => void;
   onReset: () => void;
@@ -28,6 +28,7 @@ interface HomeNavigatorProps {
   cardBalanceInfo?: CardBalanceInfo[];
   onSpendGold: (amount: number) => boolean;
   onAddCard: (cardId: string) => void;
+  onSelectTowerTroop?: (troopId: string) => void;
   // Multiplayer props
   user: User | null;
   onlinePlayers: OnlinePlayer[];
@@ -53,6 +54,7 @@ export function HomeNavigator({
   cardBalanceInfo = [],
   onSpendGold,
   onAddCard,
+  onSelectTowerTroop,
   // Multiplayer props
   user,
   onlinePlayers,
@@ -146,6 +148,7 @@ export function HomeNavigator({
             onAddDeck={onAddDeck}
             onStartBattle={onBattle}
             cardBalanceInfo={cardBalanceInfo}
+            onSelectTowerTroop={onSelectTowerTroop}
           />
         </div>
 
