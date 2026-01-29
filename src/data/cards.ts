@@ -397,28 +397,6 @@ export const allCards: CardDefinition[] = [
     size: 'huge' // Massive robot
   },
   {
-    id: 'mega-knight',
-    name: 'Mega Knight',
-    type: 'tank',
-    elixirCost: 7,
-    emoji: '👹',
-    health: 3300,
-    damage: 267,
-    attackSpeed: 0.59,
-    moveSpeed: 35,
-    range: 40,
-    hitSpeed: 1.7,
-    description: 'Jumps and smashes with splash damage',
-    rarity: 'legendary',
-    color: '#0f172a',
-    deployCooldown: 1.0,
-    isFlying: false,
-    targetType: 'ground',
-    splashRadius: 70,
-    count: 1,
-    size: 'huge' // Massive armored knight
-  },
-  {
     id: 'electro-wizard',
     name: 'Electro Wizard',
     type: 'troop',

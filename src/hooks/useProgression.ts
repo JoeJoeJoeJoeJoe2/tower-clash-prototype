@@ -23,7 +23,8 @@ const initialProgress: PlayerProgress = {
   // Player profile defaults
   playerName: 'Player',
   bannerId: 'banner-blue',
-  ownedBannerIds: [...starterBannerIds]
+  ownedBannerIds: [...starterBannerIds],
+  gold: 100 // Starting gold
 };
 
 function getTodayDateString(): string {
@@ -70,6 +71,11 @@ export function useProgression() {
         }
         if (!parsed.ownedBannerIds) {
           parsed.ownedBannerIds = [...starterBannerIds];
+        }
+        
+        // Migration: add gold if missing
+        if (parsed.gold === undefined) {
+          parsed.gold = 100;
         }
         
         // Ensure currentDeck syncs with active deck slot
@@ -187,7 +193,7 @@ export function useProgression() {
   const openChest = useCallback((): ChestReward | null => {
     if (progress.chestsAvailable <= 0) return null;
 
-    const rewards: ChestReward = { cards: [] };
+    const rewards: ChestReward = { cards: [], goldEarned: 0 };
     const unownedCards = allCards.filter(c => !progress.ownedCardIds.includes(c.id));
     
     // 20% chance to unlock a new banner
@@ -195,6 +201,9 @@ export function useProgression() {
     if (bannerReward && Math.random() < 0.2) {
       rewards.bannerId = bannerReward.id;
     }
+    
+    // Give 50-150 gold from chest
+    rewards.goldEarned = 50 + Math.floor(Math.random() * 101);
     
     // Give 2-4 random cards
     const cardCount = 2 + Math.floor(Math.random() * 3);
@@ -213,7 +222,7 @@ export function useProgression() {
       }
     }
 
-    // Update progress with new cards and banner
+    // Update progress with new cards, banner, and gold
     const newOwnedIds = [...progress.ownedCardIds];
     rewards.cards.forEach(reward => {
       if (reward.isNew && !newOwnedIds.includes(reward.cardId)) {
@@ -230,6 +239,7 @@ export function useProgression() {
       ...prev,
       ownedCardIds: newOwnedIds,
       ownedBannerIds: newOwnedBanners,
+      gold: prev.gold + (rewards.goldEarned || 0),
       chestsAvailable: prev.chestsAvailable - 1
     }));
 
@@ -254,6 +264,32 @@ export function useProgression() {
     setProgress(initialProgress);
   }, []);
 
+  const addGold = useCallback((amount: number) => {
+    setProgress(prev => ({
+      ...prev,
+      gold: prev.gold + amount
+    }));
+  }, []);
+
+  const spendGold = useCallback((amount: number): boolean => {
+    if (progress.gold < amount) return false;
+    setProgress(prev => ({
+      ...prev,
+      gold: prev.gold - amount
+    }));
+    return true;
+  }, [progress.gold]);
+
+  const addCard = useCallback((cardId: string) => {
+    setProgress(prev => {
+      if (prev.ownedCardIds.includes(cardId)) return prev;
+      return {
+        ...prev,
+        ownedCardIds: [...prev.ownedCardIds, cardId]
+      };
+    });
+  }, []);
+
   return {
     progress,
     updateDeck,
@@ -265,6 +301,9 @@ export function useProgression() {
     openChest,
     updatePlayerName,
     updateBanner,
-    resetProgress
+    resetProgress,
+    addGold,
+    spendGold,
+    addCard
   };
 }
