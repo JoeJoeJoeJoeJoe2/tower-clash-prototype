@@ -54,9 +54,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'king',
       owner: 'player',
       position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
-      health: 450,
-      maxHealth: 450,
-      attackDamage: 50, // Cannonball deals much more damage than arrows
+      health: 2400,
+      maxHealth: 2400,
+      attackDamage: 100, // Cannonball deals significant damage
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
@@ -67,9 +67,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'player',
       position: { x: 70, y: ARENA_HEIGHT - 110 },
-      health: 220,
-      maxHealth: 220,
-      attackDamage: 12,
+      health: 2000,
+      maxHealth: 2000,
+      attackDamage: 50,
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0
@@ -79,9 +79,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'player',
       position: { x: ARENA_WIDTH - 70, y: ARENA_HEIGHT - 110 },
-      health: 220,
-      maxHealth: 220,
-      attackDamage: 12,
+      health: 2000,
+      maxHealth: 2000,
+      attackDamage: 50,
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0
@@ -94,9 +94,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'king',
       owner: 'enemy',
       position: { x: ARENA_WIDTH / 2, y: 50 },
-      health: 450,
-      maxHealth: 450,
-      attackDamage: 50, // Cannonball deals much more damage than arrows
+      health: 2400,
+      maxHealth: 2400,
+      attackDamage: 100, // Cannonball deals significant damage
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
@@ -107,9 +107,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'enemy',
       position: { x: 70, y: 110 },
-      health: 220,
-      maxHealth: 220,
-      attackDamage: 12,
+      health: 2000,
+      maxHealth: 2000,
+      attackDamage: 50,
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0
@@ -119,9 +119,9 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'princess',
       owner: 'enemy',
       position: { x: ARENA_WIDTH - 70, y: 110 },
-      health: 220,
-      maxHealth: 220,
-      attackDamage: 12,
+      health: 2000,
+      maxHealth: 2000,
+      attackDamage: 50,
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0
@@ -388,7 +388,12 @@ export function useGameState(
       splashRadius: balancedCard.splashRadius,
       count: balancedCard.count || 1,
       size: balancedCard.size,
-      statusEffects: []
+      statusEffects: [],
+      // Spawning properties (for units like Witch)
+      spawnInterval: balancedCard.spawnInterval,
+      spawnCardId: balancedCard.spawnCardId,
+      spawnCount: balancedCard.spawnCount,
+      lastSpawnTime: 0
     };
   }, [getCardWithBalance]);
 
@@ -1188,14 +1193,54 @@ export function useGameState(
           }
         });
 
+        // ==================== UNIT SPAWNING (Witch, etc.) ====================
+        // Handle units that spawn other units
+        const processUnitSpawning = (units: Unit[], owner: 'player' | 'enemy') => {
+          units.forEach(unit => {
+            if (unit.health <= 0) return;
+            if (!unit.spawnCardId || !unit.spawnInterval) return;
+            
+            if (now - unit.lastSpawnTime > unit.spawnInterval * 1000) {
+              const spawnCard = getCardById(unit.spawnCardId);
+              if (spawnCard) {
+                // Spawn offset based on owner direction
+                const spawnY = owner === 'player' ? unit.position.y - 15 : unit.position.y + 15;
+                const spawnCount = unit.spawnCount || 1;
+                for (let i = 0; i < spawnCount; i++) {
+                  const offsetX = (i - (spawnCount - 1) / 2) * 12;
+                  const newUnit = spawnUnit(spawnCard, { x: unit.position.x + offsetX, y: spawnY }, owner);
+                  if (owner === 'player') {
+                    state.playerUnits.push(newUnit);
+                  } else {
+                    state.enemyUnits.push(newUnit);
+                  }
+                  addSpawnEffect({ x: unit.position.x + offsetX, y: spawnY }, owner, spawnCard.emoji);
+                }
+                unit.lastSpawnTime = now;
+              }
+            }
+          });
+        };
+        
+        processUnitSpawning(state.playerUnits, 'player');
+        processUnitSpawning(state.enemyUnits, 'enemy');
+
         // ==================== UPDATE BUILDINGS ====================
         // Decrease building lifetime and handle spawner buildings
+        // Buildings also take slow decay damage over time
+        const BUILDING_DECAY_RATE = 5; // Health lost per second
+        
         const updateBuildings = (buildings: Building[], owner: 'player' | 'enemy') => {
           return buildings.map(building => {
             const updated = { ...building };
             
             // Decrease lifetime
             updated.lifetime -= delta;
+            
+            // Buildings take decay damage over time
+            if (updated.health > 0) {
+              updated.health -= BUILDING_DECAY_RATE * delta;
+            }
             
             // Spawner buildings spawn units periodically
             if (updated.isSpawner && updated.spawnCardId && updated.lifetime > 0) {

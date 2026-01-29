@@ -147,6 +147,19 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
             style={{ width: `${healthPercent}%` }}
           />
         </div>
+        {/* Health number */}
+        <div className="text-center -mt-0.5">
+          <span 
+            className={cn(
+              "font-bold",
+              dimensions.name,
+              isPlayer ? "text-blue-200" : "text-red-200"
+            )}
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+          >
+            {Math.max(0, Math.floor(unit.health))}
+          </span>
+        </div>
       </div>
       
       {/* Card name - scales with size */}
