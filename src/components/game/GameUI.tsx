@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface GameUIProps {
   playerDeck: string[];
   cardLevels: Record<string, number>; // Card ID -> level
+  towerLevels: { princess: number; king: number }; // Tower levels
   onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
   onBack: () => void;
   onTrackDamage?: (cardId: string, damage: number) => void;
@@ -22,8 +23,8 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function GameUI({ playerDeck, cardLevels, onGameEnd, onBack, onTrackDamage, getBalancedCardStats }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, onTrackDamage, getBalancedCardStats);
+export function GameUI({ playerDeck, cardLevels, towerLevels, onGameEnd, onBack, onTrackDamage, getBalancedCardStats }: GameUIProps) {
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {

@@ -47,44 +47,69 @@ export interface CrownAnimation {
   towerType: 'king' | 'princess';
 }
 
-function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } {
+function createInitialTowers(towerLevels: { princess: number; king: number } = { princess: 1, king: 1 }): { playerTowers: Tower[], enemyTowers: Tower[] } {
+  // Calculate level multipliers (10% per level)
+  const princessMultiplier = Math.pow(1.1, towerLevels.princess - 1);
+  const kingMultiplier = Math.pow(1.1, towerLevels.king - 1);
+  
+  // Base stats
+  const basePrincessHealth = 2000;
+  const basePrincessDamage = 50;
+  const baseKingHealth = 2400;
+  const baseKingDamage = 100;
+  
+  // Scaled stats for player
+  const playerPrincessHealth = Math.floor(basePrincessHealth * princessMultiplier);
+  const playerPrincessDamage = Math.floor(basePrincessDamage * princessMultiplier);
+  const playerKingHealth = Math.floor(baseKingHealth * kingMultiplier);
+  const playerKingDamage = Math.floor(baseKingDamage * kingMultiplier);
+  
+  // Enemy gets random level 1-5 for variety
+  const enemyPrincessLevel = Math.floor(Math.random() * 5) + 1;
+  const enemyKingLevel = Math.floor(Math.random() * 5) + 1;
+  const enemyPrincessMultiplier = Math.pow(1.1, enemyPrincessLevel - 1);
+  const enemyKingMultiplier = Math.pow(1.1, enemyKingLevel - 1);
+  
   const playerTowers: Tower[] = [
     {
       id: 'player-king',
       type: 'king',
       owner: 'player',
       position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
-      health: 2400,
-      maxHealth: 2400,
-      attackDamage: 100, // Cannonball deals significant damage
+      health: playerKingHealth,
+      maxHealth: playerKingHealth,
+      attackDamage: playerKingDamage,
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
-      isActivated: false
+      isActivated: false,
+      level: towerLevels.king
     },
     {
       id: 'player-princess-left',
       type: 'princess',
       owner: 'player',
       position: { x: 70, y: ARENA_HEIGHT - 110 },
-      health: 2000,
-      maxHealth: 2000,
-      attackDamage: 50,
+      health: playerPrincessHealth,
+      maxHealth: playerPrincessHealth,
+      attackDamage: playerPrincessDamage,
       attackRange: 140,
       attackCooldown: 1800,
-      lastAttackTime: 0
+      lastAttackTime: 0,
+      level: towerLevels.princess
     },
     {
       id: 'player-princess-right',
       type: 'princess',
       owner: 'player',
       position: { x: ARENA_WIDTH - 70, y: ARENA_HEIGHT - 110 },
-      health: 2000,
-      maxHealth: 2000,
-      attackDamage: 50,
+      health: playerPrincessHealth,
+      maxHealth: playerPrincessHealth,
+      attackDamage: playerPrincessDamage,
       attackRange: 140,
       attackCooldown: 1800,
-      lastAttackTime: 0
+      lastAttackTime: 0,
+      level: towerLevels.princess
     }
   ];
 
@@ -94,37 +119,40 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       type: 'king',
       owner: 'enemy',
       position: { x: ARENA_WIDTH / 2, y: 50 },
-      health: 2400,
-      maxHealth: 2400,
-      attackDamage: 100, // Cannonball deals significant damage
+      health: Math.floor(baseKingHealth * enemyKingMultiplier),
+      maxHealth: Math.floor(baseKingHealth * enemyKingMultiplier),
+      attackDamage: Math.floor(baseKingDamage * enemyKingMultiplier),
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
-      isActivated: false
+      isActivated: false,
+      level: enemyKingLevel
     },
     {
       id: 'enemy-princess-left',
       type: 'princess',
       owner: 'enemy',
       position: { x: 70, y: 110 },
-      health: 2000,
-      maxHealth: 2000,
-      attackDamage: 50,
+      health: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
+      maxHealth: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
+      attackDamage: Math.floor(basePrincessDamage * enemyPrincessMultiplier),
       attackRange: 140,
       attackCooldown: 1800,
-      lastAttackTime: 0
+      lastAttackTime: 0,
+      level: enemyPrincessLevel
     },
     {
       id: 'enemy-princess-right',
       type: 'princess',
       owner: 'enemy',
       position: { x: ARENA_WIDTH - 70, y: 110 },
-      health: 2000,
-      maxHealth: 2000,
-      attackDamage: 50,
+      health: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
+      maxHealth: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
+      attackDamage: Math.floor(basePrincessDamage * enemyPrincessMultiplier),
       attackRange: 140,
       attackCooldown: 1800,
-      lastAttackTime: 0
+      lastAttackTime: 0,
+      level: enemyPrincessLevel
     }
   ];
 
@@ -267,8 +295,8 @@ function calculateMovement(
   return { newX, newY, direction: dy < 0 ? 'up' : 'down' };
 }
 
-function createInitialState(playerDeckIds: string[]): GameState {
-  const { playerTowers, enemyTowers } = createInitialTowers();
+function createInitialState(playerDeckIds: string[], towerLevels: { princess: number; king: number } = { princess: 1, king: 1 }): GameState {
+  const { playerTowers, enemyTowers } = createInitialTowers(towerLevels);
   const { playerZones, enemyZones } = createInitialPlacementZones();
   const playerDeck = createDeck(playerDeckIds);
   const enemyDeckIds = ['knight', 'archers', 'giant', 'wizard', 'valkyrie', 'musketeer', 'goblins', 'bomber'];
@@ -304,10 +332,11 @@ function createInitialState(playerDeckIds: string[]): GameState {
 export function useGameState(
   playerDeckIds: string[],
   playerCardLevels: Record<string, number>,
+  towerLevels: { princess: number; king: number } = { princess: 1, king: 1 },
   onTrackDamage?: (cardId: string, damage: number) => void,
   getBalancedCardStats?: (cardId: string) => CardDefinition | null
 ) {
-  const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds));
+  const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
   const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);

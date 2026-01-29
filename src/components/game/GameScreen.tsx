@@ -19,6 +19,14 @@ function getCardLevelsFromCopies(cardCopies: Record<string, number>): Record<str
   return levels;
 }
 
+// Convert towerCopies to towerLevels
+function getTowerLevelsFromCopies(towerCopies: Record<string, number>): { princess: number; king: number } {
+  return {
+    princess: getCardLevel(towerCopies.princess || 1),
+    king: getCardLevel(towerCopies.king || 1)
+  };
+}
+
 type Screen = 'home' | 'loading' | 'matchmaking' | 'battle';
 
 export function GameScreen() {
@@ -121,6 +129,7 @@ export function GameScreen() {
         <GameUI
           playerDeck={progress.currentDeck}
           cardLevels={getCardLevelsFromCopies(progress.cardCopies)}
+          towerLevels={getTowerLevelsFromCopies(progress.towerCopies)}
           onGameEnd={handleGameEnd}
           onBack={() => setScreen('home')}
           onTrackDamage={trackDamage}

@@ -446,6 +446,75 @@ export const allCards: CardDefinition[] = [
     size: 'small'
   },
 
+  // ==================== TOWER TROOPS ====================
+  // Special troops that replace Princess Towers
+  
+  {
+    id: 'cannoneer',
+    name: 'Cannoneer',
+    type: 'troop',
+    elixirCost: 0, // Tower troops have no elixir cost - they're tower replacements
+    emoji: '💥',
+    health: 2000, // Tower health
+    damage: 250, // High single-target damage
+    attackSpeed: 0.56,
+    moveSpeed: 0, // Stationary
+    range: 180,
+    hitSpeed: 1.8,
+    description: 'Tower troop that fires powerful cannonballs',
+    rarity: 'legendary',
+    color: '#6b7280',
+    deployCooldown: 0,
+    isFlying: false,
+    targetType: 'both',
+    count: 1,
+    size: 'large',
+    splashRadius: 30 // Small splash
+  },
+  {
+    id: 'dagger-duchess',
+    name: 'Dagger Duchess',
+    type: 'troop',
+    elixirCost: 0,
+    emoji: '🗡️',
+    health: 2000,
+    damage: 80, // Lower per-hit damage but very fast
+    attackSpeed: 2.5, // Very fast attack speed
+    moveSpeed: 0,
+    range: 180,
+    hitSpeed: 0.4, // Throws daggers rapidly
+    description: 'Rapid dagger thrower - stockpiles 8 daggers then reloads',
+    rarity: 'legendary',
+    color: '#ec4899',
+    deployCooldown: 0,
+    isFlying: false,
+    targetType: 'both',
+    count: 1,
+    size: 'medium'
+  },
+  {
+    id: 'royal-chef',
+    name: 'Royal Chef',
+    type: 'troop',
+    elixirCost: 0,
+    emoji: '👨‍🍳',
+    health: 2000,
+    damage: 180,
+    attackSpeed: 0.77,
+    moveSpeed: 0,
+    range: 180,
+    hitSpeed: 1.3,
+    description: 'Throws flaming pans - heals nearby allies with food buffs',
+    rarity: 'legendary',
+    color: '#f59e0b',
+    deployCooldown: 0,
+    isFlying: false,
+    targetType: 'both',
+    count: 1,
+    size: 'medium',
+    splashRadius: 25 // Small splash from pans
+  },
+
   // ==================== SPELLS ====================
   // Instant and duration-based effects
   
