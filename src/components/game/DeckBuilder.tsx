@@ -60,6 +60,7 @@ export function DeckBuilder({
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
   const [upgradeModalCard, setUpgradeModalCard] = useState<CardDefinition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keyboard navigation for scrolling
   useEffect(() => {
@@ -279,14 +280,27 @@ export function DeckBuilder({
                 onMouseEnter={() => setSelectedCard(card)}
                 onMouseLeave={() => setSelectedCard(null)}
                 onClick={() => {
-                  // Single click opens upgrade modal
-                  if (onUseWildCards) {
-                    setUpgradeModalCard(card);
+                  // Use timeout to distinguish single vs double click
+                  if (clickTimeoutRef.current) {
+                    clearTimeout(clickTimeoutRef.current);
+                    clickTimeoutRef.current = null;
                   }
+                  clickTimeoutRef.current = setTimeout(() => {
+                    // Single click opens upgrade modal
+                    if (onUseWildCards) {
+                      setUpgradeModalCard(card);
+                    }
+                    clickTimeoutRef.current = null;
+                  }, 200); // 200ms delay to wait for potential double-click
                 }}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  // Cancel the single-click timeout
+                  if (clickTimeoutRef.current) {
+                    clearTimeout(clickTimeoutRef.current);
+                    clickTimeoutRef.current = null;
+                  }
                   toggleCard(card.id);
                 }}
               >
