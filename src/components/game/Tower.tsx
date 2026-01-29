@@ -10,6 +10,7 @@ export function Tower({ tower }: TowerProps) {
   const [isAttacking, setIsAttacking] = useState(false);
   const healthPercent = (tower.health / tower.maxHealth) * 100;
   const isDestroyed = tower.health <= 0;
+  const isKingInactive = tower.type === 'king' && !tower.isActivated;
   
   const healthClass = healthPercent > 60 ? 'health-full' : healthPercent > 30 ? 'health-mid' : 'health-low';
 
@@ -65,10 +66,18 @@ export function Tower({ tower }: TowerProps) {
       >
         <span className={cn(
           'text-2xl',
-          tower.type === 'king' && 'text-3xl'
+          tower.type === 'king' && 'text-3xl',
+          isKingInactive && 'opacity-60'
         )}>
           {tower.type === 'king' ? '👑' : '👸'}
         </span>
+        
+        {/* Sleeping indicator for inactive king tower */}
+        {isKingInactive && !isDestroyed && (
+          <div className="absolute -top-1 -right-1 text-xs animate-pulse">
+            💤
+          </div>
+        )}
         
         {/* Muzzle flash when attacking */}
         {isAttacking && !isDestroyed && (

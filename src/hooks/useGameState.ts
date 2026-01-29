@@ -3,8 +3,8 @@ import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone, Buildi
 import { createDeck, drawHand, getCardById, SIZE_SPEED_MULTIPLIERS } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 
-export const ARENA_WIDTH = 320;
-export const ARENA_HEIGHT = 420;
+export const ARENA_WIDTH = 340;
+export const ARENA_HEIGHT = 500;
 const BASE_ELIXIR_REGEN_RATE = 0.35;
 const SUDDEN_DEATH_ELIXIR_MULTIPLIER = 2;
 const GAME_DURATION = 180;
@@ -53,7 +53,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'player-king',
       type: 'king',
       owner: 'player',
-      position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 40 },
+      position: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 50 },
       health: 450,
       maxHealth: 450,
       attackDamage: 25,
@@ -66,7 +66,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'player-princess-left',
       type: 'princess',
       owner: 'player',
-      position: { x: 60, y: ARENA_HEIGHT - 90 },
+      position: { x: 70, y: ARENA_HEIGHT - 110 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
@@ -78,7 +78,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'player-princess-right',
       type: 'princess',
       owner: 'player',
-      position: { x: ARENA_WIDTH - 60, y: ARENA_HEIGHT - 90 },
+      position: { x: ARENA_WIDTH - 70, y: ARENA_HEIGHT - 110 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
@@ -93,7 +93,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'enemy-king',
       type: 'king',
       owner: 'enemy',
-      position: { x: ARENA_WIDTH / 2, y: 40 },
+      position: { x: ARENA_WIDTH / 2, y: 50 },
       health: 450,
       maxHealth: 450,
       attackDamage: 25,
@@ -106,7 +106,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'enemy-princess-left',
       type: 'princess',
       owner: 'enemy',
-      position: { x: 60, y: 90 },
+      position: { x: 70, y: 110 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
@@ -118,7 +118,7 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
       id: 'enemy-princess-right',
       type: 'princess',
       owner: 'enemy',
-      position: { x: ARENA_WIDTH - 60, y: 90 },
+      position: { x: ARENA_WIDTH - 70, y: 110 },
       health: 220,
       maxHealth: 220,
       attackDamage: 12,
@@ -132,13 +132,13 @@ function createInitialTowers(): { playerTowers: Tower[], enemyTowers: Tower[] } 
 }
 
 function createInitialPlacementZones(): { playerZones: PlacementZone[], enemyZones: PlacementZone[] } {
-  // Player's default zone is their half of the arena
+  // Player's default zone is their half of the arena (extended to allow placement behind king tower)
   const playerZones: PlacementZone[] = [
     {
       id: 'player-default',
       minX: 0,
       maxX: ARENA_WIDTH,
-      minY: ARENA_HEIGHT / 2,
+      minY: ARENA_HEIGHT / 2 - 40, // Extended 40px higher to allow placement near/behind king tower
       maxY: ARENA_HEIGHT,
       isActive: true,
       reason: 'default'
@@ -1346,9 +1346,16 @@ export function useGameState(
         state.enemyUnits = state.enemyUnits.filter(u => u.health > 0);
 
         // Detect tower destructions and spawn crown animations
+        // Also activate king tower when princess tower is destroyed
         const checkTowerDestruction = (towers: Tower[], side: 'player' | 'enemy') => {
           towers.forEach(tower => {
             const prevHealth = prevTowerHealthRef.current.get(tower.id) ?? tower.maxHealth;
+            
+            // King tower activation: activate when damaged
+            if (tower.type === 'king' && !tower.isActivated && tower.health < prevHealth && tower.health > 0) {
+              tower.isActivated = true;
+            }
+            
             if (prevHealth > 0 && tower.health <= 0) {
               // Tower just got destroyed - spawn crown animation
               // Crown goes to the opposite side (enemy tower destroyed = player scores)
@@ -1360,6 +1367,14 @@ export function useGameState(
                 progress: 0,
                 towerType: tower.type
               }]);
+              
+              // King tower activation: activate when princess tower is destroyed
+              if (tower.type === 'princess') {
+                const kingTower = towers.find(t => t.type === 'king');
+                if (kingTower && !kingTower.isActivated) {
+                  kingTower.isActivated = true;
+                }
+              }
             }
             prevTowerHealthRef.current.set(tower.id, tower.health);
           });
