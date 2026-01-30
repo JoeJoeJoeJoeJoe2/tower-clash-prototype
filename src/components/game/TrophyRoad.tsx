@@ -4,6 +4,7 @@ import { Trophy, Gift, Crown, Lock, Check, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ARENAS, getCurrentArena, getNextArena, Arena } from '@/data/arenas';
 import { ChestReward } from './ChestReward';
+import { BulkChestReward } from './BulkChestReward';
 import { ChestReward as ChestRewardType } from '@/types/game';
 
 interface TrophyRoadProps {
@@ -20,7 +21,9 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showChestReward, setShowChestReward] = useState(false);
   const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
-  const [pendingClaimAll, setPendingClaimAll] = useState<number[]>([]);
+  const [showBulkReward, setShowBulkReward] = useState(false);
+  const [bulkRewards, setBulkRewards] = useState<ChestRewardType[]>([]);
+  const [bulkChestCount, setBulkChestCount] = useState(0);
 
   // Generate all trophy milestones - always start from 10 and go up
   const generateMilestones = useCallback(() => {
@@ -56,16 +59,28 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     setShowChestReward(true);
   }, []);
 
-  // Handle claim all - queue all unclaimed chests
+  // Handle claim all - open all chests at once and show combined rewards
   const handleClaimAll = useCallback(() => {
-    if (unclaimedChestMilestones.length > 0) {
-      setPendingClaimAll(unclaimedChestMilestones);
-      setPendingMilestone(unclaimedChestMilestones[0]);
-      setShowChestReward(true);
+    if (unclaimedChestMilestones.length > 0 && onClaimReward && onGenerateReward) {
+      const allRewards: ChestRewardType[] = [];
+      
+      // Claim all chests and generate rewards with random stars (3-5)
+      unclaimedChestMilestones.forEach(milestone => {
+        onClaimReward(milestone);
+        const stars = Math.floor(Math.random() * 3) + 3; // 3-5 stars
+        const reward = onGenerateReward(stars, true);
+        if (reward) {
+          allRewards.push(reward);
+        }
+      });
+      
+      setBulkRewards(allRewards);
+      setBulkChestCount(unclaimedChestMilestones.length);
+      setShowBulkReward(true);
     }
-  }, [unclaimedChestMilestones]);
+  }, [unclaimedChestMilestones, onClaimReward, onGenerateReward]);
 
-  // Handle chest reward generation
+  // Handle chest reward generation (for single chest)
   const handleGenerateReward = useCallback((stars: number): ChestRewardType | null => {
     if (pendingMilestone && onClaimReward) {
       onClaimReward(pendingMilestone);
@@ -76,24 +91,18 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     return null;
   }, [pendingMilestone, onClaimReward, onGenerateReward]);
 
-  // Handle closing chest reward
+  // Handle closing single chest reward
   const handleChestClose = useCallback(() => {
     setShowChestReward(false);
-    
-    // Check if we're in claim all mode and have more chests to open
-    if (pendingClaimAll.length > 1) {
-      const remainingChests = pendingClaimAll.slice(1);
-      setPendingClaimAll(remainingChests);
-      // Open next chest after a short delay
-      setTimeout(() => {
-        setPendingMilestone(remainingChests[0]);
-        setShowChestReward(true);
-      }, 300);
-    } else {
-      setPendingClaimAll([]);
-      setPendingMilestone(null);
-    }
-  }, [pendingClaimAll]);
+    setPendingMilestone(null);
+  }, []);
+
+  // Handle closing bulk reward
+  const handleBulkClose = useCallback(() => {
+    setShowBulkReward(false);
+    setBulkRewards([]);
+    setBulkChestCount(0);
+  }, []);
 
   // Auto-jump so the player's current section is visible (e.g. 80, 70, 60 for 60 trophies)
   useEffect(() => {
@@ -394,6 +403,15 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
         <ChestReward
           onGenerateReward={handleGenerateReward}
           onClose={handleChestClose}
+        />
+      )}
+
+      {/* Bulk Chest Reward Overlay */}
+      {showBulkReward && bulkRewards.length > 0 && (
+        <BulkChestReward
+          chestCount={bulkChestCount}
+          rewards={bulkRewards}
+          onClose={handleBulkClose}
         />
       )}
     </div>
