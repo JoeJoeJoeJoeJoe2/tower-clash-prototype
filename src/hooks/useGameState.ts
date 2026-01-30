@@ -2132,123 +2132,173 @@ export function useGameState(
   const activateChampionAbility = useCallback((unitId: string) => {
     setGameState(prev => {
       const state = { ...prev };
-      const unit = state.playerUnits.find(u => u.id === unitId);
+      const unitIndex = state.playerUnits.findIndex(u => u.id === unitId);
+      if (unitIndex === -1) return state;
       
-      if (!unit || !unit.abilityState || unit.health <= 0) return state;
+      const unit = { ...state.playerUnits[unitIndex] };
+      state.playerUnits = [...state.playerUnits];
+      state.playerUnits[unitIndex] = unit;
       
-      const ability = unit.abilityState;
+      if (!unit.abilityState || unit.health <= 0) return state;
+      
+      const abilityState = { ...unit.abilityState };
+      unit.abilityState = abilityState;
+      
       const now = Date.now();
+      const abilityInfo = getChampionAbilityInfo(abilityState.type);
       
-      // Check cooldown
-      if (now - ability.lastActivationTime < getAbilityCooldown(ability.type)) {
-        return state;
+      // Check cooldown (in milliseconds)
+      const cooldownMs = abilityInfo.cooldown * 1000;
+      if (cooldownMs > 0 && now - abilityState.lastActivationTime < cooldownMs) {
+        return prev;
       }
       
-      switch (ability.type) {
+      // Check elixir cost
+      if (state.playerElixir < abilityInfo.elixirCost) {
+        return prev;
+      }
+      
+      // Deduct elixir
+      state.playerElixir -= abilityInfo.elixirCost;
+      
+      switch (abilityState.type) {
+        case 'dash-chain': {
+          // Golden Knight: Dashing Dash - dash to up to 10 enemies
+          if (!abilityState.isActive) {
+            abilityState.isActive = true;
+            abilityState.isDashing = true;
+            abilityState.dashesRemaining = 10;
+            abilityState.lastActivationTime = now;
+            addSpawnEffect(unit.position, 'player', '⚔️');
+            
+            // Find closest enemy and dash to it
+            const enemies = state.enemyUnits.filter(e => e.health > 0 && !e.isFlying);
+            if (enemies.length > 0) {
+              const closest = enemies.reduce((a, b) => 
+                getDistance(unit.position, a.position) < getDistance(unit.position, b.position) ? a : b
+              );
+              const dashRange = 5.5 * TILE_SIZE; // 5.5 tiles
+              if (getDistance(unit.position, closest.position) <= dashRange) {
+                // Deal dash damage (about 2x normal damage)
+                const dashDamage = Math.round(unit.damage * 2 * DAMAGE_MULTIPLIER);
+                closest.health -= dashDamage;
+                addDamageNumber(closest.position, dashDamage, true);
+                unit.position = { ...closest.position };
+                abilityState.dashesRemaining!--;
+              }
+            }
+            
+            // Ability ends after initial dash - chain happens in game loop
+            abilityState.isActive = false;
+          }
+          break;
+        }
+        
         case 'cloak': {
-          // Archer Queen: Manual invisibility activation
-          if (!ability.isActive) {
-            ability.isActive = true;
-            ability.remainingDuration = 4; // 4 seconds of invisibility
-            ability.lastActivationTime = now;
+          // Archer Queen: Cloaking Cape - invisibility + attack speed boost for 3.5s
+          if (!abilityState.isActive) {
+            abilityState.isActive = true;
+            abilityState.remainingDuration = 3.5;
+            abilityState.lastActivationTime = now;
             addSpawnEffect(unit.position, 'player', '👻');
           }
           break;
         }
         
         case 'soul-summon': {
-          // Skeleton King: Force summon skeletons if we have any souls
-          if (ability.stacks > 0) {
+          // Skeleton King: Soul Summoning - spawn 6-16 skeletons based on souls collected
+          const minSouls = 6;
+          if (abilityState.stacks >= minSouls) {
             const skeletonCard = getCardById('skeletons');
             if (skeletonCard) {
-              const numToSpawn = Math.min(ability.stacks, 8);
+              const numToSpawn = Math.min(abilityState.stacks, 16);
               for (let i = 0; i < numToSpawn; i++) {
-                const offsetX = (i % 4 - 1.5) * 15;
-                const offsetY = Math.floor(i / 4) * 15;
+                const angle = (i / numToSpawn) * Math.PI * 2;
+                const radius = 30;
                 const spawnPos = {
-                  x: unit.position.x + offsetX,
-                  y: unit.position.y - 25 + offsetY
+                  x: unit.position.x + Math.cos(angle) * radius,
+                  y: unit.position.y + Math.sin(angle) * radius - 20
                 };
                 state.playerUnits = [...state.playerUnits, spawnUnit(skeletonCard, spawnPos, 'player', unit.level)];
-                addSpawnEffect(spawnPos, 'player', '💀');
               }
-              ability.stacks = 0;
-              ability.lastActivationTime = now;
+              addSpawnEffect(unit.position, 'player', '💀');
+              abilityState.stacks = 0;
+              abilityState.lastActivationTime = now;
             }
           }
           break;
         }
         
         case 'drill': {
-          // Mighty Miner: Manual burrow activation
-          if (!ability.hasTriggered) {
-            ability.hasTriggered = true;
-            // Burrow damage to enemies in path
-            const BURROW_DAMAGE = Math.round(unit.damage * 0.8 * 0.4);
-            state.enemyUnits.filter(e => e.health > 0 && getDistance(unit.position, e.position) <= 60).forEach(enemy => {
-              enemy.health -= BURROW_DAMAGE;
-              addDamageNumber(enemy.position, BURROW_DAMAGE, false);
+          // Mighty Miner: Explosive Escape - burrow to location + bomb
+          if (!abilityState.isActive) {
+            abilityState.isActive = true;
+            abilityState.lastActivationTime = now;
+            
+            // Deal bomb damage in area
+            const bombDamage = Math.round(332 * DAMAGE_MULTIPLIER);
+            state.enemyUnits.filter(e => e.health > 0 && getDistance(unit.position, e.position) <= 80).forEach(enemy => {
+              enemy.health -= bombDamage;
+              addDamageNumber(enemy.position, bombDamage, true);
             });
             
             // Teleport to king tower area
             unit.position = { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 80 };
             unit.targetId = null;
-            addSpawnEffect(unit.position, 'player', '⛏️');
-            ability.lastActivationTime = now;
-          }
-          break;
-        }
-        
-        case 'reflect': {
-          // Monk: Manual reflect activation
-          if (!ability.isActive) {
-            ability.isActive = true;
-            ability.remainingDuration = 2;
-            ability.lastActivationTime = now;
-            addSpawnEffect(unit.position, 'player', '🧘');
+            addSpawnEffect(unit.position, 'player', '💣');
+            
+            abilityState.isActive = false;
           }
           break;
         }
         
         case 'guardian': {
-          // Little Prince: Manual guardian summon
-          if (!ability.hasTriggered) {
-            ability.hasTriggered = true;
-            ability.lastActivationTime = now;
-            
-            const knightCard = getCardById('knight');
-            if (knightCard) {
-              const guardianPos = {
-                x: unit.position.x + 20,
-                y: unit.position.y - 15
-              };
-              const guardian = spawnUnit(knightCard, guardianPos, 'player', unit.level);
-              guardian.health = Math.floor(guardian.health * 1.2);
-              guardian.maxHealth = guardian.health;
-              guardian.damage = Math.floor(guardian.damage * 1.2);
-              state.playerUnits = [...state.playerUnits, guardian];
-              addSpawnEffect(guardianPos, 'player', '🛡️');
-            }
+          // Little Prince: Royal Rescue - summon Guardian that charges and knocks back
+          const knightCard = getCardById('knight');
+          if (knightCard) {
+            const guardianPos = {
+              x: unit.position.x,
+              y: unit.position.y - 30
+            };
+            const guardian = spawnUnit(knightCard, guardianPos, 'player', unit.level);
+            // Guardian has 1600 HP at level 11, scales with level
+            guardian.health = 1600;
+            guardian.maxHealth = 1600;
+            guardian.damage = Math.floor(guardian.damage * 1.5);
+            guardian.moveSpeed = 90; // Fast - charges
+            state.playerUnits = [...state.playerUnits, guardian];
+            addSpawnEffect(guardianPos, 'player', '🛡️');
+            abilityState.lastActivationTime = now;
           }
           break;
         }
         
-        // dash-chain is passive only - can't be manually activated
+        case 'reflect': {
+          // Monk: Pensive Protection - reflect projectiles + 65% damage reduction for 4s
+          if (!abilityState.isActive) {
+            abilityState.isActive = true;
+            abilityState.remainingDuration = 4;
+            abilityState.lastActivationTime = now;
+            addSpawnEffect(unit.position, 'player', '🧘');
+          }
+          break;
+        }
       }
       
       return state;
     });
   }, [spawnUnit, addSpawnEffect, addDamageNumber]);
   
-  // Helper function to get ability cooldown in ms
-  function getAbilityCooldown(abilityType: string): number {
+  // Helper function to get ability info
+  function getChampionAbilityInfo(abilityType: string): { cooldown: number; elixirCost: number } {
     switch (abilityType) {
-      case 'cloak': return 10000;
-      case 'soul-summon': return 3000;
-      case 'drill': return 15000;
-      case 'guardian': return 12000;
-      case 'reflect': return 8000;
-      default: return 0;
+      case 'dash-chain': return { cooldown: 8, elixirCost: 1 };
+      case 'cloak': return { cooldown: 17, elixirCost: 1 };
+      case 'soul-summon': return { cooldown: 0, elixirCost: 2 };
+      case 'drill': return { cooldown: 15, elixirCost: 1 };
+      case 'guardian': return { cooldown: 0, elixirCost: 3 };
+      case 'reflect': return { cooldown: 17, elixirCost: 1 };
+      default: return { cooldown: 0, elixirCost: 0 };
     }
   }
 

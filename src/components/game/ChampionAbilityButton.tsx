@@ -1,18 +1,19 @@
 import { memo, useMemo } from 'react';
 import { Unit } from '@/types/game';
-import { getChampionAbility, CHAMPION_ABILITIES } from '@/data/championAbilities';
+import { getChampionAbility } from '@/data/championAbilities';
 import { getCardById } from '@/data/cards';
 import { cn } from '@/lib/utils';
-import { Zap } from 'lucide-react';
 
 interface ChampionAbilityButtonProps {
   playerUnits: Unit[];
+  playerElixir: number;
   onActivateAbility: (unitId: string) => void;
   currentTime: number;
 }
 
 export const ChampionAbilityButton = memo(function ChampionAbilityButton({
   playerUnits,
+  playerElixir,
   onActivateAbility,
   currentTime
 }: ChampionAbilityButtonProps) {
@@ -34,18 +35,22 @@ export const ChampionAbilityButton = memo(function ChampionAbilityButton({
   // Calculate cooldown
   const abilityState = championUnit.abilityState;
   const timeSinceLastActivation = abilityState 
-    ? currentTime - abilityState.lastActivationTime 
+    ? (currentTime - abilityState.lastActivationTime) / 1000 // Convert to seconds
     : ability.cooldown;
-  const isOnCooldown = timeSinceLastActivation < ability.cooldown;
+  const isOnCooldown = ability.cooldown > 0 && timeSinceLastActivation < ability.cooldown;
   const cooldownRemaining = Math.max(0, ability.cooldown - timeSinceLastActivation);
   const cooldownPercent = isOnCooldown ? (cooldownRemaining / ability.cooldown) * 100 : 0;
   
   // Check if ability is currently active
   const isActive = abilityState?.isActive || false;
   
-  // Some abilities are passive and can't be manually triggered
-  const isPassive = ability.triggerCondition === 'passive';
-  const canActivate = !isOnCooldown && !isActive && !isPassive;
+  // Check if player has enough elixir
+  const hasEnoughElixir = playerElixir >= ability.elixirCost;
+  
+  // For soul-summon, need at least some souls to activate
+  const hasSouls = ability.id === 'soul-summon' ? (abilityState?.stacks || 0) >= 6 : true;
+  
+  const canActivate = !isOnCooldown && !isActive && hasEnoughElixir && hasSouls;
 
   const handleClick = () => {
     if (canActivate) {
@@ -74,7 +79,7 @@ export const ChampionAbilityButton = memo(function ChampionAbilityButton({
       case 'cloak': return '👻';
       case 'dash-chain': return '⚔️';
       case 'soul-summon': return '💀';
-      case 'drill': return '🔨';
+      case 'drill': return '💣';
       case 'guardian': return '🛡️';
       case 'reflect': return '🔄';
       default: return '⚡';
@@ -87,17 +92,16 @@ export const ChampionAbilityButton = memo(function ChampionAbilityButton({
         onClick={handleClick}
         disabled={!canActivate}
         className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center border-2 shadow-md transition-all relative overflow-hidden",
+          "w-10 h-10 rounded-lg flex items-center justify-center border-2 shadow-md transition-all relative overflow-hidden",
           `bg-gradient-to-b ${colors.from} ${colors.to} ${colors.border}`,
-          canActivate && "hover:scale-105 active:scale-95",
+          canActivate && "hover:scale-105 active:scale-95 cursor-pointer",
           isActive && `animate-pulse shadow-lg ${colors.glow}`,
-          (isOnCooldown || isPassive) && "opacity-60",
-          isPassive && "cursor-default"
+          !canActivate && "opacity-60 cursor-not-allowed"
         )}
-        title={`${ability.name}: ${ability.description}${isPassive ? ' (Passive)' : ''}`}
+        title={`${ability.name} (${ability.elixirCost} elixir): ${ability.description}`}
       >
         {/* Cooldown overlay */}
-        {isOnCooldown && !isPassive && (
+        {isOnCooldown && (
           <div 
             className="absolute inset-0 bg-black/60"
             style={{
@@ -112,25 +116,35 @@ export const ChampionAbilityButton = memo(function ChampionAbilityButton({
         )}
         
         {/* Ability icon */}
-        <span className="text-base relative z-10">{getAbilityIcon()}</span>
+        <span className="text-lg relative z-10">{getAbilityIcon()}</span>
         
         {/* Cooldown timer */}
-        {isOnCooldown && !isPassive && (
+        {isOnCooldown && (
           <div className="absolute bottom-0 left-0 right-0 text-[8px] font-bold text-white bg-black/50 text-center">
-            {cooldownRemaining.toFixed(1)}
+            {cooldownRemaining.toFixed(1)}s
           </div>
         )}
         
         {/* Soul stacks indicator for Skeleton King */}
         {ability.id === 'soul-summon' && abilityState?.stacks !== undefined && abilityState.stacks > 0 && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-purple-600 border border-purple-400 flex items-center justify-center text-[8px] text-white font-bold z-20">
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-600 border border-purple-400 flex items-center justify-center text-[10px] text-white font-bold z-20">
             {abilityState.stacks}
           </div>
         )}
+        
+        {/* Elixir cost badge */}
+        <div className={cn(
+          "absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold z-20 border",
+          hasEnoughElixir 
+            ? "bg-pink-500 border-pink-300 text-white" 
+            : "bg-gray-500 border-gray-400 text-gray-300"
+        )}>
+          {ability.elixirCost}
+        </div>
       </button>
       
       {/* Champion card emoji indicator */}
-      <div className="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-card border border-border flex items-center justify-center text-[10px] z-10">
+      <div className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full bg-card border border-border flex items-center justify-center text-[10px] z-10">
         {card.emoji}
       </div>
     </div>

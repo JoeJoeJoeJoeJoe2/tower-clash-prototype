@@ -274,6 +274,7 @@ export function GameUI({
               {/* Champion ability button - only shows when champion on field */}
               <ChampionAbilityButton
                 playerUnits={gameState.playerUnits}
+                playerElixir={gameState.playerElixir}
                 onActivateAbility={activateChampionAbility}
                 currentTime={Date.now()}
               />
