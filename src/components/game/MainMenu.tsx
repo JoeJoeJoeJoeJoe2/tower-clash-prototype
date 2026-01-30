@@ -1,9 +1,9 @@
 import { PlayerProgress } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Coins } from 'lucide-react';
+import { Swords, Trophy, LayoutGrid, Crown, Users, ShoppingBag, Coins, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getBannerById } from '@/data/banners';
-import { getCurrentArena } from '@/data/arenas';
+import { getCurrentArena, ARENAS } from '@/data/arenas';
 
 interface MainMenuProps {
   progress: PlayerProgress;
@@ -16,14 +16,28 @@ interface MainMenuProps {
   onReset: () => void;
   onOpenProfile: () => void;
   onOpenTrophyRoad: () => void;
+  claimedTrophyRewards?: number[];
   incomingRequestCount?: number;
 }
 
-export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile, onOpenTrophyRoad, incomingRequestCount = 0 }: MainMenuProps) {
+export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onClan, onShop, onOpenChest, onReset, onOpenProfile, onOpenTrophyRoad, claimedTrophyRewards = [], incomingRequestCount = 0 }: MainMenuProps) {
   const playerLevel = Math.min(14, Math.floor(progress.wins / 5) + 1);
   const trophies = progress.wins * 30;
   const currentBanner = getBannerById(progress.bannerId);
   const currentArena = getCurrentArena(trophies);
+
+  // Calculate unclaimed Trophy Road chests
+  const unclaimedTrophyChests = (() => {
+    let count = 0;
+    for (let t = 10; t <= trophies; t += 10) {
+      // Skip arena milestones (100, 200, 300...)
+      const isArena = ARENAS.some(a => a.trophiesRequired === t);
+      if (!isArena && !claimedTrophyRewards.includes(t)) {
+        count++;
+      }
+    }
+    return count;
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col overflow-hidden">
@@ -141,6 +155,14 @@ export function MainMenu({ progress, onBattle, onDeckBuilder, onCollection, onCl
           <div className="absolute bottom-2 right-2 bg-black/40 px-2 py-0.5 rounded text-[10px] text-white/70">
             Tap for Trophy Road
           </div>
+
+          {/* Unclaimed Trophy Road Chests Badge */}
+          {unclaimedTrophyChests > 0 && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-gradient-to-r from-purple-600 to-purple-800 px-2 py-1 rounded-lg border border-purple-400 shadow-lg animate-pulse">
+              <Gift className="w-4 h-4 text-purple-200" />
+              <span className="text-white font-bold text-sm">{unclaimedTrophyChests}</span>
+            </div>
+          )}
         </button>
 
         {/* Arena Name Badge */}
