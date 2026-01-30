@@ -114,9 +114,11 @@ export interface Unit {
     type: string;
     lastActivationTime: number;
     isActive: boolean;
-    stacks: number; // For soul summon
+    stacks: number; // For soul summon (souls collected)
     remainingDuration: number;
     hasTriggered?: boolean; // For one-time triggers like guardian
+    isDashing?: boolean; // Golden Knight is mid-dash
+    dashesRemaining?: number; // Golden Knight dashes left
   };
   
   // Evolution state - true if this unit is evolved (has cycled and player unlocked evolution)
