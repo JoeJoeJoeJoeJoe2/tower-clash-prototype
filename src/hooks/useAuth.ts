@@ -27,6 +27,18 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Anonymous sign-in with player name stored in metadata
+  const signInAnonymously = useCallback(async (playerName: string) => {
+    const { data, error } = await supabase.auth.signInAnonymously({
+      options: {
+        data: {
+          player_name: playerName
+        }
+      }
+    });
+    return { data, error };
+  }, []);
+
   const signUp = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -51,6 +63,11 @@ export function useAuth() {
     return { error };
   }, []);
 
+  // Get player name from user metadata
+  const getPlayerName = useCallback(() => {
+    return user?.user_metadata?.player_name || 'Player';
+  }, [user]);
+
   return {
     user,
     session,
@@ -58,6 +75,8 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    signInAnonymously,
+    getPlayerName,
     isAuthenticated: !!user
   };
 }
