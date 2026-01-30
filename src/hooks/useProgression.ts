@@ -44,8 +44,8 @@ const initialProgress: ExtendedPlayerProgress = {
   gold: 100, // Starting gold
   // Tower levels - start with 1 copy each (level 1)
   towerCopies: { princess: 1, king: 1 },
-  // Evolution system - start with 3 shards for testing
-  evolutionShards: 3,
+  // Evolution system - start with 6 shards for testing
+  evolutionShards: 6,
   unlockedEvolutions: [],
   // Wild Cards - start with 0 of each
   wildCardCounts: { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 },
