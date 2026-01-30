@@ -26,7 +26,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     const items: { trophies: number; type: 'chest' | 'arena'; arena?: Arena }[] = [];
     
     // Always start from 10 and show ahead of current trophies
-    const maxMilestone = Math.max(trophies + 100, 200);
+    const maxMilestone = Math.max(trophies + 200, 500);
     
     for (let t = 10; t <= maxMilestone; t += 10) {
       const arena = ARENAS.find(a => a.trophiesRequired === t);
@@ -37,7 +37,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
       }
     }
     
-    return items.reverse(); // Show highest at top
+    return items; // Ascending order - scroll down for higher trophies
   }, [trophies]);
 
   const milestones = generateMilestones();
@@ -65,13 +65,15 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     setPendingMilestone(null);
   }, []);
 
-  // Scroll to current progress on mount
+  // Scroll to current progress on mount - show current trophy milestone at top
   useEffect(() => {
     if (scrollRef.current) {
-      const currentMilestoneIndex = milestones.findIndex(m => m.trophies > trophies);
-      const scrollTarget = Math.max(0, currentMilestoneIndex - 3);
-      const itemHeight = 100;
-      scrollRef.current.scrollTop = scrollTarget * itemHeight;
+      // Find the index of the milestone closest to current trophies
+      const currentIndex = milestones.findIndex(m => m.trophies > trophies);
+      // Position so current progress is visible near top (show a couple before it)
+      const targetIndex = Math.max(0, currentIndex - 1);
+      const itemHeight = 90; // Approximate height per item
+      scrollRef.current.scrollTop = targetIndex * itemHeight;
     }
   }, [trophies, milestones]);
 
