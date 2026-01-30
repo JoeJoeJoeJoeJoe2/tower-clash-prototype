@@ -133,7 +133,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      online_players_public: {
+        Row: {
+          banner_id: string | null
+          created_at: string | null
+          id: string | null
+          is_online: boolean | null
+          last_seen: string | null
+          level: number | null
+          player_name: string | null
+          trophies: number | null
+        }
+        Insert: {
+          banner_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_online?: boolean | null
+          last_seen?: string | null
+          level?: number | null
+          player_name?: string | null
+          trophies?: number | null
+        }
+        Update: {
+          banner_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_online?: boolean | null
+          last_seen?: string | null
+          level?: number | null
+          player_name?: string | null
+          trophies?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_requests: { Args: never; Returns: undefined }
