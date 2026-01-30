@@ -315,6 +315,7 @@ export function GameScreen() {
           playerBannerEmoji={getBannerById(progress.bannerId)?.emoji || '🛡️'}
           playerLevel={playerLevel}
           trophies={trophies}
+          unlockedEvolutions={progress.unlockedEvolutions}
           onGameEnd={handleGameEnd}
           onBack={() => {
             setIsFriendlyBattle(false);

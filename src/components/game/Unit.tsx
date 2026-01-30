@@ -90,20 +90,25 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
           isPlayer ? 'ring-2 ring-blue-400' : 'ring-2 ring-red-400',
           isOnCooldown && 'opacity-70',
           isCloaked && 'opacity-40',
-          isReflecting && 'ring-4 ring-yellow-400'
+          isReflecting && 'ring-4 ring-yellow-400',
+          unit.isEvolved && 'ring-4 ring-yellow-500'
         )}
         style={{
           transform: getTransformStyle(),
           background: isCloaked 
             ? `linear-gradient(145deg, #ffffff44, #ffffff22)`
-            : `linear-gradient(145deg, ${card.color}dd, ${card.color}99)`,
+            : unit.isEvolved
+              ? `linear-gradient(145deg, #fbbf24dd, #f59e0b99)` // Golden gradient for evolved
+              : `linear-gradient(145deg, ${card.color}dd, ${card.color}99)`,
           boxShadow: isOnCooldown
             ? `0 0 30px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)`
-            : isReflecting
-              ? `0 0 25px #fbbf2480, 0 4px 8px rgba(0,0,0,0.4)`
-              : unit.state === 'attacking' 
-                ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
-                : `0 4px 8px rgba(0,0,0,0.4)`,
+            : unit.isEvolved
+              ? `0 0 25px #fbbf2480, 0 0 15px #f59e0b60, 0 4px 8px rgba(0,0,0,0.4)` // Golden glow for evolved
+              : isReflecting
+                ? `0 0 25px #fbbf2480, 0 4px 8px rgba(0,0,0,0.4)`
+                : unit.state === 'attacking' 
+                  ? `0 0 20px ${isPlayer ? '#3b82f6' : '#ef4444'}80, 0 4px 8px rgba(0,0,0,0.4)` 
+                  : `0 4px 8px rgba(0,0,0,0.4)`,
           transition: 'box-shadow 0.15s ease, transform 0.1s ease, opacity 0.3s ease'
         }}
       >
@@ -189,16 +194,17 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         </div>
       </div>
       
-      {/* Card name - scales with size */}
+      {/* Card name - scales with size, shows "Evo" prefix for evolved units */}
       <div 
         className={cn(
           "font-semibold text-center mt-0.5 px-1 rounded whitespace-nowrap",
           dimensions.name,
-          isPlayer ? "text-blue-200" : "text-red-200"
+          isPlayer ? "text-blue-200" : "text-red-200",
+          unit.isEvolved && "text-yellow-300"
         )}
         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
       >
-        {card.name}
+        {unit.isEvolved ? `Evo ${card.name}` : card.name}
       </div>
     </div>
   );
