@@ -1,4 +1,4 @@
-import { GameState, Position, PlacementZone, Building as BuildingType, ActiveSpell } from '@/types/game';
+import { GameState, Position, PlacementZone, Building as BuildingType, ActiveSpell, Tower as TowerType } from '@/types/game';
 import { Projectile, SpawnEffect, DamageNumber, CrownAnimation } from '@/hooks/useGameState';
 import { Tower } from './Tower';
 import { Unit } from './Unit';
@@ -6,7 +6,6 @@ import { ProjectileComponent, SpawnEffectComponent } from './Projectile';
 import { cn } from '@/lib/utils';
 import { getCardById } from '@/data/cards';
 import { Arena as ArenaType } from '@/data/arenas';
-
 interface ArenaProps {
   gameState: GameState;
   projectiles: Projectile[];
@@ -42,62 +41,150 @@ function DamageNumberComponent({ dmg }: { dmg: DamageNumber }) {
   );
 }
 
-function BuildingComponent({ building }: { building: BuildingType }) {
+function BuildingComponent({ building, targetPosition }: { building: BuildingType; targetPosition?: Position }) {
   const card = getCardById(building.cardId);
   const healthPercent = (building.health / building.maxHealth) * 100;
   const lifetimePercent = (building.lifetime / building.maxLifetime) * 100;
   const healthClass = healthPercent > 60 ? 'bg-green-500' : healthPercent > 30 ? 'bg-yellow-500' : 'bg-red-500';
   
+  // Check if this is a siege building (targets buildings/towers)
+  const isSiegeBuilding = building.targetType === 'buildings';
+  const hasTarget = isSiegeBuilding && targetPosition;
+  
   return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        left: building.position.x,
-        top: building.position.y,
-        transform: 'translate(-50%, -50%)'
-      }}
-    >
-      {/* Building body */}
-      <div 
-        className={cn(
-          "w-10 h-10 rounded-lg flex items-center justify-center text-lg border-2 shadow-lg",
-          building.owner === 'player' 
-            ? "bg-gradient-to-b from-blue-600 to-blue-800 border-blue-400" 
-            : "bg-gradient-to-b from-red-600 to-red-800 border-red-400"
-        )}
-      >
-        {card?.emoji || '🏰'}
-      </div>
+    <>
+      {/* Target line for siege buildings */}
+      {hasTarget && (
+        <svg 
+          className="absolute inset-0 pointer-events-none z-10"
+          style={{ width: '100%', height: '100%' }}
+        >
+          {/* Outer glow line */}
+          <line
+            x1={building.position.x}
+            y1={building.position.y}
+            x2={targetPosition.x}
+            y2={targetPosition.y}
+            stroke={building.owner === 'player' ? '#60a5fa' : '#f87171'}
+            strokeWidth="4"
+            opacity="0.3"
+            strokeLinecap="round"
+          />
+          {/* Main target line with dashed animation */}
+          <line
+            x1={building.position.x}
+            y1={building.position.y}
+            x2={targetPosition.x}
+            y2={targetPosition.y}
+            stroke={building.owner === 'player' ? '#3b82f6' : '#ef4444'}
+            strokeWidth="2"
+            strokeDasharray="8 4"
+            strokeLinecap="round"
+            className="animate-pulse"
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              from="0"
+              to="-24"
+              dur="0.5s"
+              repeatCount="indefinite"
+            />
+          </line>
+          {/* Target crosshair at tower */}
+          <circle
+            cx={targetPosition.x}
+            cy={targetPosition.y}
+            r="12"
+            fill="none"
+            stroke={building.owner === 'player' ? '#3b82f6' : '#ef4444'}
+            strokeWidth="2"
+            opacity="0.6"
+            className="animate-ping"
+            style={{ animationDuration: '1.5s' }}
+          />
+          <circle
+            cx={targetPosition.x}
+            cy={targetPosition.y}
+            r="6"
+            fill={building.owner === 'player' ? '#3b82f680' : '#ef444480'}
+            stroke={building.owner === 'player' ? '#60a5fa' : '#f87171'}
+            strokeWidth="1.5"
+          />
+        </svg>
+      )}
       
-      {/* Health bar */}
-      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          left: building.position.x,
+          top: building.position.y,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 20
+        }}
+      >
+        {/* Siege targeting indicator */}
+        {isSiegeBuilding && (
+          <div 
+            className={cn(
+              "absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1.5 py-0.5 rounded",
+              building.owner === 'player' 
+                ? "bg-blue-600/80 text-blue-100" 
+                : "bg-red-600/80 text-red-100"
+            )}
+          >
+            {hasTarget ? '🎯 LOCKED' : '🔍 SEEKING'}
+          </div>
+        )}
+        
+        {/* Building body */}
         <div 
-          className={cn("h-full transition-all", healthClass)}
-          style={{ width: `${healthPercent}%` }}
+          className={cn(
+            "w-10 h-10 rounded-lg flex items-center justify-center text-lg border-2 shadow-lg relative",
+            building.owner === 'player' 
+              ? "bg-gradient-to-b from-blue-600 to-blue-800 border-blue-400" 
+              : "bg-gradient-to-b from-red-600 to-red-800 border-red-400",
+            hasTarget && "ring-2 ring-offset-1",
+            hasTarget && (building.owner === 'player' ? "ring-blue-400/50" : "ring-red-400/50")
+          )}
+        >
+          {card?.emoji || '🏰'}
+          
+          {/* Firing indicator when attacking */}
+          {hasTarget && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-ping" />
+          )}
+        </div>
+        
+        {/* Health bar */}
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+          <div 
+            className={cn("h-full transition-all", healthClass)}
+            style={{ width: `${healthPercent}%` }}
+          />
+        </div>
+        
+        {/* Numeric health display */}
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
+          <span 
+            className={cn(
+              "text-[9px] font-bold px-1 rounded",
+              building.owner === 'player' ? "text-blue-200" : "text-red-200"
+            )}
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+          >
+            {Math.max(0, Math.floor(building.health))}
+          </span>
+        </div>
+        
+        {/* Lifetime indicator (circular) */}
+        <div 
+          className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white/50"
+          style={{
+            background: `conic-gradient(${building.owner === 'player' ? '#60a5fa' : '#f87171'} ${lifetimePercent}%, transparent ${lifetimePercent}%)`
+          }}
         />
       </div>
-      
-      {/* Numeric health display */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
-        <span 
-          className={cn(
-            "text-[9px] font-bold px-1 rounded",
-            building.owner === 'player' ? "text-blue-200" : "text-red-200"
-          )}
-          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
-        >
-          {Math.max(0, Math.floor(building.health))}
-        </span>
-      </div>
-      
-      {/* Lifetime indicator (circular) */}
-      <div 
-        className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white/50"
-        style={{
-          background: `conic-gradient(${building.owner === 'player' ? '#60a5fa' : '#f87171'} ${lifetimePercent}%, transparent ${lifetimePercent}%)`
-        }}
-      />
-    </div>
+    </>
   );
 }
 
@@ -405,12 +492,29 @@ export function Arena({
       ))}
 
       {/* Buildings */}
-      {gameState.playerBuildings.map(building => (
-        <BuildingComponent key={building.id} building={building} />
-      ))}
-      {gameState.enemyBuildings.map(building => (
-        <BuildingComponent key={building.id} building={building} />
-      ))}
+      {gameState.playerBuildings.map(building => {
+        // Find target position for siege buildings
+        const targetTower = building.targetId 
+          ? gameState.enemyTowers.find(t => t.id === building.targetId && t.health > 0)
+          : undefined;
+        const targetBuilding = !targetTower && building.targetId
+          ? gameState.enemyBuildings.find(b => b.id === building.targetId && b.health > 0)
+          : undefined;
+        const targetPosition = targetTower?.position || targetBuilding?.position;
+        
+        return <BuildingComponent key={building.id} building={building} targetPosition={targetPosition} />;
+      })}
+      {gameState.enemyBuildings.map(building => {
+        const targetTower = building.targetId 
+          ? gameState.playerTowers.find(t => t.id === building.targetId && t.health > 0)
+          : undefined;
+        const targetBuilding = !targetTower && building.targetId
+          ? gameState.playerBuildings.find(b => b.id === building.targetId && b.health > 0)
+          : undefined;
+        const targetPosition = targetTower?.position || targetBuilding?.position;
+        
+        return <BuildingComponent key={building.id} building={building} targetPosition={targetPosition} />;
+      })}
 
       {/* Active Spells (visual effects) */}
       {gameState.activeSpells.map(spell => (

@@ -144,6 +144,7 @@ export interface Building {
   range: number;
   lastAttackTime: number;
   targetType: 'ground' | 'air' | 'both' | 'buildings';
+  targetId?: string; // ID of the tower/building being targeted (for siege buildings)
   
   // Building-specific
   lifetime: number; // Remaining lifetime in seconds
