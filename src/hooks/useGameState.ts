@@ -57,9 +57,9 @@ function createInitialTowers(towerLevels: { princess: number; king: number } = {
   
   // Base stats
   const basePrincessHealth = 2000;
-  const basePrincessDamage = 50;
+  const basePrincessDamage = 100; // Enough to 1-shot skeletons (80 HP)
   const baseKingHealth = 2400;
-  const baseKingDamage = 100;
+  const baseKingDamage = 150; // King tower deals more damage
   
   // Scaled stats for player
   const playerPrincessHealth = Math.floor(basePrincessHealth * princessMultiplier);
