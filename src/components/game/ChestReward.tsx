@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChestReward as ChestRewardType } from '@/types/game';
 import { getCardById } from '@/data/cards';
+import { getTowerTroopById } from '@/data/towerTroops';
 import { GameCard } from './GameCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Sparkles, Gift, Coins, Star, Gem } from 'lucide-react';
+import { Sparkles, Gift, Coins, Star, Gem, Shield } from 'lucide-react';
 
 interface ChestRewardProps {
   onGenerateReward: (stars: number) => ChestRewardType | null;
@@ -211,6 +212,16 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
                       </div>
                     );
                   })}
+                </div>
+              )}
+              {reward.towerTroopUnlock && (
+                <div className="flex items-center justify-center gap-2 mt-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full px-4 py-2 animate-pulse border border-cyan-400/30">
+                  <Shield className="w-5 h-5 text-cyan-400" />
+                  <span className="text-lg">{getTowerTroopById(reward.towerTroopUnlock).emoji}</span>
+                  <span className="text-cyan-300 font-bold">
+                    New Tower Troop: {getTowerTroopById(reward.towerTroopUnlock).name}!
+                  </span>
+                  <span className="text-lg">🎉</span>
                 </div>
               )}
             </div>

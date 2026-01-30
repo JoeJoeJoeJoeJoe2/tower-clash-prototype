@@ -261,6 +261,7 @@ export interface ChestReward {
   stars?: number; // Number of stars earned during chest opening (1-5)
   evolutionShards?: number; // Evolution shards (only from 5-star chests)
   wildCards?: { rarity: string; count: number }[]; // Wild cards earned from chest
+  towerTroopUnlock?: string; // Tower troop ID unlocked from chest
 }
 
 // Available banners in the game

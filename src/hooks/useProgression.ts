@@ -4,7 +4,7 @@ import { allCards, starterCardIds } from '@/data/cards';
 import { starterBannerIds, getRandomBanner } from '@/data/banners';
 import { getCardLevel } from '@/lib/cardLevels';
 import { EVOLUTION_SHARDS_REQUIRED, hasEvolution } from '@/data/evolutions';
-import { TOWER_TROOPS } from '@/data/towerTroops';
+import { TOWER_TROOPS, TowerTroop } from '@/data/towerTroops';
 
 // Extended progress type with tower troop support
 export interface ExtendedPlayerProgress extends PlayerProgress {
@@ -324,6 +324,39 @@ export function useProgression() {
       rewards.towerCards!.push({ towerId: towerType, count: towerCardCount });
     }
     
+    // Tower Troop unlock chance - separate from tower cards
+    // Higher chance for tower troops, weighted by rarity
+    const towerTroopChance = starCount >= 4 ? 0.5 : starCount >= 2 ? 0.35 : 0.2;
+    if (Math.random() < towerTroopChance) {
+      const unlockedTroopIds = prog.unlockedTowerTroopIds || ['default'];
+      // Filter out already unlocked troops (except default which is always unlocked)
+      const availableTroops = TOWER_TROOPS.filter(t => 
+        t.id !== 'default' && !unlockedTroopIds.includes(t.id)
+      );
+      
+      if (availableTroops.length > 0) {
+        // Weight by rarity - common/rare much more likely than epic/legendary
+        const weightedTroops: typeof availableTroops = [];
+        availableTroops.forEach(troop => {
+          let weight = 1;
+          switch (troop.rarity) {
+            case 'common': weight = 10; break;
+            case 'rare': weight = 8; break;     // Cannoneer - high weight
+            case 'epic': weight = 5; break;     // Dagger Duchess - medium-high weight
+            case 'legendary': weight = 1; break;
+          }
+          for (let i = 0; i < weight; i++) {
+            weightedTroops.push(troop);
+          }
+        });
+        
+        const randomTroop = weightedTroops[Math.floor(Math.random() * weightedTroops.length)];
+        if (randomTroop) {
+          rewards.towerTroopUnlock = randomTroop.id;
+        }
+      }
+    }
+    
     // Gold: 500-1125 range, stars increase the average
     const baseGold = 500;
     const maxExtraGold = 625;
@@ -405,6 +438,12 @@ export function useProgression() {
         newWildCardCounts[wc.rarity] = (newWildCardCounts[wc.rarity] || 0) + wc.count;
       });
     }
+    
+    // Unlock tower troop if rewarded
+    const newUnlockedTowerTroopIds = [...(prog.unlockedTowerTroopIds || ['default'])];
+    if (rewards.towerTroopUnlock && !newUnlockedTowerTroopIds.includes(rewards.towerTroopUnlock)) {
+      newUnlockedTowerTroopIds.push(rewards.towerTroopUnlock);
+    }
 
     setProgress(prev => ({
       ...prev,
@@ -413,6 +452,7 @@ export function useProgression() {
       ownedBannerIds: newOwnedBanners,
       towerCopies: newTowerCopies,
       wildCardCounts: newWildCardCounts,
+      unlockedTowerTroopIds: newUnlockedTowerTroopIds,
       gold: prev.gold + (rewards.goldEarned || 0),
       evolutionShards: prev.evolutionShards + (rewards.evolutionShards || 0),
       // Only decrement chest counter if this is a regular chest (not trophy road)
