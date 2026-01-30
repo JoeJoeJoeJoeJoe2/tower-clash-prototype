@@ -20,6 +20,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showChestReward, setShowChestReward] = useState(false);
   const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
+  const [pendingClaimAll, setPendingClaimAll] = useState<number[]>([]);
 
   // Generate all trophy milestones - always start from 10 and go up
   const generateMilestones = useCallback(() => {
@@ -42,11 +43,27 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
 
   const milestones = generateMilestones();
 
+  // Get all unclaimed chest milestones that the player can claim
+  const unclaimedChestMilestones = milestones
+    .filter(m => m.type === 'chest' && trophies >= m.trophies && !claimedRewards.includes(m.trophies))
+    .map(m => m.trophies);
+
+  const canClaimAll = trophies >= 99 && unclaimedChestMilestones.length > 1;
+
   // Handle claiming a reward - opens chest experience
   const handleClaimClick = useCallback((milestone: number) => {
     setPendingMilestone(milestone);
     setShowChestReward(true);
   }, []);
+
+  // Handle claim all - queue all unclaimed chests
+  const handleClaimAll = useCallback(() => {
+    if (unclaimedChestMilestones.length > 0) {
+      setPendingClaimAll(unclaimedChestMilestones);
+      setPendingMilestone(unclaimedChestMilestones[0]);
+      setShowChestReward(true);
+    }
+  }, [unclaimedChestMilestones]);
 
   // Handle chest reward generation
   const handleGenerateReward = useCallback((stars: number): ChestRewardType | null => {
@@ -62,8 +79,21 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
   // Handle closing chest reward
   const handleChestClose = useCallback(() => {
     setShowChestReward(false);
-    setPendingMilestone(null);
-  }, []);
+    
+    // Check if we're in claim all mode and have more chests to open
+    if (pendingClaimAll.length > 1) {
+      const remainingChests = pendingClaimAll.slice(1);
+      setPendingClaimAll(remainingChests);
+      // Open next chest after a short delay
+      setTimeout(() => {
+        setPendingMilestone(remainingChests[0]);
+        setShowChestReward(true);
+      }, 300);
+    } else {
+      setPendingClaimAll([]);
+      setPendingMilestone(null);
+    }
+  }, [pendingClaimAll]);
 
   // Auto-jump so the player's current section is visible (e.g. 80, 70, 60 for 60 trophies)
   useEffect(() => {
@@ -103,7 +133,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
           <ChevronLeft className="w-6 h-6" />
         </button>
         
-        <div className="text-center">
+        <div className="text-center flex-1">
           <h1 className="text-xl font-bold text-white">Trophy Road</h1>
           <div className="flex items-center justify-center gap-2 mt-1">
             <Trophy className="w-4 h-4 text-amber-400" />
@@ -172,6 +202,19 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
           )}
         </div>
       </div>
+
+      {/* Claim All Button */}
+      {canClaimAll && (
+        <div className="px-4 pb-2">
+          <Button
+            onClick={handleClaimAll}
+            className="w-full h-10 text-sm font-bold bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600 border-b-4 border-green-900 rounded-xl animate-pulse"
+          >
+            <Gift className="w-4 h-4 mr-2" />
+            Claim All ({unclaimedChestMilestones.length} Chests)
+          </Button>
+        </div>
+      )}
 
       {/* Trophy Road List */}
       <div className="flex-1 min-h-0 overflow-hidden px-4 pb-4">
