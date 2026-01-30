@@ -92,18 +92,28 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
             onClick={handleChestClick}
           >
             {/* Stars above chest */}
-            {stars > 0 && stage !== 'open' && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1">
-                {Array.from({ length: stars }).map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={cn(
-                      'w-6 h-6 text-amber-400 fill-amber-400 animate-pulse',
-                      i === stars - 1 && 'animate-bounce'
-                    )} 
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  />
-                ))}
+            {stage !== 'open' && (
+              <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+                <div className="flex gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={cn(
+                        'w-6 h-6 transition-all duration-300',
+                        i < stars 
+                          ? 'text-amber-400 fill-amber-400 scale-110' 
+                          : 'text-gray-600 fill-transparent opacity-40',
+                        i === stars - 1 && stars > 0 && 'animate-bounce'
+                      )} 
+                    />
+                  ))}
+                </div>
+                <span className={cn(
+                  "text-sm font-bold transition-all",
+                  stars > 0 ? "text-amber-400" : "text-gray-500"
+                )}>
+                  {stars > 0 ? `${stars} Star${stars > 1 ? 's' : ''}` : 'Tap to earn stars!'}
+                </span>
               </div>
             )}
             
