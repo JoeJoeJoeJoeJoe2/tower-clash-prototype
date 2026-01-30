@@ -39,21 +39,22 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
         setStars(starsRef.current);
       }
       
-      // After 5 clicks, generate reward and start opening
-      if (newClicks >= maxClicks && !hasGeneratedReward.current) {
-        hasGeneratedReward.current = true;
-        // Generate reward immediately with current stars
-        const finalStars = Math.max(1, starsRef.current);
-        const generatedReward = onGenerateReward(finalStars);
-        setReward(generatedReward);
-        
-        // Transition to opening stage
-        setTimeout(() => setStage('opening'), 100);
-      }
-      
       return newClicks;
     });
-  }, [stage, maxClicks, onGenerateReward]);
+  }, [stage]);
+
+  // Generate reward when clicks reach max - separate effect to avoid render-phase updates
+  useEffect(() => {
+    if (clicks >= maxClicks && !hasGeneratedReward.current) {
+      hasGeneratedReward.current = true;
+      const finalStars = Math.max(1, starsRef.current);
+      const generatedReward = onGenerateReward(finalStars);
+      setReward(generatedReward);
+      
+      // Transition to opening stage
+      setTimeout(() => setStage('opening'), 100);
+    }
+  }, [clicks, maxClicks, onGenerateReward]);
 
   // Transition from opening to open after animation
   useEffect(() => {
