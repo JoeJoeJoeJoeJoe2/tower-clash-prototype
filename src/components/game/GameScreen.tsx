@@ -186,8 +186,8 @@ export function GameScreen() {
     const opponentId = isChallenger ? acceptedBattle.to_user_id : acceptedBattle.from_user_id;
     const opponentName = isChallenger ? acceptedBattle.to_player_name : acceptedBattle.from_player_name;
     
-    // Find opponent in online players to get their banner and level
-    const opponent = onlinePlayers.find(p => p.user_id === opponentId);
+    // Find opponent in online players by name to get their banner and level
+    const opponent = onlinePlayers.find(p => p.player_name === opponentName);
     const opponentBannerId = opponent?.banner_id || 'banner-blue';
     const opponentLevel = opponent?.level || 1;
     

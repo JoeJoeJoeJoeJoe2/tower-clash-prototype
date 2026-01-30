@@ -169,6 +169,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_requests: { Args: never; Returns: undefined }
+      get_user_id_for_player: {
+        Args: { player_record_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
