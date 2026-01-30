@@ -754,28 +754,45 @@ export function useGameState(
           const enemyLeftPrincess = state.enemyTowers.find(t => t.id === 'enemy-princess-left');
           const enemyRightPrincess = state.enemyTowers.find(t => t.id === 'enemy-princess-right');
           
-          if (enemyLeftPrincess && enemyLeftPrincess.health <= 0) {
-            zones.push({
-              id: 'enemy-left-destroyed',
-              minX: 0,
-              maxX: ARENA_WIDTH / 2 - 20,
-              minY: ARENA_HEIGHT / 2 - 100,
-              maxY: ARENA_HEIGHT / 2,
-              isActive: true,
-              reason: 'tower-destroyed'
-            });
-          }
+          const leftDestroyed = enemyLeftPrincess && enemyLeftPrincess.health <= 0;
+          const rightDestroyed = enemyRightPrincess && enemyRightPrincess.health <= 0;
           
-          if (enemyRightPrincess && enemyRightPrincess.health <= 0) {
+          // If both princess towers are destroyed, create one large merged zone
+          if (leftDestroyed && rightDestroyed) {
             zones.push({
-              id: 'enemy-right-destroyed',
-              minX: ARENA_WIDTH / 2 + 20,
+              id: 'enemy-both-destroyed',
+              minX: 0,
               maxX: ARENA_WIDTH,
               minY: ARENA_HEIGHT / 2 - 100,
               maxY: ARENA_HEIGHT / 2,
               isActive: true,
               reason: 'tower-destroyed'
             });
+          } else {
+            // Otherwise create individual zones for each destroyed tower
+            if (leftDestroyed) {
+              zones.push({
+                id: 'enemy-left-destroyed',
+                minX: 0,
+                maxX: ARENA_WIDTH / 2 - 20,
+                minY: ARENA_HEIGHT / 2 - 100,
+                maxY: ARENA_HEIGHT / 2,
+                isActive: true,
+                reason: 'tower-destroyed'
+              });
+            }
+            
+            if (rightDestroyed) {
+              zones.push({
+                id: 'enemy-right-destroyed',
+                minX: ARENA_WIDTH / 2 + 20,
+                maxX: ARENA_WIDTH,
+                minY: ARENA_HEIGHT / 2 - 100,
+                maxY: ARENA_HEIGHT / 2,
+                isActive: true,
+                reason: 'tower-destroyed'
+              });
+            }
           }
           
           return zones;
@@ -797,28 +814,45 @@ export function useGameState(
           const playerLeftPrincess = state.playerTowers.find(t => t.id === 'player-princess-left');
           const playerRightPrincess = state.playerTowers.find(t => t.id === 'player-princess-right');
           
-          if (playerLeftPrincess && playerLeftPrincess.health <= 0) {
-            zones.push({
-              id: 'player-left-destroyed',
-              minX: 0,
-              maxX: ARENA_WIDTH / 2 - 20,
-              minY: ARENA_HEIGHT / 2,
-              maxY: ARENA_HEIGHT / 2 + 100,
-              isActive: true,
-              reason: 'tower-destroyed'
-            });
-          }
+          const leftDestroyed = playerLeftPrincess && playerLeftPrincess.health <= 0;
+          const rightDestroyed = playerRightPrincess && playerRightPrincess.health <= 0;
           
-          if (playerRightPrincess && playerRightPrincess.health <= 0) {
+          // If both princess towers are destroyed, create one large merged zone
+          if (leftDestroyed && rightDestroyed) {
             zones.push({
-              id: 'player-right-destroyed',
-              minX: ARENA_WIDTH / 2 + 20,
+              id: 'player-both-destroyed',
+              minX: 0,
               maxX: ARENA_WIDTH,
               minY: ARENA_HEIGHT / 2,
               maxY: ARENA_HEIGHT / 2 + 100,
               isActive: true,
               reason: 'tower-destroyed'
             });
+          } else {
+            // Otherwise create individual zones for each destroyed tower
+            if (leftDestroyed) {
+              zones.push({
+                id: 'player-left-destroyed',
+                minX: 0,
+                maxX: ARENA_WIDTH / 2 - 20,
+                minY: ARENA_HEIGHT / 2,
+                maxY: ARENA_HEIGHT / 2 + 100,
+                isActive: true,
+                reason: 'tower-destroyed'
+              });
+            }
+            
+            if (rightDestroyed) {
+              zones.push({
+                id: 'player-right-destroyed',
+                minX: ARENA_WIDTH / 2 + 20,
+                maxX: ARENA_WIDTH,
+                minY: ARENA_HEIGHT / 2,
+                maxY: ARENA_HEIGHT / 2 + 100,
+                isActive: true,
+                reason: 'tower-destroyed'
+              });
+            }
           }
           
           return zones;
