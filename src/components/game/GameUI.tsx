@@ -7,6 +7,7 @@ import { ElixirBar } from './ElixirBar';
 import { BattleResults } from './BattleResults';
 import { EmotePanel } from './EmotePanel';
 import { EmoteDisplay, EmoteMessage } from './EmoteDisplay';
+import { ChampionAbilityButton } from './ChampionAbilityButton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Zap, X, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -71,7 +72,7 @@ export function GameUI({
   onSendCardPlacement,
   onConsumePlacement
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions);
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
@@ -251,7 +252,7 @@ export function GameUI({
               cardLevels={cardLevels}
             />
             
-            {/* Emote button + Elixir bar row */}
+            {/* Emote button + Elixir bar + Ability button row */}
             <div className="flex items-center gap-2 w-full justify-center">
               {/* Emote button */}
               <button
@@ -269,6 +270,13 @@ export function GameUI({
                   isSuddenDeath={gameState.isSuddenDeath}
                 />
               </div>
+              
+              {/* Champion ability button - only shows when champion on field */}
+              <ChampionAbilityButton
+                playerUnits={gameState.playerUnits}
+                onActivateAbility={activateChampionAbility}
+                currentTime={Date.now()}
+              />
             </div>
 
             {gameState.selectedCardIndex !== null && (
