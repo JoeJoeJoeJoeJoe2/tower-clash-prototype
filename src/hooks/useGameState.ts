@@ -497,7 +497,8 @@ export function useGameState(
       attackSpeed: card.attackSpeed,
       range: card.range,
       lastAttackTime: 0,
-      targetType: card.targetType === 'buildings' ? 'both' : card.targetType,
+      // Preserve 'buildings' targetType for siege buildings (X-Bow) so they can attack towers
+      targetType: card.targetType,
       lifetime: card.buildingLifetime || 30,
       maxLifetime: card.buildingLifetime || 30,
       isSpawner: !!(card.spawnCardId),
