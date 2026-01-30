@@ -32,8 +32,11 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, claimedRewards = 
   function generateMilestones() {
     const items: { trophies: number; type: 'chest' | 'arena'; arena?: Arena }[] = [];
     
-    // Generate milestones up to 2000+ trophies
-    for (let t = 10; t <= 2000; t += 10) {
+    // Generate milestones dynamically - extend beyond player's current trophies
+    // Start at 10, then 20, 30... with arenas every 100 (100, 200, 300...)
+    const maxMilestone = Math.max(trophies + 200, 500); // Show at least 200 ahead of current
+    
+    for (let t = 10; t <= maxMilestone; t += 10) {
       const arena = ARENAS.find(a => a.trophiesRequired === t);
       if (arena) {
         items.push({ trophies: t, type: 'arena', arena });
