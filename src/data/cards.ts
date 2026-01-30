@@ -55,7 +55,7 @@ export const allCards: CardDefinition[] = [
     damage: 180,
     attackSpeed: 0.83,
     moveSpeed: 35,
-    range: 150,
+    range: 100,
     hitSpeed: 1.2,
     description: 'A pair of sharpshooters',
     rarity: 'common',
@@ -454,7 +454,7 @@ export const allCards: CardDefinition[] = [
     damage: 200,
     attackSpeed: 0.33,
     moveSpeed: 35,
-    range: 250,
+    range: 320,
     hitSpeed: 3.0,
     description: 'Incredible range - outranges everything',
     rarity: 'legendary',
@@ -1002,9 +1002,9 @@ export const allCards: CardDefinition[] = [
     emoji: '🎯',
     health: 1500,
     damage: 52, // 2x damage
-    attackSpeed: 8.0, // 2x faster attack speed
+    attackSpeed: 4.0, // Slower attack speed
     moveSpeed: 0,
-    range: 280,
+    range: 350, // Increased range
     description: 'Long range siege weapon',
     rarity: 'epic',
     color: '#7c3aed',
