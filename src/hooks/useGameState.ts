@@ -2012,6 +2012,130 @@ export function useGameState(
     aiLastPlayTime.current = 0;
   }, [playerDeckIds]);
 
+  // Manually activate a champion ability
+  const activateChampionAbility = useCallback((unitId: string) => {
+    setGameState(prev => {
+      const state = { ...prev };
+      const unit = state.playerUnits.find(u => u.id === unitId);
+      
+      if (!unit || !unit.abilityState || unit.health <= 0) return state;
+      
+      const ability = unit.abilityState;
+      const now = Date.now();
+      
+      // Check cooldown
+      if (now - ability.lastActivationTime < getAbilityCooldown(ability.type)) {
+        return state;
+      }
+      
+      switch (ability.type) {
+        case 'cloak': {
+          // Archer Queen: Manual invisibility activation
+          if (!ability.isActive) {
+            ability.isActive = true;
+            ability.remainingDuration = 4; // 4 seconds of invisibility
+            ability.lastActivationTime = now;
+            addSpawnEffect(unit.position, 'player', '👻');
+          }
+          break;
+        }
+        
+        case 'soul-summon': {
+          // Skeleton King: Force summon skeletons if we have any souls
+          if (ability.stacks > 0) {
+            const skeletonCard = getCardById('skeletons');
+            if (skeletonCard) {
+              const numToSpawn = Math.min(ability.stacks, 8);
+              for (let i = 0; i < numToSpawn; i++) {
+                const offsetX = (i % 4 - 1.5) * 15;
+                const offsetY = Math.floor(i / 4) * 15;
+                const spawnPos = {
+                  x: unit.position.x + offsetX,
+                  y: unit.position.y - 25 + offsetY
+                };
+                state.playerUnits = [...state.playerUnits, spawnUnit(skeletonCard, spawnPos, 'player', unit.level)];
+                addSpawnEffect(spawnPos, 'player', '💀');
+              }
+              ability.stacks = 0;
+              ability.lastActivationTime = now;
+            }
+          }
+          break;
+        }
+        
+        case 'drill': {
+          // Mighty Miner: Manual burrow activation
+          if (!ability.hasTriggered) {
+            ability.hasTriggered = true;
+            // Burrow damage to enemies in path
+            const BURROW_DAMAGE = Math.round(unit.damage * 0.8 * 0.4);
+            state.enemyUnits.filter(e => e.health > 0 && getDistance(unit.position, e.position) <= 60).forEach(enemy => {
+              enemy.health -= BURROW_DAMAGE;
+              addDamageNumber(enemy.position, BURROW_DAMAGE, false);
+            });
+            
+            // Teleport to king tower area
+            unit.position = { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 80 };
+            unit.targetId = null;
+            addSpawnEffect(unit.position, 'player', '⛏️');
+            ability.lastActivationTime = now;
+          }
+          break;
+        }
+        
+        case 'reflect': {
+          // Monk: Manual reflect activation
+          if (!ability.isActive) {
+            ability.isActive = true;
+            ability.remainingDuration = 2;
+            ability.lastActivationTime = now;
+            addSpawnEffect(unit.position, 'player', '🧘');
+          }
+          break;
+        }
+        
+        case 'guardian': {
+          // Little Prince: Manual guardian summon
+          if (!ability.hasTriggered) {
+            ability.hasTriggered = true;
+            ability.lastActivationTime = now;
+            
+            const knightCard = getCardById('knight');
+            if (knightCard) {
+              const guardianPos = {
+                x: unit.position.x + 20,
+                y: unit.position.y - 15
+              };
+              const guardian = spawnUnit(knightCard, guardianPos, 'player', unit.level);
+              guardian.health = Math.floor(guardian.health * 1.2);
+              guardian.maxHealth = guardian.health;
+              guardian.damage = Math.floor(guardian.damage * 1.2);
+              state.playerUnits = [...state.playerUnits, guardian];
+              addSpawnEffect(guardianPos, 'player', '🛡️');
+            }
+          }
+          break;
+        }
+        
+        // dash-chain is passive only - can't be manually activated
+      }
+      
+      return state;
+    });
+  }, [spawnUnit, addSpawnEffect, addDamageNumber]);
+  
+  // Helper function to get ability cooldown in ms
+  function getAbilityCooldown(abilityType: string): number {
+    switch (abilityType) {
+      case 'cloak': return 10000;
+      case 'soul-summon': return 3000;
+      case 'drill': return 15000;
+      case 'guardian': return 12000;
+      case 'reflect': return 8000;
+      default: return 0;
+    }
+  }
+
   return {
     gameState,
     projectiles,
@@ -2022,6 +2146,7 @@ export function useGameState(
     playEnemyCard,
     selectCard,
     resetGame,
+    activateChampionAbility,
     ARENA_WIDTH,
     ARENA_HEIGHT
   };
