@@ -22,7 +22,7 @@ export interface Projectile {
   progress: number;
   damage: number;
   targetId: string;
-  type: 'arrow' | 'fireball';
+  type: 'arrow' | 'fireball' | 'bolt';
   owner: 'player' | 'enemy';
 }
 
@@ -1528,44 +1528,94 @@ export function useGameState(
             // Defensive buildings attack enemies
             if (updated.damage > 0 && updated.range > 0 && updated.lifetime > 0 && updated.health > 0) {
               const enemyUnits = owner === 'player' ? state.enemyUnits : state.playerUnits;
+              const enemyTowers = owner === 'player' ? state.enemyTowers : state.playerTowers;
               
-              // Filter valid targets based on building's targetType
-              const validTargets = enemyUnits.filter(u => {
+              // Filter valid unit targets based on building's targetType
+              const validUnitTargets = updated.targetType === 'buildings' ? [] : enemyUnits.filter(u => {
                 if (u.health <= 0) return false;
                 if (updated.targetType === 'ground' && u.isFlying) return false;
                 if (updated.targetType === 'air' && !u.isFlying) return false;
                 return getDistance(updated.position, u.position) <= updated.range;
               });
               
-              if (validTargets.length > 0 && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
-                const target = validTargets[0];
+              // Siege buildings (targetType: 'buildings') can attack towers
+              const validTowerTargets = updated.targetType === 'buildings' 
+                ? enemyTowers.filter(t => t.health > 0 && getDistance(updated.position, t.position) <= updated.range)
+                : [];
+              
+              // Combine targets - units first, then towers for siege buildings
+              const hasUnitTarget = validUnitTargets.length > 0;
+              const hasTowerTarget = validTowerTargets.length > 0;
+              
+              if ((hasUnitTarget || hasTowerTarget) && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
                 updated.lastAttackTime = now;
-                
-                // Apply damage (splash or single target)
                 const buildingDamage = Math.round(updated.damage * DAMAGE_MULTIPLIER);
-                if (updated.splashRadius && updated.splashRadius > 0) {
-                  validTargets.forEach(t => {
-                    if (getDistance(target.position, t.position) <= updated.splashRadius!) {
-                      t.health -= buildingDamage;
-                      addDamageNumber(t.position, buildingDamage, buildingDamage > 60);
-                    }
+                
+                if (hasUnitTarget) {
+                  // Attack units
+                  const target = validUnitTargets[0];
+                  if (updated.splashRadius && updated.splashRadius > 0) {
+                    validUnitTargets.forEach(t => {
+                      if (getDistance(target.position, t.position) <= updated.splashRadius!) {
+                        t.health -= buildingDamage;
+                        addDamageNumber(t.position, buildingDamage, buildingDamage > 60);
+                      }
+                    });
+                  } else {
+                    target.health -= buildingDamage;
+                    addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
+                  }
+                  
+                  // Add projectile visual
+                  newProjectiles.push({
+                    id: `proj-${projectileIdCounter.current++}`,
+                    from: { ...updated.position },
+                    to: { ...target.position },
+                    progress: 0,
+                    damage: 0,
+                    targetId: target.id,
+                    type: 'arrow',
+                    owner
                   });
-                } else {
+                } else if (hasTowerTarget) {
+                  // Attack towers (siege buildings like X-Bow)
+                  const target = validTowerTargets.reduce((closest, tower) => 
+                    getDistance(updated.position, tower.position) < getDistance(updated.position, closest.position) ? tower : closest
+                  );
                   target.health -= buildingDamage;
                   addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
+                  
+                  // Check for tower destruction and crown animation
+                  if (target.health <= 0) {
+                    const scoringSide = owner === 'player' ? 'player' : 'enemy';
+                    setCrownAnimations(prev => [...prev, {
+                      id: `crown-${crownIdCounter.current++}`,
+                      fromPosition: { ...target.position },
+                      toSide: scoringSide,
+                      progress: 0,
+                      towerType: target.type
+                    }]);
+                    // Activate king tower if princess tower destroyed
+                    if (target.type === 'princess') {
+                      const kingTower = enemyTowers.find(t => t.type === 'king');
+                      if (kingTower && !kingTower.isActivated) {
+                        kingTower.isActivated = true;
+                      }
+                    }
+                  }
+                  
+                  // Add projectile visual for siege attack
+                  newProjectiles.push({
+                    id: `proj-${projectileIdCounter.current++}`,
+                    from: { ...updated.position },
+                    to: { ...target.position },
+                    progress: 0,
+                    damage: 0,
+                    targetId: target.id,
+                    type: 'bolt', // Different visual for siege attacks
+                    owner
+                  });
                 }
-                
-                // Add projectile visual
-                newProjectiles.push({
-                  id: `proj-${projectileIdCounter.current++}`,
-                  from: { ...updated.position },
-                  to: { ...target.position },
-                  progress: 0,
-                  damage: 0, // Damage already applied
-                  targetId: target.id,
-                  type: 'arrow',
-                  owner
-                });
               }
             }
             

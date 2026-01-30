@@ -141,7 +141,7 @@ export interface Building {
   attackSpeed: number;
   range: number;
   lastAttackTime: number;
-  targetType: 'ground' | 'air' | 'both';
+  targetType: 'ground' | 'air' | 'both' | 'buildings';
   
   // Building-specific
   lifetime: number; // Remaining lifetime in seconds

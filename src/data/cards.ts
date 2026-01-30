@@ -454,9 +454,9 @@ export const allCards: CardDefinition[] = [
     damage: 200,
     attackSpeed: 0.33,
     moveSpeed: 35,
-    range: 320,
+    range: 400, // Incredible range - can hit towers from across the bridge
     hitSpeed: 3.0,
-    description: 'Incredible range - outranges everything',
+    description: 'Incredible range - outranges everything including towers',
     rarity: 'legendary',
     color: '#f472b6',
     deployCooldown: 1.0,
@@ -1001,16 +1001,16 @@ export const allCards: CardDefinition[] = [
     elixirCost: 6,
     emoji: '🎯',
     health: 1500,
-    damage: 52, // 2x damage
-    attackSpeed: 4.0, // Slower attack speed
+    damage: 52,
+    attackSpeed: 4.0,
     moveSpeed: 0,
-    range: 350, // Increased range
-    description: 'Long range siege weapon',
+    range: 400, // Long range - can hit towers from across the bridge
+    description: 'Long range siege weapon - targets towers',
     rarity: 'epic',
     color: '#7c3aed',
     deployCooldown: 3.5,
     isFlying: false,
-    targetType: 'ground',
+    targetType: 'buildings', // Siege building - targets buildings/towers like Giant
     buildingLifetime: 40,
     size: 'large'
   }
