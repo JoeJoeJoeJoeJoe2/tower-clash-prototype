@@ -1,23 +1,52 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trophy, Gift, Crown, Lock, Check, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ARENAS, getCurrentArena, getNextArena, Arena } from '@/data/arenas';
+import { ChestReward } from './ChestReward';
+import { ChestReward as ChestRewardType } from '@/types/game';
 
 interface TrophyRoadProps {
   trophies: number;
   onClose: () => void;
-  onClaimReward?: (trophyMilestone: number) => void;
+  onClaimReward?: (trophyMilestone: number) => boolean;
+  onGenerateReward?: (stars: number, skipInventoryCheck?: boolean) => ChestRewardType | null;
   claimedRewards?: number[]; // Trophy milestones already claimed
 }
 
-export function TrophyRoad({ trophies, onClose, onClaimReward, claimedRewards = [] }: TrophyRoadProps) {
+export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward, claimedRewards = [] }: TrophyRoadProps) {
   const currentArena = getCurrentArena(trophies);
   const nextArena = getNextArena(trophies);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showChestReward, setShowChestReward] = useState(false);
+  const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
 
   // Generate all trophy milestones
   const milestones = generateMilestones();
+
+  // Handle claiming a reward - opens chest experience
+  const handleClaimClick = useCallback((milestone: number) => {
+    setPendingMilestone(milestone);
+    setShowChestReward(true);
+  }, []);
+
+  // Handle chest reward generation
+  const handleGenerateReward = useCallback((stars: number): ChestRewardType | null => {
+    if (pendingMilestone && onClaimReward) {
+      onClaimReward(pendingMilestone);
+    }
+    if (onGenerateReward) {
+      // Pass true to skip inventory check for trophy road rewards
+      return onGenerateReward(stars, true);
+    }
+    return null;
+  }, [pendingMilestone, onClaimReward, onGenerateReward]);
+
+  // Handle closing chest reward
+  const handleChestClose = useCallback(() => {
+    setShowChestReward(false);
+    setPendingMilestone(null);
+  }, []);
 
   // Scroll to current progress on mount
   useEffect(() => {
@@ -207,10 +236,10 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, claimedRewards = 
                 </div>
 
                 {/* Claim button */}
-                {!isArena && canClaim && onClaimReward && (
+                {!isArena && canClaim && (
                   <Button
                     size="sm"
-                    onClick={() => onClaimReward(milestone.trophies)}
+                    onClick={() => handleClaimClick(milestone.trophies)}
                     className="bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600 text-white font-bold text-xs px-3"
                   >
                     Claim
@@ -235,6 +264,14 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, claimedRewards = 
           OK
         </Button>
       </div>
+
+      {/* Chest Reward Overlay */}
+      {showChestReward && onGenerateReward && (
+        <ChestReward
+          onGenerateReward={handleGenerateReward}
+          onClose={handleChestClose}
+        />
+      )}
     </div>
   );
 }
