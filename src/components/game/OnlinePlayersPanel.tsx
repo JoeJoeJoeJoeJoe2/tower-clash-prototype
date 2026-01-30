@@ -10,7 +10,7 @@ interface OnlinePlayersPanelProps {
   onlinePlayers: OnlinePlayer[];
   incomingRequests: BattleRequest[];
   outgoingRequests: BattleRequest[];
-  onSendRequest: (userId: string, playerName: string) => Promise<boolean>;
+  onSendRequest: (playerRecordId: string, playerName: string) => Promise<boolean>;
   onAcceptRequest: (requestId: string) => Promise<boolean>;
   onDeclineRequest: (requestId: string) => Promise<boolean>;
   onCancelRequest: (requestId: string) => Promise<boolean>;
@@ -32,9 +32,9 @@ export function OnlinePlayersPanel({
   };
 
   const handleSendRequest = async (player: OnlinePlayer) => {
-    setLoading(player.user_id, true);
-    await onSendRequest(player.user_id, player.player_name);
-    setLoading(player.user_id, false);
+    setLoading(player.id, true);
+    await onSendRequest(player.id, player.player_name);
+    setLoading(player.id, false);
   };
 
   const handleAccept = async (requestId: string) => {
@@ -55,12 +55,14 @@ export function OnlinePlayersPanel({
     setLoading(requestId, false);
   };
 
-  const hasPendingRequestTo = (userId: string) => {
-    return outgoingRequests.some(r => r.to_user_id === userId);
+  // Check if we have a pending request to a player by matching player name
+  // Since we no longer expose user_id, we match on outgoing request to_player_name
+  const hasPendingRequestTo = (playerName: string) => {
+    return outgoingRequests.some(r => r.to_player_name === playerName);
   };
 
-  const getOutgoingRequestId = (userId: string) => {
-    return outgoingRequests.find(r => r.to_user_id === userId)?.id;
+  const getOutgoingRequestId = (playerName: string) => {
+    return outgoingRequests.find(r => r.to_player_name === playerName)?.id;
   };
 
   return (
@@ -130,8 +132,8 @@ export function OnlinePlayersPanel({
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
             {onlinePlayers.map((player) => {
               const banner = getBannerById(player.banner_id);
-              const hasPending = hasPendingRequestTo(player.user_id);
-              const pendingRequestId = getOutgoingRequestId(player.user_id);
+              const hasPending = hasPendingRequestTo(player.player_name);
+              const pendingRequestId = getOutgoingRequestId(player.player_name);
               
               return (
                 <div
@@ -187,10 +189,10 @@ export function OnlinePlayersPanel({
                     <Button
                       size="sm"
                       onClick={() => handleSendRequest(player)}
-                      disabled={loadingStates[player.user_id]}
+                      disabled={loadingStates[player.id]}
                       className="bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500"
                     >
-                      {loadingStates[player.user_id] ? (
+                      {loadingStates[player.id] ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <>

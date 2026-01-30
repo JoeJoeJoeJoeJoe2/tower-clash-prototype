@@ -18,18 +18,27 @@ export function useBattleRequests(user: User | null, playerName: string) {
   const [outgoingRequests, setOutgoingRequests] = useState<BattleRequest[]>([]);
   const [acceptedBattle, setAcceptedBattle] = useState<BattleRequest | null>(null);
 
-  // Send a battle request
+  // Send a battle request using player record id (not user_id for security)
   const sendBattleRequest = useCallback(async (
-    toUserId: string,
+    toPlayerRecordId: string,
     toPlayerName: string
   ): Promise<boolean> => {
     if (!user) return false;
+
+    // Look up the user_id using the database function
+    const { data: targetUserId, error: lookupError } = await supabase
+      .rpc('get_user_id_for_player', { player_record_id: toPlayerRecordId });
+
+    if (lookupError || !targetUserId) {
+      console.error('Failed to lookup player:', lookupError);
+      return false;
+    }
 
     const { error } = await supabase
       .from('battle_requests')
       .insert({
         from_user_id: user.id,
-        to_user_id: toUserId,
+        to_user_id: targetUserId,
         from_player_name: playerName,
         to_player_name: toPlayerName,
         status: 'pending'
