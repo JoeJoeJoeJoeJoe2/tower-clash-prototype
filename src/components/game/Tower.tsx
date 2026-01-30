@@ -79,6 +79,13 @@ export function Tower({ tower }: TowerProps) {
           </div>
         )}
         
+        {/* Cannon indicator for activated king tower */}
+        {tower.type === 'king' && tower.isActivated && !isDestroyed && (
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-lg animate-bounce">
+            🔫
+          </div>
+        )}
+        
         {/* Muzzle flash when attacking */}
         {isAttacking && !isDestroyed && (
           <div className="absolute -top-2 left-1/2 -translate-x-1/2">
