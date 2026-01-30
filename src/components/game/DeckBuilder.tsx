@@ -122,7 +122,8 @@ export function DeckBuilder({
     : '0.0';
 
   const isActiveDeck = activeDeckId === editingDeckId;
-  const canBattle = deckSlots.find(s => s.id === activeDeckId)?.cardIds.length === 8;
+  // Allow battle with current editing deck if it has 8 cards (auto-saves on battle)
+  const canBattle = selectedDeck.length === 8;
 
   return (
     <div 
@@ -436,11 +437,18 @@ export function DeckBuilder({
         </div>
         <Button 
           className="w-full gap-2"
-          onClick={onStartBattle}
+          onClick={() => {
+            // Auto-save current deck and set as active before battle
+            if (selectedDeck.length === 8) {
+              onSaveDeck(editingDeckId, selectedDeck);
+              onSetActiveDeck(editingDeckId);
+              onStartBattle();
+            }
+          }}
           disabled={!canBattle}
         >
           <Swords className="w-4 h-4" />
-          Battle with Deck {activeDeckId}!
+          Battle!
         </Button>
       </div>
 
