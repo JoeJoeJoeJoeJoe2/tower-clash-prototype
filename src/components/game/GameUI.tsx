@@ -236,8 +236,8 @@ export function GameUI({
         {/* Controls - always visible at bottom */}
         <div className="w-full max-w-md shrink-0">
           <div 
-            className="bg-card/80 backdrop-blur-sm border-t border-border/30 px-1 py-1.5 flex flex-col items-center gap-1"
-            style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+            className="bg-card/80 backdrop-blur-sm border-t border-border/30 px-1 py-0.5 flex flex-col items-center gap-0.5"
+            style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
           >
             {/* Cards */}
             <Hand
