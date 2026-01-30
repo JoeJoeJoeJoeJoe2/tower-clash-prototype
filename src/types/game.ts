@@ -67,6 +67,9 @@ export interface CardDefinition {
   
   // Champion ability
   championAbility?: string; // Ability type ID for champions
+  
+  // Evolution cycle tracking (runtime only - tracks if card has cycled)
+  hasEvoCycled?: boolean;
 }
 
 export interface Unit {
@@ -115,6 +118,9 @@ export interface Unit {
     remainingDuration: number;
     hasTriggered?: boolean; // For one-time triggers like guardian
   };
+  
+  // Evolution state - true if this unit is evolved (has cycled and player unlocked evolution)
+  isEvolved?: boolean;
 }
 
 export interface StatusEffect {

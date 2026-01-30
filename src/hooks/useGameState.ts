@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone, Building, ActiveSpell } from '@/types/game';
 import { createDeck, drawHand, getCardById, SIZE_SPEED_MULTIPLIERS } from '@/data/cards';
 import { makeAIDecision } from './useAI';
+import { getEvolution, hasEvolution } from '@/data/evolutions';
 
 export const ARENA_WIDTH = 340;
 export const ARENA_HEIGHT = 500;
@@ -337,7 +338,8 @@ export function useGameState(
   towerLevels: { princess: number; king: number } = { princess: 1, king: 1 },
   onTrackDamage?: (cardId: string, damage: number) => void,
   getBalancedCardStats?: (cardId: string) => CardDefinition | null,
-  isMultiplayer: boolean = false
+  isMultiplayer: boolean = false,
+  unlockedEvolutions: string[] = []
 ) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -348,6 +350,13 @@ export function useGameState(
   // Store card levels in a ref so spawnUnit can access them
   const cardLevelsRef = useRef(playerCardLevels);
   cardLevelsRef.current = playerCardLevels;
+  
+  // Store unlocked evolutions in a ref
+  const unlockedEvolutionsRef = useRef(unlockedEvolutions);
+  unlockedEvolutionsRef.current = unlockedEvolutions;
+  
+  // Track how many times each card has been played (for evolution cycling)
+  const cardPlayCountRef = useRef<Map<string, number>>(new Map());
   
   // Track previous tower health to detect when towers are destroyed
   const prevTowerHealthRef = useRef<Map<string, number>>(new Map());
@@ -396,7 +405,7 @@ export function useGameState(
     return balanced || card;
   }, []);
 
-  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy', level: number = 1): Unit => {
+  const spawnUnit = useCallback((card: CardDefinition, position: Position, owner: 'player' | 'enemy', level: number = 1, isEvolved: boolean = false): Unit => {
     // Apply balance modifiers for player cards
     const balancedCard = owner === 'player' ? getCardWithBalance(card) : card;
     
@@ -406,8 +415,17 @@ export function useGameState(
     
     // Calculate level multiplier (10% per level)
     const levelMultiplier = Math.pow(1.1, level - 1);
-    const scaledHealth = Math.floor(balancedCard.health * levelMultiplier);
-    const scaledDamage = Math.floor(balancedCard.damage * levelMultiplier);
+    let scaledHealth = Math.floor(balancedCard.health * levelMultiplier);
+    let scaledDamage = Math.floor(balancedCard.damage * levelMultiplier);
+    
+    // Apply evolution bonuses if evolved
+    if (isEvolved) {
+      const evolution = getEvolution(card.id);
+      if (evolution) {
+        scaledHealth = Math.floor(scaledHealth * (1 + evolution.healthBonus));
+        scaledDamage = Math.floor(scaledDamage * (1 + evolution.damageBonus));
+      }
+    }
     
     // Initialize champion ability state if applicable
     const abilityState = balancedCard.championAbility ? {
@@ -450,7 +468,9 @@ export function useGameState(
       spawnCount: balancedCard.spawnCount,
       lastSpawnTime: 0,
       // Champion ability state
-      abilityState
+      abilityState,
+      // Evolution state
+      isEvolved
     };
   }, [getCardWithBalance]);
 
@@ -521,6 +541,19 @@ export function useGameState(
       const nextCard = prev.playerDeck[0];
       if (!nextCard) return prev;
 
+      // Track card play count for evolution cycling
+      const currentPlayCount = cardPlayCountRef.current.get(card.id) || 0;
+      cardPlayCountRef.current.set(card.id, currentPlayCount + 1);
+      
+      // Determine if card should be evolved
+      // Card needs: 1) player has unlocked evolution 2) card has evolution available 3) has cycled enough times
+      const hasUnlockedEvolution = unlockedEvolutionsRef.current.includes(card.id);
+      const cardHasEvolution = hasEvolution(card.id);
+      const evolution = getEvolution(card.id);
+      const cyclesRequired = evolution?.cycles || 1;
+      // First play doesn't count - evolution activates after the card has cycled through the deck
+      const isEvolvedThisPlay = hasUnlockedEvolution && cardHasEvolution && currentPlayCount >= cyclesRequired;
+
       addSpawnEffect(position, 'player', card.emoji);
       
       const newHand = [...prev.playerHand];
@@ -558,11 +591,16 @@ export function useGameState(
             y: (i % 2) * 10
           } : { x: 0, y: 0 };
           const unitPos = { x: position.x + offset.x, y: position.y + offset.y };
-          const unit = spawnUnit(card, unitPos, 'player', cardLevel);
+          const unit = spawnUnit(card, unitPos, 'player', cardLevel, isEvolvedThisPlay);
           // Adjust health for multi-unit cards (health is per unit) - scale by level
           const levelMultiplier = Math.pow(1.1, cardLevel - 1);
-          unit.health = Math.floor(card.health * levelMultiplier);
-          unit.maxHealth = Math.floor(card.health * levelMultiplier);
+          let unitHealth = Math.floor(card.health * levelMultiplier);
+          // Apply evolution health bonus for evolved units
+          if (isEvolvedThisPlay && evolution) {
+            unitHealth = Math.floor(unitHealth * (1 + evolution.healthBonus));
+          }
+          unit.health = unitHealth;
+          unit.maxHealth = unitHealth;
           newUnits.push(unit);
         }
         newState.playerUnits = [...prev.playerUnits, ...newUnits];
