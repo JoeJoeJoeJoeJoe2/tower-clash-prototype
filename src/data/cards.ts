@@ -293,7 +293,7 @@ export const allCards: CardDefinition[] = [
     health: 800,
     damage: 400,
     attackSpeed: 0.63,
-    moveSpeed: 60,
+    moveSpeed: 90, // Very fast - like Clash Royale
     range: 30,
     hitSpeed: 1.6,
     description: 'Fast tower rusher - targets buildings only',
@@ -318,7 +318,7 @@ export const allCards: CardDefinition[] = [
     health: 750,
     damage: 480,
     attackSpeed: 0.71,
-    moveSpeed: 45,
+    moveSpeed: 75, // Fast - charges to very fast in Clash Royale
     range: 35,
     hitSpeed: 1.4,
     description: 'Charges into battle for double damage',
