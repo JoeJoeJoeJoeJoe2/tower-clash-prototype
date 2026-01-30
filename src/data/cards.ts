@@ -1001,8 +1001,8 @@ export const allCards: CardDefinition[] = [
     elixirCost: 6,
     emoji: '🎯',
     health: 1500,
-    damage: 26,
-    attackSpeed: 4.0,
+    damage: 52, // 2x damage
+    attackSpeed: 8.0, // 2x faster attack speed
     moveSpeed: 0,
     range: 280,
     description: 'Long range siege weapon',

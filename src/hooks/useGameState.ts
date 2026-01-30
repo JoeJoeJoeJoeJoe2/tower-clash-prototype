@@ -308,8 +308,8 @@ function createInitialState(playerDeckIds: string[], towerLevels: { princess: nu
   const { hand: enemyHand, remainingDeck: enemyRemainingDeck } = drawHand(enemyDeck);
 
   return {
-    playerElixir: 5,
-    enemyElixir: 5,
+    playerElixir: 8,
+    enemyElixir: 8,
     playerTowers,
     enemyTowers,
     playerUnits: [],
