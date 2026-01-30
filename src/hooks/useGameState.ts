@@ -1530,56 +1530,42 @@ export function useGameState(
             if (updated.damage > 0 && updated.range > 0 && updated.lifetime > 0 && updated.health > 0) {
               const enemyUnits = owner === 'player' ? state.enemyUnits : state.playerUnits;
               const enemyTowers = owner === 'player' ? state.enemyTowers : state.playerTowers;
+              const enemyBuildings = owner === 'player' ? state.enemyBuildings : state.playerBuildings;
               
-              // Filter valid unit targets based on building's targetType
-              const validUnitTargets = updated.targetType === 'buildings' ? [] : enemyUnits.filter(u => {
-                if (u.health <= 0) return false;
-                if (updated.targetType === 'ground' && u.isFlying) return false;
-                if (updated.targetType === 'air' && !u.isFlying) return false;
-                return getDistance(updated.position, u.position) <= updated.range;
-              });
+              // Siege buildings (targetType: 'buildings') prioritize towers and buildings
+              const isSiegeBuilding = updated.targetType === 'buildings';
               
-              // Siege buildings (targetType: 'buildings') can attack towers
-              const validTowerTargets = updated.targetType === 'buildings' 
+              // Filter valid tower targets for siege buildings
+              const validTowerTargets = isSiegeBuilding 
                 ? enemyTowers.filter(t => t.health > 0 && getDistance(updated.position, t.position) <= updated.range)
                 : [];
               
-              // Combine targets - units first, then towers for siege buildings
-              const hasUnitTarget = validUnitTargets.length > 0;
-              const hasTowerTarget = validTowerTargets.length > 0;
+              // Filter valid enemy building targets for siege buildings
+              const validBuildingTargets = isSiegeBuilding
+                ? enemyBuildings.filter(b => b.health > 0 && getDistance(updated.position, b.position) <= updated.range)
+                : [];
               
-              if ((hasUnitTarget || hasTowerTarget) && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
+              // Filter valid unit targets - siege buildings can attack units as fallback when no buildings/towers available
+              const validUnitTargets = enemyUnits.filter(u => {
+                if (u.health <= 0) return false;
+                if (updated.targetType === 'ground' && u.isFlying) return false;
+                if (updated.targetType === 'air' && !u.isFlying) return false;
+                // For siege buildings, only consider units if no towers/buildings are in range
+                if (isSiegeBuilding && (validTowerTargets.length > 0 || validBuildingTargets.length > 0)) return false;
+                return getDistance(updated.position, u.position) <= updated.range;
+              });
+              
+              // Determine what to attack - priority: towers > buildings > units
+              const hasTowerTarget = validTowerTargets.length > 0;
+              const hasBuildingTarget = validBuildingTargets.length > 0;
+              const hasUnitTarget = validUnitTargets.length > 0;
+              
+              if ((hasUnitTarget || hasTowerTarget || hasBuildingTarget) && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
                 updated.lastAttackTime = now;
                 const buildingDamage = Math.round(updated.damage * DAMAGE_MULTIPLIER);
                 
-                if (hasUnitTarget) {
-                  // Attack units
-                  const target = validUnitTargets[0];
-                  if (updated.splashRadius && updated.splashRadius > 0) {
-                    validUnitTargets.forEach(t => {
-                      if (getDistance(target.position, t.position) <= updated.splashRadius!) {
-                        t.health -= buildingDamage;
-                        addDamageNumber(t.position, buildingDamage, buildingDamage > 60);
-                      }
-                    });
-                  } else {
-                    target.health -= buildingDamage;
-                    addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
-                  }
-                  
-                  // Add projectile visual
-                  newProjectiles.push({
-                    id: `proj-${projectileIdCounter.current++}`,
-                    from: { ...updated.position },
-                    to: { ...target.position },
-                    progress: 0,
-                    damage: 0,
-                    targetId: target.id,
-                    type: 'arrow',
-                    owner
-                  });
-                } else if (hasTowerTarget) {
-                  // Attack towers (siege buildings like X-Bow)
+                if (hasTowerTarget) {
+                  // Attack closest tower (siege buildings like X-Bow)
                   const target = validTowerTargets.reduce((closest, tower) => 
                     getDistance(updated.position, tower.position) < getDistance(updated.position, closest.position) ? tower : closest
                   );
@@ -1613,7 +1599,52 @@ export function useGameState(
                     progress: 0,
                     damage: 0,
                     targetId: target.id,
-                    type: 'bolt', // Different visual for siege attacks
+                    type: 'bolt',
+                    owner
+                  });
+                } else if (hasBuildingTarget) {
+                  // Attack closest enemy building
+                  const target = validBuildingTargets.reduce((closest, building) => 
+                    getDistance(updated.position, building.position) < getDistance(updated.position, closest.position) ? building : closest
+                  );
+                  target.health -= buildingDamage;
+                  addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
+                  
+                  newProjectiles.push({
+                    id: `proj-${projectileIdCounter.current++}`,
+                    from: { ...updated.position },
+                    to: { ...target.position },
+                    progress: 0,
+                    damage: 0,
+                    targetId: target.id,
+                    type: 'bolt',
+                    owner
+                  });
+                } else if (hasUnitTarget) {
+                  // Attack units (fallback for siege buildings, primary for defensive buildings)
+                  const target = validUnitTargets.reduce((closest, unit) => 
+                    getDistance(updated.position, unit.position) < getDistance(updated.position, closest.position) ? unit : closest
+                  );
+                  if (updated.splashRadius && updated.splashRadius > 0) {
+                    validUnitTargets.forEach(t => {
+                      if (getDistance(target.position, t.position) <= updated.splashRadius!) {
+                        t.health -= buildingDamage;
+                        addDamageNumber(t.position, buildingDamage, buildingDamage > 60);
+                      }
+                    });
+                  } else {
+                    target.health -= buildingDamage;
+                    addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
+                  }
+                  
+                  newProjectiles.push({
+                    id: `proj-${projectileIdCounter.current++}`,
+                    from: { ...updated.position },
+                    to: { ...target.position },
+                    progress: 0,
+                    damage: 0,
+                    targetId: target.id,
+                    type: 'arrow',
                     owner
                   });
                 }
