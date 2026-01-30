@@ -123,9 +123,9 @@ export function useProgression() {
           parsed.towerCopies = { princess: 1, king: 1 };
         }
         
-        // Migration: add evolution system if missing
-        if (parsed.evolutionShards === undefined) {
-          parsed.evolutionShards = 0;
+        // Migration: add evolution system if missing - give 6 shards
+        if (parsed.evolutionShards === undefined || parsed.evolutionShards < 6) {
+          parsed.evolutionShards = 6;
         }
         if (!parsed.unlockedEvolutions) {
           parsed.unlockedEvolutions = [];
