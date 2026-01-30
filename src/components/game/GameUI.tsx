@@ -24,6 +24,7 @@ interface GameUIProps {
   playerLevel: number;
   trophies?: number; // Player's current trophies for arena theme
   unlockedEvolutions?: string[]; // Card IDs with unlocked evolutions
+  selectedTowerTroopId?: string; // Currently equipped tower troop
   onGameEnd: (result: 'win' | 'loss' | 'draw') => void;
   onBack: () => void;
   onTrackDamage?: (cardId: string, damage: number) => void;
@@ -61,6 +62,7 @@ export function GameUI({
   playerLevel,
   trophies = 0,
   unlockedEvolutions = [],
+  selectedTowerTroopId = 'default',
   onGameEnd, 
   onBack, 
   onTrackDamage, 
@@ -72,7 +74,7 @@ export function GameUI({
   onSendCardPlacement,
   onConsumePlacement
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId);
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);

@@ -159,6 +159,25 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
         </div>
       )}
       
+      {/* Pancake buff indicator - golden pancake icon with stack count */}
+      {unit.pancakeBuffs > 0 && (
+        <div className="absolute -top-2 -left-2 flex items-center">
+          <div 
+            className="w-5 h-5 rounded-full bg-amber-500 border-2 border-amber-300 flex items-center justify-center text-[10px]"
+            style={{
+              boxShadow: '0 0 8px rgba(251, 191, 36, 0.6)'
+            }}
+          >
+            🥞
+          </div>
+          {unit.pancakeBuffs > 1 && (
+            <span className="text-[8px] text-amber-300 font-bold ml-0.5" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+              x{unit.pancakeBuffs}
+            </span>
+          )}
+        </div>
+      )}
+      
       {/* Health bar - scales with size */}
       <div className={cn("mt-1", dimensions.health)}>
         <div className="h-1.5 rounded-full bg-black/60 overflow-hidden">

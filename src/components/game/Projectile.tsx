@@ -55,6 +55,35 @@ export const ProjectileComponent = memo(function ProjectileComponent({ projectil
           }}
           />
         </div>
+      ) : type === 'pancake' ? (
+        // Pancake projectile - golden disc that buffs friendly units
+        <div className="relative animate-spin" style={{ animationDuration: '0.3s' }}>
+          <div className="text-2xl">🥞</div>
+          {/* Golden glow */}
+          <div className="absolute inset-0 -m-1 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(251,191,36,0.6), transparent)',
+              filter: 'blur(4px)'
+            }}
+          />
+        </div>
+      ) : type === 'bolt' ? (
+        // Bolt projectile - for siege buildings like X-Bow
+        <div className="relative">
+          <div className={cn(
+            'w-6 h-1 rounded-full',
+            owner === 'player' ? 'bg-blue-500' : 'bg-red-500'
+          )} />
+          {/* Electric glow */}
+          <div className="absolute inset-0 -m-0.5"
+            style={{
+              background: owner === 'player' 
+                ? 'linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent)'
+                : 'linear-gradient(90deg, transparent, #ef4444, #f87171, transparent)',
+              filter: 'blur(2px)'
+            }}
+          />
+        </div>
       ) : (
         // Cannonball projectile - large, heavy, with smoke trail
         <div className="relative">

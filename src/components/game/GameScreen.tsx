@@ -316,6 +316,7 @@ export function GameScreen() {
           playerLevel={playerLevel}
           trophies={trophies}
           unlockedEvolutions={progress.unlockedEvolutions}
+          selectedTowerTroopId={progress.selectedTowerTroopId}
           onGameEnd={handleGameEnd}
           onBack={() => {
             setIsFriendlyBattle(false);
