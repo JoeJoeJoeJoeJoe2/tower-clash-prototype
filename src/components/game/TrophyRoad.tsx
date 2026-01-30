@@ -65,17 +65,17 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     setPendingMilestone(null);
   }, []);
 
-  // Scroll to current progress on mount - show current trophy milestone at top
+  // Scroll to current progress on mount - anchor to the nearest (floored) 10-trophy milestone
   useEffect(() => {
-    if (scrollRef.current) {
-      // Find the index of the milestone closest to current trophies
-      const currentIndex = milestones.findIndex(m => m.trophies > trophies);
-      // Position so current progress is visible near top (show a couple before it)
-      const targetIndex = Math.max(0, currentIndex - 1);
-      const itemHeight = 90; // Approximate height per item
-      scrollRef.current.scrollTop = targetIndex * itemHeight;
-    }
-  }, [trophies, milestones]);
+    if (!scrollRef.current) return;
+
+    const nearestMilestone = Math.max(10, Math.floor(trophies / 10) * 10);
+    // Wait a frame so the list is laid out before we scroll.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`trophy-road-${nearestMilestone}`);
+      el?.scrollIntoView({ block: 'start', behavior: 'auto' });
+    });
+  }, [trophies, milestones.length]);
 
   const trophiesToNextArena = nextArena ? nextArena.trophiesRequired - trophies : 0;
 
@@ -161,10 +161,10 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
       </div>
 
       {/* Trophy Road List */}
-      <div className="flex-1 overflow-hidden px-4 pb-4">
+      <div className="flex-1 min-h-0 overflow-hidden px-4 pb-4">
         <div 
           ref={scrollRef}
-          className="h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cyan-800 scrollbar-track-transparent"
+          className="h-full min-h-0 overflow-y-auto pr-2 overscroll-contain touch-pan-y scrollbar-thin scrollbar-thumb-cyan-800 scrollbar-track-transparent"
         >
           {milestones.map((milestone, index) => {
             const isUnlocked = trophies >= milestone.trophies;
@@ -174,7 +174,11 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
             const isNext = !isUnlocked && (index === milestones.length - 1 || trophies >= milestones[index + 1]?.trophies);
 
             return (
-              <div key={milestone.trophies} className="relative">
+              <div
+                id={`trophy-road-${milestone.trophies}`}
+                key={milestone.trophies}
+                className="relative"
+              >
                 {/* Vertical connection line */}
                 {index < milestones.length - 1 && (
                   <div className={cn(
