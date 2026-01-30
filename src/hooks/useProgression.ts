@@ -331,13 +331,8 @@ export function useProgression() {
     const randomGold = Math.floor(Math.random() * (maxExtraGold - starBonus));
     rewards.goldEarned = Math.floor(baseGold + starBonus + randomGold);
     
-    // Card count: min 60, max 600 - scales with stars
-    // Base: 60-200, scales up with stars
-    const baseCards = 60;
-    const maxExtra = 540; // Up to 600 total
-    const starMultiplier = (starCount - 1) / 4; // 0 at 1 star, 1 at 5 stars
-    const randomVariation = Math.random() * 0.4; // 0-40% variation
-    let cardCount = Math.floor(baseCards + (maxExtra * starMultiplier * (0.6 + randomVariation)));
+    // Card count: 1-5 cards based on stars
+    const cardCount = Math.min(5, Math.max(1, starCount));
     
     // Filter cards by rarity based on stars (exclude tower troops with 0 elixir)
     const getAvailableCards = (owned: boolean) => {
