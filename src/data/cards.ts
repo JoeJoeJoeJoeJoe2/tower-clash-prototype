@@ -1013,6 +1013,27 @@ export const allCards: CardDefinition[] = [
     targetType: 'buildings', // Siege building - targets buildings/towers like Giant
     buildingLifetime: 40,
     size: 'large'
+  },
+  {
+    id: 'mortar',
+    name: 'Mortar',
+    type: 'building',
+    elixirCost: 4,
+    emoji: '💣',
+    health: 1100,
+    damage: 228,
+    attackSpeed: 0.2, // 5 second attack interval (slow but heavy)
+    moveSpeed: 0,
+    range: 380, // Long range - can hit towers from across the bridge
+    description: 'Lobs explosive shells at buildings from long range',
+    rarity: 'rare',
+    color: '#f59e0b',
+    deployCooldown: 3.5,
+    isFlying: false,
+    targetType: 'buildings', // Siege building - targets buildings/towers
+    buildingLifetime: 30,
+    splashRadius: 50, // Splash damage
+    size: 'large'
   }
 ];
 
