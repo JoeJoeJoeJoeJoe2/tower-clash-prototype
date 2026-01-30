@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
+// Public view interface (excludes user_id for security)
 export interface OnlinePlayer {
   id: string;
-  user_id: string;
   player_name: string;
   banner_id: string;
   trophies: number;
@@ -23,7 +23,7 @@ export function useOnlinePresence(
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
 
-  // Register/update online status
+  // Register/update online status (uses base table - user owns their row)
   const updatePresence = useCallback(async () => {
     if (!user) return;
 
@@ -48,7 +48,7 @@ export function useOnlinePresence(
     }
   }, [user, playerName, bannerId, trophies, level]);
 
-  // Go offline
+  // Go offline (uses base table - user owns their row)
   const goOffline = useCallback(async () => {
     if (!user) return;
 
@@ -58,19 +58,21 @@ export function useOnlinePresence(
       .eq('user_id', user.id);
   }, [user]);
 
-  // Fetch online players
+  // Fetch online players using the public view (excludes user_id)
   const fetchOnlinePlayers = useCallback(async () => {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
+    // Use the public view that doesn't expose user_id
     const { data, error } = await supabase
-      .from('online_players')
+      .from('online_players_public')
       .select('*')
       .eq('is_online', true)
       .gte('last_seen', fiveMinutesAgo)
       .order('trophies', { ascending: false });
 
     if (data && !error) {
-      setOnlinePlayers(data);
+      // Filter out self by matching on myPlayerId
+      setOnlinePlayers(data as OnlinePlayer[]);
     }
   }, []);
 
@@ -118,7 +120,7 @@ export function useOnlinePresence(
   }, [user, updatePresence, goOffline, fetchOnlinePlayers]);
 
   return {
-    onlinePlayers: onlinePlayers.filter(p => p.user_id !== user?.id), // Exclude self
+    onlinePlayers: onlinePlayers.filter(p => p.id !== myPlayerId), // Exclude self by id
     myPlayerId,
     refreshPlayers: fetchOnlinePlayers
   };
