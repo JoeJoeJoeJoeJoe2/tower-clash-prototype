@@ -259,7 +259,7 @@ export function useProgression() {
     }));
   }, []);
 
-  const openChest = useCallback((starCount: number = 1): ChestReward | null => {
+  const openChest = useCallback((starCount: number = 1, skipInventoryCheck: boolean = false): ChestReward | null => {
     // Use a ref-like approach to get current progress
     let currentProgress: PlayerProgress | null = null;
     setProgress(prev => {
@@ -267,7 +267,9 @@ export function useProgression() {
       return prev;
     });
     
-    if (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0) return null;
+    // Skip inventory check for trophy road rewards (they're claimed directly)
+    if (!skipInventoryCheck && (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0)) return null;
+    if (!currentProgress) return null;
     
     const prog = currentProgress as PlayerProgress;
     const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount, evolutionShards: 0, wildCards: [] };
@@ -416,7 +418,8 @@ export function useProgression() {
       wildCardCounts: newWildCardCounts,
       gold: prev.gold + (rewards.goldEarned || 0),
       evolutionShards: prev.evolutionShards + (rewards.evolutionShards || 0),
-      chestsAvailable: prev.chestsAvailable - 1
+      // Only decrement chest counter if this is a regular chest (not trophy road)
+      chestsAvailable: skipInventoryCheck ? prev.chestsAvailable : prev.chestsAvailable - 1
     }));
 
     return rewards;
@@ -509,7 +512,8 @@ export function useProgression() {
     return true;
   }, [progress.unlockedTowerTroopIds]);
 
-  // Claim a trophy road reward
+  // Claim a trophy road reward (marks as claimed, but doesn't add to chest inventory
+  // since the chest is opened directly in TrophyRoad component)
   const claimTrophyReward = useCallback((trophyMilestone: number): boolean => {
     const currentTrophies = progress.wins * 30;
     
@@ -517,10 +521,9 @@ export function useProgression() {
     if (progress.claimedTrophyRewards.includes(trophyMilestone)) return false;
     if (currentTrophies < trophyMilestone) return false;
     
-    // Award a chest
+    // Mark as claimed (chest will be opened directly in UI)
     setProgress(prev => ({
       ...prev,
-      chestsAvailable: prev.chestsAvailable + 1,
       claimedTrophyRewards: [...prev.claimedTrophyRewards, trophyMilestone]
     }));
     

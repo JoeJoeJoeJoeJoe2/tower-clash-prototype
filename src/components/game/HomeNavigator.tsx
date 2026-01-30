@@ -3,6 +3,7 @@ import { User } from '@supabase/supabase-js';
 import { OnlinePlayer } from '@/hooks/useOnlinePresence';
 import { BattleRequest } from '@/hooks/useBattleRequests';
 import { ExtendedPlayerProgress } from '@/hooks/useProgression';
+import { ChestReward } from '@/types/game';
 import { MainMenu } from './MainMenu';
 import { CardsPage } from './CardsPage';
 import { CardBalanceInfo } from './DeckBuilder';
@@ -30,6 +31,7 @@ interface HomeNavigatorProps {
   onAddCard: (cardId: string) => void;
   onSelectTowerTroop?: (troopId: string) => void;
   onClaimTrophyReward?: (trophyMilestone: number) => boolean;
+  onGenerateReward?: (stars: number, skipInventoryCheck?: boolean) => ChestReward | null;
   onUseWildCards?: (cardId: string, amount: number) => boolean;
   // Multiplayer props
   user: User | null;
@@ -58,6 +60,7 @@ export function HomeNavigator({
   onAddCard,
   onSelectTowerTroop,
   onClaimTrophyReward,
+  onGenerateReward,
   onUseWildCards,
   // Multiplayer props
   user,
@@ -202,6 +205,7 @@ export function HomeNavigator({
             trophies={trophies}
             onClose={() => setShowTrophyRoad(false)}
             onClaimReward={onClaimTrophyReward}
+            onGenerateReward={onGenerateReward}
             claimedRewards={progress.claimedTrophyRewards || []}
           />
         </div>

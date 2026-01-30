@@ -167,8 +167,8 @@ export function GameScreen() {
     }
   };
 
-  const handleGenerateReward = useCallback((stars: number): ChestReward | null => {
-    return openChest(stars);
+  const handleGenerateReward = useCallback((stars: number, skipInventoryCheck: boolean = false): ChestReward | null => {
+    return openChest(stars, skipInventoryCheck);
   }, [openChest]);
 
   const handleReset = () => {
@@ -275,6 +275,7 @@ export function GameScreen() {
           onAddCard={addCard}
           onSelectTowerTroop={selectTowerTroop}
           onClaimTrophyReward={claimTrophyReward}
+          onGenerateReward={handleGenerateReward}
           onUseWildCards={useWildCards}
           // Multiplayer props
           user={user}
