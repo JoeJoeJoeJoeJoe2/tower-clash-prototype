@@ -28,7 +28,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     // Always start from 10 and show ahead of current trophies
     const maxMilestone = Math.max(trophies + 200, 500);
     
-    for (let t = 10; t <= maxMilestone; t += 10) {
+    for (let t = 0; t <= maxMilestone; t += 10) {
       const arena = ARENAS.find(a => a.trophiesRequired === t);
       if (arena) {
         items.push({ trophies: t, type: 'arena', arena });
@@ -37,7 +37,7 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
       }
     }
     
-    return items; // Ascending order - scroll down for higher trophies
+    return items.reverse(); // Descending order - higher trophies at the top
   }, [trophies]);
 
   const milestones = generateMilestones();
@@ -65,22 +65,35 @@ export function TrophyRoad({ trophies, onClose, onClaimReward, onGenerateReward,
     setPendingMilestone(null);
   }, []);
 
-  // Scroll to current progress on mount - anchor to the nearest (floored) 10-trophy milestone
+  // Auto-jump so the player's current section is visible (e.g. 80, 70, 60 for 60 trophies)
   useEffect(() => {
-    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    if (!container) return;
 
-    const nearestMilestone = Math.max(10, Math.floor(trophies / 10) * 10);
-    // Wait a frame so the list is laid out before we scroll.
+    const maxMilestone = Math.max(trophies + 200, 500);
+    const currentMilestone = Math.max(0, Math.floor(trophies / 10) * 10);
+    const targetMilestone = Math.min(maxMilestone, currentMilestone + 20);
+
     requestAnimationFrame(() => {
-      const el = document.getElementById(`trophy-road-${nearestMilestone}`);
-      el?.scrollIntoView({ block: 'start', behavior: 'auto' });
+      const el = container.querySelector<HTMLElement>(`#trophy-road-${targetMilestone}`);
+      if (!el) return;
+
+      // Compute offset relative to scroll container.
+      let top = 0;
+      let node: HTMLElement | null = el;
+      while (node && node !== container) {
+        top += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
+      }
+
+      container.scrollTo({ top, behavior: 'auto' });
     });
   }, [trophies, milestones.length]);
 
   const trophiesToNextArena = nextArena ? nextArena.trophiesRequired - trophies : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col">
+    <div className="h-screen overflow-hidden bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col">
       {/* Header */}
       <div className="relative bg-gradient-to-b from-[#0d1b2a] to-[#152238] px-4 py-3 border-b border-cyan-900/50">
         <button 

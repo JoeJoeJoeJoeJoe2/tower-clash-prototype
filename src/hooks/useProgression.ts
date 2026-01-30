@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerProgress, ChestReward, DeckSlot } from '@/types/game';
 import { allCards, starterCardIds } from '@/data/cards';
 import { starterBannerIds, getRandomBanner } from '@/data/banners';
@@ -181,6 +181,12 @@ export function useProgression() {
     };
   });
 
+  // Keep an always-up-to-date ref for synchronous reads inside callbacks.
+  const progressRef = useRef<ExtendedPlayerProgress>(progress);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
@@ -260,18 +266,11 @@ export function useProgression() {
   }, []);
 
   const openChest = useCallback((starCount: number = 1, skipInventoryCheck: boolean = false): ChestReward | null => {
-    // Use a ref-like approach to get current progress
-    let currentProgress: PlayerProgress | null = null;
-    setProgress(prev => {
-      currentProgress = prev;
-      return prev;
-    });
-    
+    const prog = progressRef.current;
+
     // Skip inventory check for trophy road rewards (they're claimed directly)
-    if (!skipInventoryCheck && (!currentProgress || (currentProgress as PlayerProgress).chestsAvailable <= 0)) return null;
-    if (!currentProgress) return null;
-    
-    const prog = currentProgress as PlayerProgress;
+    if (!skipInventoryCheck && prog.chestsAvailable <= 0) return null;
+
     const rewards: ChestReward = { cards: [], towerCards: [], goldEarned: 0, stars: starCount, evolutionShards: 0, wildCards: [] };
     const unownedCards = allCards.filter(c => 
       !prog.ownedCardIds.includes(c.id) && 
