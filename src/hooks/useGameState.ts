@@ -1560,6 +1560,23 @@ export function useGameState(
               const hasBuildingTarget = validBuildingTargets.length > 0;
               const hasUnitTarget = validUnitTargets.length > 0;
               
+              // Update targetId for siege buildings (for visual target line)
+              if (isSiegeBuilding) {
+                if (hasTowerTarget) {
+                  const closestTower = validTowerTargets.reduce((closest, tower) => 
+                    getDistance(updated.position, tower.position) < getDistance(updated.position, closest.position) ? tower : closest
+                  );
+                  updated.targetId = closestTower.id;
+                } else if (hasBuildingTarget) {
+                  const closestBuilding = validBuildingTargets.reduce((closest, building) => 
+                    getDistance(updated.position, building.position) < getDistance(updated.position, closest.position) ? building : closest
+                  );
+                  updated.targetId = closestBuilding.id;
+                } else {
+                  updated.targetId = undefined;
+                }
+              }
+              
               if ((hasUnitTarget || hasTowerTarget || hasBuildingTarget) && now - updated.lastAttackTime > 1000 / updated.attackSpeed) {
                 updated.lastAttackTime = now;
                 const buildingDamage = Math.round(updated.damage * DAMAGE_MULTIPLIER);
@@ -1589,6 +1606,8 @@ export function useGameState(
                         kingTower.isActivated = true;
                       }
                     }
+                    // Clear targetId when target is destroyed
+                    updated.targetId = undefined;
                   }
                   
                   // Add projectile visual for siege attack
@@ -1609,6 +1628,11 @@ export function useGameState(
                   );
                   target.health -= buildingDamage;
                   addDamageNumber(target.position, buildingDamage, buildingDamage > 60);
+                  
+                  // Clear targetId when target is destroyed
+                  if (target.health <= 0) {
+                    updated.targetId = undefined;
+                  }
                   
                   newProjectiles.push({
                     id: `proj-${projectileIdCounter.current++}`,
