@@ -170,6 +170,7 @@ export function HomeNavigator({
             onReset={onReset}
             onOpenProfile={onOpenProfile}
             onOpenTrophyRoad={() => setShowTrophyRoad(true)}
+            claimedTrophyRewards={progress.claimedTrophyRewards}
             incomingRequestCount={incomingRequests.length}
           />
         </div>
