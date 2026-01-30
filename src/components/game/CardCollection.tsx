@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { allCards } from '@/data/cards';
 import { wildCards, WildCardRarity } from '@/data/wildCards';
 import { evolutions, getEvolution, EVOLUTION_SHARDS_REQUIRED } from '@/data/evolutions';
@@ -8,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { EvolutionShardsModal } from './EvolutionShardsModal';
 
 interface CardCollectionProps {
   ownedCardIds: string[];
@@ -16,6 +18,7 @@ interface CardCollectionProps {
   evolutionShards: number;
   unlockedEvolutions: string[];
   onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
+  onUnlockEvolution?: (cardId: string) => boolean;
 }
 
 const rarityConfig = {
@@ -36,8 +39,10 @@ export function CardCollection({
   wildCardCounts,
   evolutionShards,
   unlockedEvolutions,
-  onUseWildCard
+  onUseWildCard,
+  onUnlockEvolution
 }: CardCollectionProps) {
+  const [showEvolutionModal, setShowEvolutionModal] = useState(false);
   // Filter out tower troops (0 elixir cost)
   const collectibleCards = allCards.filter(c => c.elixirCost > 0);
   const ownedCount = collectibleCards.filter(c => ownedCardIds.includes(c.id)).length;
@@ -61,14 +66,17 @@ export function CardCollection({
             </p>
           </div>
           
-          {/* Evolution Shards Display */}
-          <div className="flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg px-3 py-2 border border-purple-500/30">
+          {/* Evolution Shards Display - Clickable */}
+          <button
+            onClick={() => setShowEvolutionModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg px-3 py-2 border border-purple-500/30 hover:from-purple-600/30 hover:to-pink-600/30 transition-colors"
+          >
             <Sparkles className="w-5 h-5 text-purple-400" />
             <div className="text-right">
               <div className="text-sm font-bold text-purple-300">{evolutionShards}</div>
               <div className="text-[9px] text-purple-400/70">Evo Shards</div>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Wild Cards Section */}
@@ -260,6 +268,17 @@ export function CardCollection({
           </div>
         </div>
       </div>
+
+      {/* Evolution Shards Modal */}
+      {showEvolutionModal && onUnlockEvolution && (
+        <EvolutionShardsModal
+          evolutionShards={evolutionShards}
+          ownedCardIds={ownedCardIds}
+          unlockedEvolutions={unlockedEvolutions}
+          onUnlockEvolution={onUnlockEvolution}
+          onClose={() => setShowEvolutionModal(false)}
+        />
+      )}
     </ScrollArea>
   );
 }

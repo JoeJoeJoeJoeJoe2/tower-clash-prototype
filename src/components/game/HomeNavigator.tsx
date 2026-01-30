@@ -33,6 +33,7 @@ interface HomeNavigatorProps {
   onClaimTrophyReward?: (trophyMilestone: number) => boolean;
   onGenerateReward?: (stars: number, skipInventoryCheck?: boolean) => ChestReward | null;
   onUseWildCards?: (cardId: string, amount: number) => boolean;
+  onUnlockEvolution?: (cardId: string) => boolean;
   // Multiplayer props
   user: User | null;
   onlinePlayers: OnlinePlayer[];
@@ -62,6 +63,7 @@ export function HomeNavigator({
   onClaimTrophyReward,
   onGenerateReward,
   onUseWildCards,
+  onUnlockEvolution,
   // Multiplayer props
   user,
   onlinePlayers,
@@ -157,6 +159,7 @@ export function HomeNavigator({
             cardBalanceInfo={cardBalanceInfo}
             onSelectTowerTroop={onSelectTowerTroop}
             onUseWildCards={onUseWildCards}
+            onUnlockEvolution={onUnlockEvolution}
           />
         </div>
 

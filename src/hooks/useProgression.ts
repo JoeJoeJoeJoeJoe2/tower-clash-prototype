@@ -44,8 +44,8 @@ const initialProgress: ExtendedPlayerProgress = {
   gold: 100, // Starting gold
   // Tower levels - start with 1 copy each (level 1)
   towerCopies: { princess: 1, king: 1 },
-  // Evolution system
-  evolutionShards: 0,
+  // Evolution system - start with 3 shards for testing
+  evolutionShards: 3,
   unlockedEvolutions: [],
   // Wild Cards - start with 0 of each
   wildCardCounts: { common: 0, rare: 0, epic: 0, legendary: 0, champion: 0 },
@@ -331,10 +331,13 @@ export function useProgression() {
     const randomGold = Math.floor(Math.random() * (maxExtraGold - starBonus));
     rewards.goldEarned = Math.floor(baseGold + starBonus + randomGold);
     
-    // Card count: 2-4 base, +1 for 3+ stars, +1 for 5 stars
-    let cardCount = 2 + Math.floor(Math.random() * 3);
-    if (starCount >= 3) cardCount++;
-    if (starCount >= 5) cardCount++;
+    // Card count: min 60, max 600 - scales with stars
+    // Base: 60-200, scales up with stars
+    const baseCards = 60;
+    const maxExtra = 540; // Up to 600 total
+    const starMultiplier = (starCount - 1) / 4; // 0 at 1 star, 1 at 5 stars
+    const randomVariation = Math.random() * 0.4; // 0-40% variation
+    let cardCount = Math.floor(baseCards + (maxExtra * starMultiplier * (0.6 + randomVariation)));
     
     // Filter cards by rarity based on stars (exclude tower troops with 0 elixir)
     const getAvailableCards = (owned: boolean) => {
