@@ -17,6 +17,10 @@ export interface TowerTroop {
   hasHealing?: boolean;
   healAmount?: number;
   healInterval?: number;
+  // Royal Chef pancake buff - throws pancakes at friendly troops to level them up
+  hasPancakeBuff?: boolean;
+  pancakeInterval?: number; // Seconds between pancake throws
+  pancakeBuffAmount?: number; // Stat boost percentage (e.g., 0.1 = 10% boost)
 }
 
 export const TOWER_TROOPS: TowerTroop[] = [
@@ -64,7 +68,7 @@ export const TOWER_TROOPS: TowerTroop[] = [
     id: 'royal-chef',
     name: 'Royal Chef',
     emoji: '👨‍🍳',
-    description: 'Splash damage and heals nearby troops.',
+    description: 'Throws pancakes to buff friendly troops! Also heals nearby troops.',
     rarity: 'legendary',
     color: '#ef4444',
     healthMultiplier: 0.85,
@@ -76,6 +80,9 @@ export const TOWER_TROOPS: TowerTroop[] = [
     hasHealing: true,
     healAmount: 20, // HP per tick
     healInterval: 2, // seconds
+    hasPancakeBuff: true,
+    pancakeInterval: 4, // Throw pancake every 4 seconds
+    pancakeBuffAmount: 0.15, // 15% stat boost per pancake
   },
   {
     id: 'archer-queen',

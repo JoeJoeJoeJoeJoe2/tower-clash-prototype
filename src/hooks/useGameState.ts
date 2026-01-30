@@ -3,6 +3,7 @@ import { GameState, Tower, Unit, CardDefinition, Position, PlacementZone, Buildi
 import { createDeck, drawHand, getCardById, SIZE_SPEED_MULTIPLIERS } from '@/data/cards';
 import { makeAIDecision } from './useAI';
 import { getEvolution, hasEvolution } from '@/data/evolutions';
+import { getTowerTroopById } from '@/data/towerTroops';
 
 export const ARENA_WIDTH = 340;
 export const ARENA_HEIGHT = 500;
@@ -22,7 +23,7 @@ export interface Projectile {
   progress: number;
   damage: number;
   targetId: string;
-  type: 'arrow' | 'fireball' | 'bolt';
+  type: 'arrow' | 'fireball' | 'bolt' | 'pancake';
   owner: 'player' | 'enemy';
 }
 
@@ -339,7 +340,8 @@ export function useGameState(
   onTrackDamage?: (cardId: string, damage: number) => void,
   getBalancedCardStats?: (cardId: string) => CardDefinition | null,
   isMultiplayer: boolean = false,
-  unlockedEvolutions: string[] = []
+  unlockedEvolutions: string[] = [],
+  selectedTowerTroopId: string = 'default'
 ) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -368,6 +370,8 @@ export function useGameState(
   const damageIdCounter = useRef(0);
   const crownIdCounter = useRef(0);
   const aiLastPlayTime = useRef(0);
+  const lastPancakeThrowTime = useRef(0); // Track Royal Chef pancake throws
+  const selectedTowerTroopRef = useRef(selectedTowerTroopId);
   const isMultiplayerRef = useRef(isMultiplayer);
   const trackDamageRef = useRef(onTrackDamage);
   const getBalancedStatsRef = useRef(getBalancedCardStats);
@@ -377,7 +381,8 @@ export function useGameState(
     trackDamageRef.current = onTrackDamage;
     getBalancedStatsRef.current = getBalancedCardStats;
     isMultiplayerRef.current = isMultiplayer;
-  }, [onTrackDamage, getBalancedCardStats, isMultiplayer]);
+    selectedTowerTroopRef.current = selectedTowerTroopId;
+  }, [onTrackDamage, getBalancedCardStats, isMultiplayer, selectedTowerTroopId]);
 
   const addDamageNumber = useCallback((position: Position, damage: number, isCritical = false) => {
     const num: DamageNumber = {
@@ -470,7 +475,9 @@ export function useGameState(
       // Champion ability state
       abilityState,
       // Evolution state
-      isEvolved
+      isEvolved,
+      // Pancake buff counter (Royal Chef)
+      pancakeBuffs: 0
     };
   }, [getCardWithBalance]);
 
@@ -1811,15 +1818,33 @@ export function useGameState(
           setProjectiles(prev => [...prev, ...newProjectiles]);
         }
 
-        // Apply projectile damage
+        // Apply projectile damage or buffs
         setProjectiles(currentProjectiles => {
           currentProjectiles.forEach(proj => {
             if (proj.progress >= 0.85 && proj.progress < 0.95) {
-              const allUnits = [...state.playerUnits, ...state.enemyUnits];
-              const target = allUnits.find(u => u.id === proj.targetId);
-              if (target && target.health > 0) {
-                target.health -= proj.damage;
-                addDamageNumber(target.position, proj.damage);
+              // Handle pancake buff projectiles differently
+              if (proj.type === 'pancake') {
+                // Find the friendly unit to buff
+                const friendlyUnits = proj.owner === 'player' ? state.playerUnits : state.enemyUnits;
+                const target = friendlyUnits.find(u => u.id === proj.targetId);
+                if (target && target.health > 0) {
+                  // Apply pancake buff - increase stats by 15%
+                  target.pancakeBuffs += 1;
+                  const buffMultiplier = 1.15;
+                  target.damage = Math.floor(target.damage * buffMultiplier);
+                  target.health = Math.floor(target.health * buffMultiplier);
+                  target.maxHealth = Math.floor(target.maxHealth * buffMultiplier);
+                  // Visual feedback
+                  addSpawnEffect(target.position, proj.owner, '🥞');
+                }
+              } else {
+                // Normal damage projectile
+                const allUnits = [...state.playerUnits, ...state.enemyUnits];
+                const target = allUnits.find(u => u.id === proj.targetId);
+                if (target && target.health > 0) {
+                  target.health -= proj.damage;
+                  addDamageNumber(target.position, proj.damage);
+                }
               }
             }
           });
@@ -2007,6 +2032,53 @@ export function useGameState(
         }
         if (newEnemyUnits.length > 0) {
           state.enemyUnits = [...state.enemyUnits, ...newEnemyUnits];
+        }
+
+        // ==================== ROYAL CHEF PANCAKE BUFF ====================
+        // Royal Chef tower troop throws pancakes at friendly troops to buff them
+        const towerTroop = getTowerTroopById(selectedTowerTroopRef.current);
+        if (towerTroop.hasPancakeBuff && towerTroop.pancakeInterval) {
+          const pancakeInterval = towerTroop.pancakeInterval * 1000; // Convert to ms
+          
+          // Check if it's time to throw a pancake
+          if (now - lastPancakeThrowTime.current > pancakeInterval) {
+            // Find alive princess towers that can throw pancakes
+            const alivePrincessTowers = state.playerTowers.filter(t => 
+              t.type === 'princess' && t.health > 0
+            );
+            
+            // Find friendly units that can be buffed (prefer units with fewer buffs)
+            const buffableUnits = state.playerUnits
+              .filter(u => u.health > 0 && u.pancakeBuffs < 3) // Max 3 pancake buffs
+              .sort((a, b) => a.pancakeBuffs - b.pancakeBuffs);
+            
+            if (alivePrincessTowers.length > 0 && buffableUnits.length > 0) {
+              // Pick the first princess tower and closest buffable unit
+              const tower = alivePrincessTowers[0];
+              const target = buffableUnits.reduce((closest, unit) => {
+                const distToCurrent = getDistance(tower.position, unit.position);
+                const distToClosest = getDistance(tower.position, closest.position);
+                return distToCurrent < distToClosest ? unit : closest;
+              });
+              
+              // Only throw if target is in range (extended range for buffs)
+              const buffRange = tower.attackRange * 1.5;
+              if (getDistance(tower.position, target.position) <= buffRange) {
+                // Create pancake projectile
+                newProjectiles.push({
+                  id: `proj-${projectileIdCounter.current++}`,
+                  from: { ...tower.position },
+                  to: { ...target.position },
+                  progress: 0,
+                  damage: 0, // Pancakes don't deal damage
+                  targetId: target.id,
+                  type: 'pancake',
+                  owner: 'player'
+                });
+                lastPancakeThrowTime.current = now;
+              }
+            }
+          }
         }
 
         // Remove dead units
