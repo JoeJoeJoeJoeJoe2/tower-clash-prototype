@@ -26,6 +26,9 @@ export function Tower({ tower }: TowerProps) {
 
   const size = tower.type === 'king' ? 'w-16 h-16' : 'w-12 h-12';
 
+  // For player's king tower, show health above to avoid being covered by UI
+  const showHealthAbove = tower.type === 'king' && tower.owner === 'player';
+
   return (
     <div
       className={cn(
@@ -50,6 +53,37 @@ export function Tower({ tower }: TowerProps) {
             transform: 'translate(-50%, -50%)'
           }}
         />
+      )}
+
+      {/* Health bar ABOVE tower for player king tower */}
+      {!isDestroyed && showHealthAbove && (
+        <div className="w-full mb-1 px-1">
+          <div className="health-bar-container h-2 relative">
+            <div
+              className={cn('health-bar-fill', healthClass)}
+              style={{ width: `${healthPercent}%` }}
+            />
+          </div>
+          <div className="text-center mt-0.5 flex items-center justify-center gap-0.5">
+            {tower.level && (
+              <span 
+                className="text-[10px] font-bold text-amber-400 px-1"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+              >
+                Lv{tower.level}
+              </span>
+            )}
+            <span 
+              className={cn(
+                "text-[10px] font-bold px-1 rounded",
+                tower.owner === 'player' ? "text-blue-200" : "text-red-200"
+              )}
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+            >
+              {Math.max(0, Math.floor(tower.health))}
+            </span>
+          </div>
+        </div>
       )}
       
       <div
@@ -96,7 +130,8 @@ export function Tower({ tower }: TowerProps) {
         )}
       </div>
       
-      {!isDestroyed && (
+      {/* Health bar BELOW tower for all other towers */}
+      {!isDestroyed && !showHealthAbove && (
         <div className="w-full mt-1 px-1">
           <div className="health-bar-container h-2 relative">
             <div
@@ -104,7 +139,6 @@ export function Tower({ tower }: TowerProps) {
               style={{ width: `${healthPercent}%` }}
             />
           </div>
-          {/* Health number and Level */}
           <div className="text-center mt-0.5 flex items-center justify-center gap-0.5">
             {tower.level && (
               <span 
