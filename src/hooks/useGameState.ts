@@ -681,6 +681,10 @@ export function useGameState(
     }));
   }, []);
 
+  // Throttle host state updates to improve FPS for Player 2
+  const lastHostUpdateRef = useRef<number>(0);
+  const HOST_UPDATE_THROTTLE_MS = 50; // Only apply host state every 50ms max
+
   // Apply synced state from host (for Player 2 in multiplayer)
   // This function receives game state from the host and applies critical values
   const applyHostState = useCallback((hostState: {
@@ -701,6 +705,13 @@ export function useGameState(
       currentTarget?: { x: number; y: number } | null;
     }>;
   }) => {
+    // Throttle updates to prevent too many re-renders (improves FPS)
+    const now = Date.now();
+    if (now - lastHostUpdateRef.current < HOST_UPDATE_THROTTLE_MS) {
+      return; // Skip this update, too soon
+    }
+    lastHostUpdateRef.current = now;
+
     setGameState(prev => {
       // Apply tower health from host (these are THEIR perspective, so swap for us)
       // Host's "playerTowers" = our "enemyTowers" (since we're the opponent)
@@ -727,8 +738,13 @@ export function useGameState(
       
       if (hostState.units) {
         // Host's enemy units are our player units (and vice versa)
-        // Mirror Y positions (ARENA_HEIGHT - y) for perspective swap
-        const mirror = (p: { x: number; y: number }) => ({ x: p.x, y: ARENA_HEIGHT - p.y });
+        // Mirror BOTH X and Y positions for full perspective swap:
+        // - Y mirroring: flips top/bottom (their side vs our side)
+        // - X mirroring: flips left/right lanes so they match visually
+        const mirror = (p: { x: number; y: number }) => ({ 
+          x: ARENA_WIDTH - p.x,  // Mirror X so left/right lanes match
+          y: ARENA_HEIGHT - p.y  // Mirror Y so top/bottom match
+        });
         const dist = (a: Position, b: Position) => Math.hypot(a.x - b.x, a.y - b.y);
 
         const buildUnitList = (
