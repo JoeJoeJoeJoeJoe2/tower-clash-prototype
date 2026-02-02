@@ -53,12 +53,12 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
         <div
           key={playerEmote.id}
           className={cn(
-            "absolute z-40",
+            "absolute z-[100]",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
           style={{
             left: '50%',
-            bottom: '160px', // Above the player king tower
+            bottom: '200px', // Well above the player king tower
             transform: 'translateX(-50%)'
           }}
         >
@@ -71,12 +71,12 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
         <div
           key={enemyEmote.id}
           className={cn(
-            "absolute z-40",
+            "absolute z-[100]",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
           style={{
             left: '50%',
-            top: '105px', // Above the enemy king tower
+            top: '135px', // Well above the enemy king tower
             transform: 'translateX(-50%)'
           }}
         >
