@@ -424,18 +424,9 @@ export function ClanScreen({
                 {/* Create Clan Button */}
                 <Button
                   onClick={() => setShowCreateModal(true)}
-                  className="w-full mb-2 h-12 text-lg font-bold bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-b-4 border-purple-900"
+                  className="w-full mb-4 h-12 text-lg font-bold bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-b-4 border-purple-900"
                 >
                   <Plus className="w-5 h-5 mr-2" /> Create New Clan
-                </Button>
-
-                {/* Delete All Clans Button (Admin) */}
-                <Button
-                  onClick={handleDeleteAllClans}
-                  variant="outline"
-                  className="w-full mb-4 h-10 text-sm text-red-400 border-red-500/50 hover:bg-red-900/20 hover:text-red-300"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete All Clans
                 </Button>
 
                 {/* Search */}
