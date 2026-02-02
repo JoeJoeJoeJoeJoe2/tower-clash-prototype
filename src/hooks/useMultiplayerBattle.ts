@@ -204,12 +204,81 @@ export function useMultiplayerBattle(
       .eq('id', battleState.battleId);
   }, [battleState]);
 
-  // Subscribe to battle updates
+  // Process game state updates (shared between realtime and polling)
+  const processGameStateUpdate = useCallback((newData: Record<string, unknown>) => {
+    const gameState = newData.game_state as unknown as MultiplayerGameState | null;
+    
+    const currentBattleState = battleStateRef.current;
+    if (!currentBattleState || !gameState) return;
+
+    // Get opponent's new placements
+    const allPlacements = gameState.placements || [];
+    const opponentPlacements = allPlacements.filter(
+      p => p.isPlayer1 !== currentBattleState.isPlayer1 &&
+           p.timestamp > lastProcessedTimestampRef.current
+    );
+
+    if (opponentPlacements.length > 0) {
+      lastProcessedTimestampRef.current = Math.max(
+        ...opponentPlacements.map(p => p.timestamp)
+      );
+      setPendingOpponentPlacements(prev => [...prev, ...opponentPlacements]);
+    }
+
+    // For Player 2, receive synced game state from Player 1
+    if (!currentBattleState.isPlayer1 && gameState.syncedState) {
+      setSyncedGameState(gameState.syncedState);
+    }
+
+    // Check if game ended
+    if (newData.status === 'finished') {
+      setBattleState(prev => prev ? {
+        ...prev,
+        status: 'finished',
+        winnerId: (newData.winner_id as string) || undefined
+      } : null);
+    }
+  }, []);
+
+  // Subscribe to battle updates with polling fallback
   useEffect(() => {
     if (!battleId || !user) return;
 
     // First, join the battle
     joinBattle(battleId);
+
+    let pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let lastSyncTimestamp = 0;
+
+    // Polling fallback for when realtime fails
+    const pollForUpdates = async () => {
+      const currentBattleState = battleStateRef.current;
+      if (!currentBattleState) return;
+
+      try {
+        const { data } = await supabase
+          .from('active_battles')
+          .select('*')
+          .eq('id', battleId)
+          .single();
+
+        if (data) {
+          const gameState = data.game_state as unknown as MultiplayerGameState | null;
+          const syncTimestamp = gameState?.syncedState?.timestamp || 0;
+          
+          // Only process if we have new data
+          if (syncTimestamp > lastSyncTimestamp) {
+            lastSyncTimestamp = syncTimestamp;
+            processGameStateUpdate(data as unknown as Record<string, unknown>);
+          }
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+
+      // Continue polling every 200ms for responsive gameplay
+      pollTimeoutId = setTimeout(pollForUpdates, 200);
+    };
 
     // Subscribe to game state changes using Realtime
     const channel = supabase
@@ -226,52 +295,33 @@ export function useMultiplayerBattle(
           const newData = payload.new as Record<string, unknown>;
           const gameState = newData.game_state as unknown as MultiplayerGameState | null;
           
-          // Use ref to get current state (avoids stale closure)
-          const currentBattleState = battleStateRef.current;
-          if (!currentBattleState || !gameState) return;
-
-          // Get opponent's new placements
-          const allPlacements = gameState.placements || [];
-          const opponentPlacements = allPlacements.filter(
-            p => p.isPlayer1 !== currentBattleState.isPlayer1 &&
-                 p.timestamp > lastProcessedTimestampRef.current
-          );
-
-          if (opponentPlacements.length > 0) {
-            // Update last processed timestamp
-            lastProcessedTimestampRef.current = Math.max(
-              ...opponentPlacements.map(p => p.timestamp)
-            );
-            
-            // Queue these placements for processing
-            setPendingOpponentPlacements(prev => [...prev, ...opponentPlacements]);
+          // Update lastSyncTimestamp to prevent duplicate processing from polling
+          if (gameState?.syncedState?.timestamp) {
+            lastSyncTimestamp = gameState.syncedState.timestamp;
           }
-
-          // For Player 2, receive synced game state from Player 1
-          if (!currentBattleState.isPlayer1 && gameState.syncedState) {
-            setSyncedGameState(gameState.syncedState);
-          }
-
-          // Check if game ended
-          if (newData.status === 'finished') {
-            setBattleState(prev => prev ? {
-              ...prev,
-              status: 'finished',
-              winnerId: (newData.winner_id as string) || undefined
-            } : null);
-          }
+          
+          processGameStateUpdate(newData);
         }
       )
       .subscribe((status) => {
         setIsConnected(status === 'SUBSCRIBED');
+        
+        // Start polling as fallback regardless of realtime status
+        // This ensures we always get updates even if realtime is slow or fails
+        if (!pollTimeoutId) {
+          pollTimeoutId = setTimeout(pollForUpdates, 200);
+        }
       });
 
     channelRef.current = channel;
 
     return () => {
+      if (pollTimeoutId) {
+        clearTimeout(pollTimeoutId);
+      }
       channel.unsubscribe();
     };
-  }, [battleId, user, joinBattle]);
+  }, [battleId, user, joinBattle, processGameStateUpdate]);
 
   // Clear a processed placement
   const consumePlacement = useCallback(() => {
