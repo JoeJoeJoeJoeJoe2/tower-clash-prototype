@@ -266,6 +266,43 @@ export function useClan(user: User | null, playerName: string, trophies: number)
     return { success: true };
   }, [user, userMembership, clanMembers.length]);
 
+  // Delete clan (leader only)
+  const deleteClan = useCallback(async () => {
+    if (!user || !userMembership || !userClan) return { success: false, error: 'Not in a clan' };
+    
+    if (userMembership.role !== 'leader') {
+      return { success: false, error: 'Only the leader can delete the clan' };
+    }
+
+    // First remove all members (this will trigger member_count update)
+    const { error: membersError } = await supabase
+      .from('clan_members')
+      .delete()
+      .eq('clan_id', userClan.id);
+
+    if (membersError) {
+      console.error('Error removing members:', membersError);
+      return { success: false, error: membersError.message };
+    }
+
+    // Then delete the clan
+    const { error: deleteError } = await supabase
+      .from('clans')
+      .delete()
+      .eq('id', userClan.id);
+
+    if (deleteError) {
+      console.error('Error deleting clan:', deleteError);
+      return { success: false, error: deleteError.message };
+    }
+
+    setUserClan(null);
+    setUserMembership(null);
+    setClanMembers([]);
+    setClanMessages([]);
+    return { success: true };
+  }, [user, userMembership, userClan]);
+
   // Kick a member (leader/co-leader only)
   const kickMember = useCallback(async (memberId: string) => {
     if (!userMembership || !['leader', 'co-leader'].includes(userMembership.role)) {
@@ -383,6 +420,7 @@ export function useClan(user: User | null, playerName: string, trophies: number)
     createClan,
     joinClan,
     leaveClan,
+    deleteClan,
     kickMember,
     promoteMember,
     sendMessage,

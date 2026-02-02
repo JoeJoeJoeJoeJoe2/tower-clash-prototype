@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff, Loader2, Plus, LogOut, Search, UserMinus } from 'lucide-react';
+import { ArrowLeft, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff, Loader2, Plus, LogOut, Search, UserMinus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
 import { OnlinePlayer } from '@/hooks/useOnlinePresence';
@@ -81,6 +81,7 @@ export function ClanScreen({
     createClan,
     joinClan,
     leaveClan,
+    deleteClan,
     kickMember,
     promoteMember,
     sendMessage: sendClanMessage,
@@ -123,6 +124,17 @@ export function ClanScreen({
       setActiveTab('search');
     } else {
       toast.error(result.error || 'Failed to leave clan');
+    }
+  };
+
+  const handleDeleteClan = async () => {
+    if (!confirm('Are you sure you want to delete this clan? This action cannot be undone.')) return;
+    const result = await deleteClan();
+    if (result.success) {
+      toast.success('Clan deleted');
+      setActiveTab('search');
+    } else {
+      toast.error(result.error || 'Failed to delete clan');
     }
   };
 
@@ -263,15 +275,28 @@ export function ClanScreen({
                 <Users className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-300">{clanMembers.length} members</span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLeaveClan}
-                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-              >
-                <LogOut className="w-4 h-4 mr-1" />
-                Leave
-              </Button>
+              <div className="flex gap-2">
+                {userMembership?.role === 'leader' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteClan}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete Clan
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLeaveClan}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Leave
+                </Button>
+              </div>
             </div>
 
             {/* Members List (collapsible) */}
