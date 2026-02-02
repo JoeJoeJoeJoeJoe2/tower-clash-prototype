@@ -352,7 +352,7 @@ export function DeckBuilder({
         const nerfMultiplier = isNerfed ? (1 - balance.nerfLevel * 0.1) : 1;
         
         return (
-          <div className="fixed bottom-36 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">{selectedCard.emoji}</span>
               <div className="flex-1">
