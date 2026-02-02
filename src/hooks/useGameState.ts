@@ -738,12 +738,13 @@ export function useGameState(
       
       if (hostState.units) {
         // Host's enemy units are our player units (and vice versa)
-        // Mirror BOTH X and Y positions for full perspective swap:
+        // Only mirror Y position for perspective swap:
         // - Y mirroring: flips top/bottom (their side vs our side)
-        // - X mirroring: flips left/right lanes so they match visually
+        // - X stays the same: left lane remains left, right lane remains right
+        // This matches how Clash Royale works - both players see the same lanes
         const mirror = (p: { x: number; y: number }) => ({ 
-          x: ARENA_WIDTH - p.x,  // Mirror X so left/right lanes match
-          y: ARENA_HEIGHT - p.y  // Mirror Y so top/bottom match
+          x: p.x,                 // Keep X the same - lanes don't flip
+          y: ARENA_HEIGHT - p.y   // Mirror Y so top/bottom swap
         });
         const dist = (a: Position, b: Position) => Math.hypot(a.x - b.x, a.y - b.y);
 
