@@ -989,6 +989,13 @@ export function useGameState(
         state.playerUnits = state.playerUnits.map(unit => {
           if (unit.health <= 0) return unit;
 
+          // Check for freeze/stun - completely prevents movement and attacking
+          const isFrozen = unit.statusEffects.some(e => e.type === 'freeze' || e.type === 'stun');
+          if (isFrozen) {
+            unit.state = 'idle';
+            return unit;
+          }
+
           // Decrement deploy cooldown
           if (unit.deployCooldown > 0) {
             unit.deployCooldown = Math.max(0, unit.deployCooldown - delta);
@@ -1218,6 +1225,13 @@ export function useGameState(
         // Update enemy units
         state.enemyUnits = state.enemyUnits.map(unit => {
           if (unit.health <= 0) return unit;
+
+          // Check for freeze/stun - completely prevents movement and attacking
+          const isFrozen = unit.statusEffects.some(e => e.type === 'freeze' || e.type === 'stun');
+          if (isFrozen) {
+            unit.state = 'idle';
+            return unit;
+          }
 
           // Decrement deploy cooldown
           if (unit.deployCooldown > 0) {
