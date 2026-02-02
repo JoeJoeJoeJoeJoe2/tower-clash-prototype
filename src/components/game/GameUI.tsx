@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Zap, X, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentArena } from '@/data/arenas';
-import { MultiplayerBattleState, CardPlacement } from '@/hooks/useMultiplayerBattle';
+import { MultiplayerBattleState, CardPlacement, SyncedGameState } from '@/hooks/useMultiplayerBattle';
 import { getCardById } from '@/data/cards';
 
 interface GameUIProps {
@@ -32,9 +32,12 @@ interface GameUIProps {
   isFriendlyBattle?: boolean;
   // Multiplayer props
   isMultiplayer?: boolean;
+  isHost?: boolean; // True if this player is the host (Player 1) who runs the authoritative simulation
   battleState?: MultiplayerBattleState | null;
   pendingOpponentPlacements?: CardPlacement[];
+  syncedGameState?: SyncedGameState | null; // Game state synced from host (for non-host players)
   onSendCardPlacement?: (cardId: string, cardIndex: number, position: Position) => void;
+  onSyncGameState?: (state: SyncedGameState) => void; // For host to sync state to client
   onConsumePlacement?: () => void;
   opponentLevel?: number; // Opponent's actual level for multiplayer
 }
@@ -70,13 +73,16 @@ export function GameUI({
   getBalancedCardStats,
   isFriendlyBattle = false,
   isMultiplayer = false,
+  isHost = true,
   battleState,
   pendingOpponentPlacements = [],
+  syncedGameState,
   onSendCardPlacement,
+  onSyncGameState,
   onConsumePlacement,
   opponentLevel = 1
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, applyHostState, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel, isHost);
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
@@ -123,6 +129,48 @@ export function GameUI({
     playEnemyCard(placement.cardId, placement.position);
     onConsumePlacement?.();
   }, [isMultiplayer, pendingOpponentPlacements, playEnemyCard, onConsumePlacement]);
+
+  // HOST: Sync game state to the client periodically
+  useEffect(() => {
+    if (!isMultiplayer || !isHost || !onSyncGameState) return;
+
+    // Sync every 500ms to keep client in sync
+    const syncInterval = setInterval(() => {
+      if (gameState.gameStatus === 'playing') {
+        onSyncGameState({
+          timestamp: Date.now(),
+          playerTowers: gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+          enemyTowers: gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+          timeRemaining: gameState.timeRemaining,
+          playerElixir: gameState.playerElixir,
+          enemyElixir: gameState.enemyElixir,
+          gameStatus: gameState.gameStatus
+        });
+      }
+    }, 500);
+
+    // Also sync immediately when game ends
+    if (gameState.gameStatus !== 'playing') {
+      onSyncGameState({
+        timestamp: Date.now(),
+        playerTowers: gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+        enemyTowers: gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+        timeRemaining: gameState.timeRemaining,
+        playerElixir: gameState.playerElixir,
+        enemyElixir: gameState.enemyElixir,
+        gameStatus: gameState.gameStatus
+      });
+    }
+
+    return () => clearInterval(syncInterval);
+  }, [isMultiplayer, isHost, onSyncGameState, gameState.gameStatus, gameState.playerTowers, gameState.enemyTowers, gameState.timeRemaining, gameState.playerElixir, gameState.enemyElixir]);
+
+  // CLIENT: Apply synced state from host
+  useEffect(() => {
+    if (!isMultiplayer || isHost || !syncedGameState) return;
+    
+    applyHostState(syncedGameState);
+  }, [isMultiplayer, isHost, syncedGameState, applyHostState]);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {

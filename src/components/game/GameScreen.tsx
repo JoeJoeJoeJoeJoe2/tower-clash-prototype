@@ -101,8 +101,10 @@ export function GameScreen() {
     battleState,
     isConnected,
     pendingOpponentPlacements,
+    syncedGameState,
     createBattle,
     sendCardPlacement,
+    syncGameState,
     reportGameEnd,
     consumePlacement,
     disconnect
@@ -330,9 +332,12 @@ export function GameScreen() {
           isFriendlyBattle={isFriendlyBattle}
           // Multiplayer props
           isMultiplayer={isFriendlyBattle && !!activeBattleId}
+          isHost={battleState?.isPlayer1 ?? true}
           battleState={battleState}
           pendingOpponentPlacements={pendingOpponentPlacements}
+          syncedGameState={syncedGameState}
           onSendCardPlacement={sendCardPlacement}
+          onSyncGameState={syncGameState}
           onConsumePlacement={consumePlacement}
           opponentLevel={battleState?.opponentLevel || friendlyBattleData?.opponentLevel || 1}
         />

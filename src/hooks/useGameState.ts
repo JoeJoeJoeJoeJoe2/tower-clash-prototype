@@ -349,7 +349,8 @@ export function useGameState(
   isMultiplayer: boolean = false,
   unlockedEvolutions: string[] = [],
   selectedTowerTroopId: string = 'default',
-  opponentLevel: number = 1 // For multiplayer - opponent's actual level
+  opponentLevel: number = 1, // For multiplayer - opponent's actual level
+  isHost: boolean = true // For multiplayer - is this player the host (runs authoritative simulation)
 ) {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels, isMultiplayer, opponentLevel));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -381,6 +382,7 @@ export function useGameState(
   const lastPancakeThrowTime = useRef(0); // Track Royal Chef pancake throws
   const selectedTowerTroopRef = useRef(selectedTowerTroopId);
   const isMultiplayerRef = useRef(isMultiplayer);
+  const isHostRef = useRef(isHost);
   const trackDamageRef = useRef(onTrackDamage);
   const getBalancedStatsRef = useRef(getBalancedCardStats);
   
@@ -389,8 +391,9 @@ export function useGameState(
     trackDamageRef.current = onTrackDamage;
     getBalancedStatsRef.current = getBalancedCardStats;
     isMultiplayerRef.current = isMultiplayer;
+    isHostRef.current = isHost;
     selectedTowerTroopRef.current = selectedTowerTroopId;
-  }, [onTrackDamage, getBalancedCardStats, isMultiplayer, selectedTowerTroopId]);
+  }, [onTrackDamage, getBalancedCardStats, isMultiplayer, isHost, selectedTowerTroopId]);
 
   const addDamageNumber = useCallback((position: Position, damage: number, isCritical = false) => {
     const num: DamageNumber = {
@@ -678,6 +681,57 @@ export function useGameState(
     }));
   }, []);
 
+  // Apply synced state from host (for Player 2 in multiplayer)
+  // This function receives game state from the host and applies critical values
+  const applyHostState = useCallback((hostState: {
+    playerTowers: Array<{ id: string; health: number; maxHealth: number }>;
+    enemyTowers: Array<{ id: string; health: number; maxHealth: number }>;
+    timeRemaining: number;
+    playerElixir: number;
+    enemyElixir: number;
+    gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
+  }) => {
+    setGameState(prev => {
+      // Apply tower health from host (these are THEIR perspective, so swap for us)
+      // Host's "playerTowers" = our "enemyTowers" (since we're the opponent)
+      // Host's "enemyTowers" = our "playerTowers" (since we're the player to them)
+      const newPlayerTowers = prev.playerTowers.map(tower => {
+        const hostTower = hostState.enemyTowers.find(t => t.id === tower.id.replace('player', 'enemy'));
+        if (hostTower) {
+          return { ...tower, health: hostTower.health, maxHealth: hostTower.maxHealth };
+        }
+        return tower;
+      });
+      
+      const newEnemyTowers = prev.enemyTowers.map(tower => {
+        const hostTower = hostState.playerTowers.find(t => t.id === tower.id.replace('enemy', 'player'));
+        if (hostTower) {
+          return { ...tower, health: hostTower.health, maxHealth: hostTower.maxHealth };
+        }
+        return tower;
+      });
+
+      // Swap win/loss status (their win = our loss)
+      let adjustedStatus = hostState.gameStatus;
+      if (hostState.gameStatus === 'player-wins') {
+        adjustedStatus = 'enemy-wins';
+      } else if (hostState.gameStatus === 'enemy-wins') {
+        adjustedStatus = 'player-wins';
+      }
+      
+      return {
+        ...prev,
+        playerTowers: newPlayerTowers,
+        enemyTowers: newEnemyTowers,
+        timeRemaining: hostState.timeRemaining,
+        // Swap elixir: their player elixir = our enemy elixir
+        playerElixir: hostState.enemyElixir,
+        enemyElixir: hostState.playerElixir,
+        gameStatus: adjustedStatus
+      };
+    });
+  }, []);
+
   // Main game loop
   useEffect(() => {
     let animationId: number;
@@ -722,6 +776,17 @@ export function useGameState(
 
       setGameState(prev => {
         if (prev.gameStatus !== 'playing') return prev;
+        
+        // For non-host in multiplayer, only run visual updates - the host syncs authoritative state
+        // We still need to process some local things like card selection, but skip game simulation
+        if (isMultiplayerRef.current && !isHostRef.current) {
+          // Only update time-based things that don't affect game state
+          return {
+            ...prev,
+            // Keep hand/deck for card selection
+            // Tower health and game status come from host via applyHostState
+          };
+        }
 
         const state: GameState = {
           ...prev,
@@ -2419,6 +2484,7 @@ export function useGameState(
     selectCard,
     resetGame,
     activateChampionAbility,
+    applyHostState,
     ARENA_WIDTH,
     ARENA_HEIGHT
   };
