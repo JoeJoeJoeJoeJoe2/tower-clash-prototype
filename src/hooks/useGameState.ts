@@ -51,7 +51,11 @@ export interface CrownAnimation {
   towerType: 'king' | 'princess';
 }
 
-function createInitialTowers(towerLevels: { princess: number; king: number } = { princess: 1, king: 1 }): { playerTowers: Tower[], enemyTowers: Tower[] } {
+function createInitialTowers(
+  towerLevels: { princess: number; king: number } = { princess: 1, king: 1 },
+  isMultiplayer: boolean = false,
+  opponentLevel: number = 1
+): { playerTowers: Tower[], enemyTowers: Tower[] } {
   // Calculate level multipliers (10% per level)
   const princessMultiplier = Math.pow(1.1, towerLevels.princess - 1);
   const kingMultiplier = Math.pow(1.1, towerLevels.king - 1);
@@ -68,11 +72,9 @@ function createInitialTowers(towerLevels: { princess: number; king: number } = {
   const playerKingHealth = Math.floor(baseKingHealth * kingMultiplier);
   const playerKingDamage = Math.floor(baseKingDamage * kingMultiplier);
   
-  // Enemy gets random level 1-5 for variety
-  const enemyPrincessLevel = Math.floor(Math.random() * 5) + 1;
-  const enemyKingLevel = Math.floor(Math.random() * 5) + 1;
-  const enemyPrincessMultiplier = Math.pow(1.1, enemyPrincessLevel - 1);
-  const enemyKingMultiplier = Math.pow(1.1, enemyKingLevel - 1);
+  // Enemy level: use actual opponent level in multiplayer, random in single-player
+  const enemyLevel = isMultiplayer ? opponentLevel : Math.floor(Math.random() * 5) + 1;
+  const enemyMultiplier = Math.pow(1.1, enemyLevel - 1);
   
   const playerTowers: Tower[] = [
     {
@@ -123,40 +125,40 @@ function createInitialTowers(towerLevels: { princess: number; king: number } = {
       type: 'king',
       owner: 'enemy',
       position: { x: ARENA_WIDTH / 2, y: 50 },
-      health: Math.floor(baseKingHealth * enemyKingMultiplier),
-      maxHealth: Math.floor(baseKingHealth * enemyKingMultiplier),
-      attackDamage: Math.floor(baseKingDamage * enemyKingMultiplier),
+      health: Math.floor(baseKingHealth * enemyMultiplier),
+      maxHealth: Math.floor(baseKingHealth * enemyMultiplier),
+      attackDamage: Math.floor(baseKingDamage * enemyMultiplier),
       attackRange: 80,
       attackCooldown: 2000,
       lastAttackTime: 0,
       isActivated: false,
-      level: enemyKingLevel
+      level: enemyLevel
     },
     {
       id: 'enemy-princess-left',
       type: 'princess',
       owner: 'enemy',
       position: { x: 70, y: 110 },
-      health: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
-      maxHealth: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
-      attackDamage: Math.floor(basePrincessDamage * enemyPrincessMultiplier),
+      health: Math.floor(basePrincessHealth * enemyMultiplier),
+      maxHealth: Math.floor(basePrincessHealth * enemyMultiplier),
+      attackDamage: Math.floor(basePrincessDamage * enemyMultiplier),
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0,
-      level: enemyPrincessLevel
+      level: enemyLevel
     },
     {
       id: 'enemy-princess-right',
       type: 'princess',
       owner: 'enemy',
       position: { x: ARENA_WIDTH - 70, y: 110 },
-      health: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
-      maxHealth: Math.floor(basePrincessHealth * enemyPrincessMultiplier),
-      attackDamage: Math.floor(basePrincessDamage * enemyPrincessMultiplier),
+      health: Math.floor(basePrincessHealth * enemyMultiplier),
+      maxHealth: Math.floor(basePrincessHealth * enemyMultiplier),
+      attackDamage: Math.floor(basePrincessDamage * enemyMultiplier),
       attackRange: 140,
       attackCooldown: 1800,
       lastAttackTime: 0,
-      level: enemyPrincessLevel
+      level: enemyLevel
     }
   ];
 
@@ -299,8 +301,13 @@ function calculateMovement(
   return { newX, newY, direction: dy < 0 ? 'up' : 'down' };
 }
 
-function createInitialState(playerDeckIds: string[], towerLevels: { princess: number; king: number } = { princess: 1, king: 1 }): GameState {
-  const { playerTowers, enemyTowers } = createInitialTowers(towerLevels);
+function createInitialState(
+  playerDeckIds: string[], 
+  towerLevels: { princess: number; king: number } = { princess: 1, king: 1 },
+  isMultiplayer: boolean = false,
+  opponentLevel: number = 1
+): GameState {
+  const { playerTowers, enemyTowers } = createInitialTowers(towerLevels, isMultiplayer, opponentLevel);
   const { playerZones, enemyZones } = createInitialPlacementZones();
   const playerDeck = createDeck(playerDeckIds);
   const enemyDeckIds = ['knight', 'archers', 'giant', 'wizard', 'valkyrie', 'musketeer', 'goblins', 'bomber'];
@@ -341,9 +348,10 @@ export function useGameState(
   getBalancedCardStats?: (cardId: string) => CardDefinition | null,
   isMultiplayer: boolean = false,
   unlockedEvolutions: string[] = [],
-  selectedTowerTroopId: string = 'default'
+  selectedTowerTroopId: string = 'default',
+  opponentLevel: number = 1 // For multiplayer - opponent's actual level
 ) {
-  const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels));
+  const [gameState, setGameState] = useState<GameState>(() => createInitialState(playerDeckIds, towerLevels, isMultiplayer, opponentLevel));
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [spawnEffects, setSpawnEffects] = useState<SpawnEffect[]>([]);
   const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);

@@ -36,6 +36,7 @@ interface GameUIProps {
   pendingOpponentPlacements?: CardPlacement[];
   onSendCardPlacement?: (cardId: string, cardIndex: number, position: Position) => void;
   onConsumePlacement?: () => void;
+  opponentLevel?: number; // Opponent's actual level for multiplayer
 }
 
 function formatTime(seconds: number): string {
@@ -72,9 +73,10 @@ export function GameUI({
   battleState,
   pendingOpponentPlacements = [],
   onSendCardPlacement,
-  onConsumePlacement
+  onConsumePlacement,
+  opponentLevel = 1
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel);
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);

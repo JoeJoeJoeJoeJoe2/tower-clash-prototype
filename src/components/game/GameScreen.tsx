@@ -334,6 +334,7 @@ export function GameScreen() {
           pendingOpponentPlacements={pendingOpponentPlacements}
           onSendCardPlacement={sendCardPlacement}
           onConsumePlacement={consumePlacement}
+          opponentLevel={battleState?.opponentLevel || friendlyBattleData?.opponentLevel || 1}
         />
       )}
 
