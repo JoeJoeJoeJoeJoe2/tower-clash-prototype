@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff, Loader2, Plus, LogOut, Search, UserMinus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
 import { OnlinePlayer } from '@/hooks/useOnlinePresence';
 import { BattleRequest } from '@/hooks/useBattleRequests';
 import { OnlinePlayersPanel } from './OnlinePlayersPanel';
 import { useChat } from '@/hooks/useChat';
+import { useClan, Clan, ClanMember } from '@/hooks/useClan';
+import { CreateClanModal } from './CreateClanModal';
+import { toast } from 'sonner';
 
 interface ClanScreenProps {
   playerName: string;
@@ -25,7 +28,21 @@ interface ClanScreenProps {
   onSignIn: () => void;
 }
 
-type Tab = 'online' | 'chat' | 'members';
+type Tab = 'online' | 'clan' | 'search';
+
+const ROLE_ORDER = { leader: 0, 'co-leader': 1, elder: 2, member: 3 };
+const ROLE_COLORS: Record<string, string> = {
+  leader: 'text-yellow-400',
+  'co-leader': 'text-purple-400',
+  elder: 'text-blue-400',
+  member: 'text-gray-400'
+};
+const ROLE_ICONS: Record<string, string> = {
+  leader: '👑',
+  'co-leader': '⚔️',
+  elder: '🛡️',
+  member: ''
+};
 
 export function ClanScreen({ 
   playerName, 
@@ -45,25 +62,93 @@ export function ClanScreen({
   const [activeTab, setActiveTab] = useState<Tab>('online');
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages: chatMessages, loading: chatLoading, sendMessage } = useChat(user);
+  // Global chat (for users not in a clan)
+  const { messages: globalMessages, loading: globalChatLoading, sendMessage: sendGlobalMessage } = useChat(user);
+  
+  // Clan system
+  const {
+    userClan,
+    userMembership,
+    clanMembers,
+    clanMessages,
+    availableClans,
+    loading: clanLoading,
+    messagesLoading,
+    createClan,
+    joinClan,
+    leaveClan,
+    kickMember,
+    promoteMember,
+    sendMessage: sendClanMessage,
+    refreshClans
+  } = useClan(user, playerName, trophies);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [clanMessages, globalMessages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sending || !user) return;
     
     setSending(true);
-    const success = await sendMessage(newMessage, playerName);
+    const success = userClan 
+      ? await sendClanMessage(newMessage)
+      : await sendGlobalMessage(newMessage, playerName);
+    
     if (success) {
       setNewMessage('');
     }
     setSending(false);
   };
+
+  const handleJoinClan = async (clanId: string) => {
+    const result = await joinClan(clanId);
+    if (result.success) {
+      toast.success('Joined clan successfully!');
+      setActiveTab('clan');
+    } else {
+      toast.error(result.error || 'Failed to join clan');
+    }
+  };
+
+  const handleLeaveClan = async () => {
+    const result = await leaveClan();
+    if (result.success) {
+      toast.success('Left clan');
+      setActiveTab('search');
+    } else {
+      toast.error(result.error || 'Failed to leave clan');
+    }
+  };
+
+  const handleKickMember = async (member: ClanMember) => {
+    if (!confirm(`Kick ${member.player_name} from the clan?`)) return;
+    const result = await kickMember(member.id);
+    if (result.success) {
+      toast.success(`${member.player_name} was removed from the clan`);
+    } else {
+      toast.error(result.error || 'Failed to kick member');
+    }
+  };
+
+  const sortedMembers = [...clanMembers].sort((a, b) => 
+    ROLE_ORDER[a.role] - ROLE_ORDER[b.role]
+  );
+
+  const filteredClans = availableClans.filter(clan =>
+    clan.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const messages = userClan ? clanMessages : globalMessages;
+  const chatLoading = userClan ? messagesLoading : globalChatLoading;
+
+  // Determine which tabs to show based on clan status
+  const tabs: Tab[] = userClan ? ['online', 'clan'] : ['online', 'search'];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a3a5c] via-[#0d2840] to-[#0a1f33] flex flex-col">
@@ -73,16 +158,24 @@ export function ClanScreen({
           <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-xl">
+            {userClan ? userClan.badge_emoji : <Shield className="w-5 h-5 text-white" />}
           </div>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">Social</h1>
+            <h1 className="text-lg font-bold text-white">
+              {userClan ? userClan.name : 'Social'}
+            </h1>
             <div className="flex items-center gap-2 text-xs">
               {user ? (
                 <>
                   <Wifi className="w-3 h-3 text-green-400" />
                   <span className="text-green-400">Online</span>
+                  {userClan && (
+                    <>
+                      <span className="text-gray-500">•</span>
+                      <span className="text-gray-400">{userClan.member_count} members</span>
+                    </>
+                  )}
                   <span className="text-gray-500">•</span>
                   <button 
                     onClick={onSignOut}
@@ -103,7 +196,7 @@ export function ClanScreen({
 
         {/* Tabs */}
         <div className="flex gap-2 mt-3">
-          {(['online', 'chat', 'members'] as Tab[]).map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -115,9 +208,9 @@ export function ClanScreen({
               )}
             >
               {tab === 'online' && <Wifi className="w-4 h-4 inline mr-1" />}
-              {tab === 'chat' && <MessageSquare className="w-4 h-4 inline mr-1" />}
-              {tab === 'members' && <Users className="w-4 h-4 inline mr-1" />}
-              {tab === 'online' ? 'Players' : tab}
+              {tab === 'clan' && <MessageSquare className="w-4 h-4 inline mr-1" />}
+              {tab === 'search' && <Search className="w-4 h-4 inline mr-1" />}
+              {tab === 'online' ? 'Players' : tab === 'search' ? 'Find Clan' : 'Clan Chat'}
               {tab === 'online' && incomingRequests.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center animate-bounce">
                   {incomingRequests.length}
@@ -130,6 +223,7 @@ export function ClanScreen({
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Online Players Tab */}
         {activeTab === 'online' && (
           <div className="flex-1 overflow-y-auto p-3">
             {user ? (
@@ -147,81 +241,80 @@ export function ClanScreen({
                 <WifiOff className="w-16 h-16 mx-auto text-gray-600 mb-4" />
                 <h3 className="text-white text-xl font-bold mb-3">Sign in to play with friends!</h3>
                 <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
-                  Create an account to see online players and challenge them to friendly battles!
+                  Create an account to see online players and join clans!
                 </p>
-                
-                {/* Sign In Button */}
                 <Button
                   onClick={onSignIn}
-                  className="w-full max-w-xs mx-auto mb-6 h-12 text-lg font-bold bg-gradient-to-b from-green-500 via-green-600 to-green-700 hover:from-green-400 hover:via-green-500 hover:to-green-600 border-b-4 border-green-900"
+                  className="w-full max-w-xs mx-auto h-12 text-lg font-bold bg-gradient-to-b from-green-500 via-green-600 to-green-700"
                 >
                   Sign In / Create Account
                 </Button>
-                
-                {/* How it works section */}
-                <div className="bg-gray-800/50 rounded-xl p-4 max-w-sm mx-auto text-left border border-gray-700/50">
-                  <h4 className="text-cyan-400 font-semibold mb-3 text-center">📋 How to Play with Friends</h4>
-                  <ol className="space-y-3 text-sm">
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">1</span>
-                      <span className="text-gray-300">
-                        <strong className="text-white">Create an account</strong> using your email and a password (minimum 6 characters)
-                      </span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">2</span>
-                      <span className="text-gray-300">
-                        <strong className="text-white">Find your friend</strong> in the online players list
-                      </span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">3</span>
-                      <span className="text-gray-300">
-                        <strong className="text-white">Send a battle request</strong> by tapping the ⚔️ button next to their name
-                      </span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-600 text-white font-bold flex items-center justify-center text-xs">4</span>
-                      <span className="text-gray-300">
-                        <strong className="text-white">Wait for them to accept</strong> and the battle will begin!
-                      </span>
-                    </li>
-                  </ol>
-                  <p className="text-gray-500 text-xs mt-4 text-center">
-                    💡 Tip: Both players need to be signed in and online at the same time!
-                  </p>
-                </div>
               </div>
             )}
           </div>
         )}
 
-        {activeTab === 'chat' && (
+        {/* Clan Chat Tab (only when in a clan) */}
+        {activeTab === 'clan' && userClan && (
           <>
+            {/* Clan Info Header */}
+            <div className="bg-gray-800/50 px-3 py-2 border-b border-gray-700/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-300">{clanMembers.length} members</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLeaveClan}
+                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                Leave
+              </Button>
+            </div>
+
+            {/* Members List (collapsible) */}
+            <details className="bg-gray-800/30 border-b border-gray-700/30">
+              <summary className="px-3 py-2 cursor-pointer text-sm text-cyan-400 hover:text-cyan-300">
+                👥 View Members
+              </summary>
+              <div className="px-3 pb-2 space-y-1 max-h-40 overflow-y-auto">
+                {sortedMembers.map((member) => (
+                  <div key={member.id} className="flex items-center gap-2 text-sm py-1">
+                    <span>{ROLE_ICONS[member.role]}</span>
+                    <span className={ROLE_COLORS[member.role]}>{member.player_name}</span>
+                    {member.user_id === user?.id && <span className="text-gray-500">(you)</span>}
+                    {userMembership && 
+                     ['leader', 'co-leader'].includes(userMembership.role) && 
+                     member.user_id !== user?.id &&
+                     member.role !== 'leader' && (
+                      <button
+                        onClick={() => handleKickMember(member)}
+                        className="ml-auto text-red-400 hover:text-red-300"
+                        title="Kick member"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {!user ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 mx-auto text-gray-600 mb-3" />
-                  <p className="text-gray-400">Sign in to chat with other players!</p>
-                  <Button
-                    onClick={onSignIn}
-                    className="mt-4 bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600"
-                  >
-                    Sign In
-                  </Button>
-                </div>
-              ) : chatLoading ? (
+              {chatLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
                 </div>
-              ) : chatMessages.length === 0 ? (
+              ) : messages.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-12 h-12 mx-auto text-gray-600 mb-3" />
-                  <p className="text-gray-400">No messages yet. Be the first to say something!</p>
+                  <p className="text-gray-400">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                chatMessages.map((msg) => (
+                messages.map((msg) => (
                   <div 
                     key={msg.id}
                     className={cn(
@@ -251,57 +344,115 @@ export function ClanScreen({
             </div>
 
             {/* Message Input */}
-            {user && (
-              <div className="p-3 bg-[#0a1525] border-t border-cyan-900/40">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                    disabled={sending}
-                    className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 disabled:opacity-50"
-                  />
-                  <Button 
-                    onClick={handleSendMessage} 
-                    disabled={sending || !newMessage.trim()}
-                    className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50"
-                  >
-                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                  </Button>
-                </div>
+            <div className="p-3 bg-[#0a1525] border-t border-cyan-900/40">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                  disabled={sending}
+                  className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 disabled:opacity-50"
+                />
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={sending || !newMessage.trim()}
+                  className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50"
+                >
+                  {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                </Button>
               </div>
-            )}
+            </div>
           </>
         )}
 
-        {activeTab === 'members' && (
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {/* Show player as the only member for now */}
-            <div className="bg-gray-800/50 rounded-lg p-3 flex items-center gap-3">
-              <div className="text-gray-500 font-bold w-6 text-center">1</div>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-green-600">
-                {Math.min(14, Math.floor(trophies / 150) + 1)}
+        {/* Search/Join Clan Tab (only when not in a clan) */}
+        {activeTab === 'search' && !userClan && (
+          <div className="flex-1 overflow-y-auto p-3">
+            {!user ? (
+              <div className="text-center py-8">
+                <Shield className="w-12 h-12 mx-auto text-gray-600 mb-3" />
+                <p className="text-gray-400">Sign in to create or join clans!</p>
+                <Button onClick={onSignIn} className="mt-4 bg-green-600 hover:bg-green-500">
+                  Sign In
+                </Button>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-yellow-400" />
-                  <span className="font-semibold text-yellow-400">{playerName}</span>
-                  <span className="w-2 h-2 rounded-full bg-green-400" />
+            ) : clanLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+              </div>
+            ) : (
+              <>
+                {/* Create Clan Button */}
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  className="w-full mb-4 h-12 text-lg font-bold bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-b-4 border-purple-900"
+                >
+                  <Plus className="w-5 h-5 mr-2" /> Create New Clan
+                </Button>
+
+                {/* Search */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search clans..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500"
+                  />
                 </div>
-                <p className="text-gray-400 text-sm flex items-center gap-1">
-                  <Trophy className="w-3 h-3" /> {trophies.toLocaleString()}
-                </p>
-              </div>
-            </div>
-            
-            <p className="text-gray-500 text-center py-4 text-sm">
-              Invite friends to join your clan!
-            </p>
+
+                {/* Available Clans */}
+                <div className="space-y-2">
+                  {filteredClans.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">
+                      {searchQuery ? 'No clans found' : 'No clans available. Create one!'}
+                    </p>
+                  ) : (
+                    filteredClans.map((clan) => (
+                      <div 
+                        key={clan.id}
+                        className="bg-gray-800/50 rounded-lg p-3 flex items-center gap-3"
+                      >
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-2xl">
+                          {clan.badge_emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-white truncate">{clan.name}</h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span><Users className="w-3 h-3 inline" /> {clan.member_count}</span>
+                            <span>•</span>
+                            <span><Trophy className="w-3 h-3 inline" /> {clan.min_trophies}+</span>
+                          </div>
+                          {clan.description && (
+                            <p className="text-gray-500 text-xs truncate mt-1">{clan.description}</p>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => handleJoinClan(clan.id)}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-500"
+                        >
+                          Join
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
+
+      {/* Create Clan Modal */}
+      <CreateClanModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={createClan}
+      />
     </div>
   );
 }

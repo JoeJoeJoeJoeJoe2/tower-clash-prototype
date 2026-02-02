@@ -119,6 +119,112 @@ export type Database = {
         }
         Relationships: []
       }
+      clan_members: {
+        Row: {
+          clan_id: string
+          id: string
+          joined_at: string
+          player_name: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          clan_id: string
+          id?: string
+          joined_at?: string
+          player_name: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          clan_id?: string
+          id?: string
+          joined_at?: string
+          player_name?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_members_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clan_messages: {
+        Row: {
+          clan_id: string
+          created_at: string
+          id: string
+          message: string
+          player_name: string
+          user_id: string
+        }
+        Insert: {
+          clan_id: string
+          created_at?: string
+          id?: string
+          message: string
+          player_name: string
+          user_id: string
+        }
+        Update: {
+          clan_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          player_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_messages_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clans: {
+        Row: {
+          badge_emoji: string
+          created_at: string
+          description: string | null
+          id: string
+          is_open: boolean
+          leader_id: string
+          member_count: number
+          min_trophies: number
+          name: string
+        }
+        Insert: {
+          badge_emoji?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_open?: boolean
+          leader_id: string
+          member_count?: number
+          min_trophies?: number
+          name: string
+        }
+        Update: {
+          badge_emoji?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_open?: boolean
+          leader_id?: string
+          member_count?: number
+          min_trophies?: number
+          name?: string
+        }
+        Relationships: []
+      }
       online_players: {
         Row: {
           banner_id: string
@@ -193,9 +299,17 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_requests: { Args: never; Returns: undefined }
+      get_user_clan_role: {
+        Args: { check_clan_id: string; check_user_id: string }
+        Returns: string
+      }
       get_user_id_for_player: {
         Args: { player_record_id: string }
         Returns: string
+      }
+      is_user_in_clan: {
+        Args: { check_clan_id: string; check_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
