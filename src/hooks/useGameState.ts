@@ -814,9 +814,11 @@ export function useGameState(
         playerUnits: newPlayerUnits,
         enemyUnits: newEnemyUnits,
         timeRemaining: hostState.timeRemaining,
-        // Swap elixir: their player elixir = our enemy elixir
-        playerElixir: hostState.enemyElixir,
-        enemyElixir: hostState.playerElixir,
+        // DON'T sync elixir - each player manages their own elixir locally
+        // Player 2 regenerates their own elixir in the game loop (lines 872-889)
+        // Syncing it would overwrite their actual elixir with host's AI-tracked value
+        // playerElixir: prev.playerElixir, // keep local
+        // enemyElixir: prev.enemyElixir, // keep local  
         gameStatus: adjustedStatus
       };
     });
