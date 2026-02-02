@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Position } from '@/types/game';
+import { Position, Tower, Unit, Building } from '@/types/game';
 
 export interface MultiplayerBattleState {
   battleId: string;
@@ -18,13 +18,24 @@ export interface CardPlacement {
   cardIndex: number;
   position: Position;
   timestamp: number;
+  isPlayer1: boolean; // Which player placed the card
+}
+
+// Synced game state for Player 2 to receive
+export interface SyncedGameState {
+  timestamp: number;
+  playerTowers: Array<{ id: string; health: number; maxHealth: number }>;
+  enemyTowers: Array<{ id: string; health: number; maxHealth: number }>;
+  timeRemaining: number;
+  playerElixir: number;
+  enemyElixir: number;
+  gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
 }
 
 interface MultiplayerGameState {
-  player1Placements: CardPlacement[];
-  player2Placements: CardPlacement[];
-  lastProcessedPlayer1: number;
-  lastProcessedPlayer2: number;
+  placements: CardPlacement[];
+  lastProcessed: number;
+  syncedState?: SyncedGameState;
 }
 
 export function useMultiplayerBattle(
@@ -36,6 +47,7 @@ export function useMultiplayerBattle(
 ) {
   const [battleState, setBattleState] = useState<MultiplayerBattleState | null>(null);
   const [pendingOpponentPlacements, setPendingOpponentPlacements] = useState<CardPlacement[]>([]);
+  const [syncedGameState, setSyncedGameState] = useState<SyncedGameState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const lastProcessedTimestampRef = useRef<number>(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -71,10 +83,8 @@ export function useMultiplayerBattle(
           player2_level: opponentLevel,
           status: 'active',
           game_state: {
-            player1Placements: [],
-            player2Placements: [],
-            lastProcessedPlayer1: 0,
-            lastProcessedPlayer2: 0
+            placements: [],
+            lastProcessed: 0
           }
         })
         .select('id')
@@ -131,7 +141,8 @@ export function useMultiplayerBattle(
       cardId,
       cardIndex,
       position: { x: position.x, y: position.y },
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      isPlayer1: battleState.isPlayer1
     };
 
     // Get current game state
@@ -144,20 +155,41 @@ export function useMultiplayerBattle(
     if (!battleData) return;
 
     const gameState = battleData.game_state as unknown as MultiplayerGameState;
-    const updatedState: Record<string, unknown> = { ...gameState };
+    const updatedState: MultiplayerGameState = {
+      ...gameState,
+      placements: [...(gameState.placements || []), placement]
+    };
 
-    if (battleState.isPlayer1) {
-      updatedState.player1Placements = [...(gameState.player1Placements || []), placement];
-    } else {
-      updatedState.player2Placements = [...(gameState.player2Placements || []), placement];
-    }
-
-    // Update the game state (cast to Json-compatible type)
+    // Update the game state
     await supabase
       .from('active_battles')
       .update({ game_state: updatedState as unknown as Record<string, never> })
       .eq('id', battleState.battleId);
   }, [battleState, user]);
+
+  // Sync game state from host (Player 1) to client (Player 2)
+  const syncGameState = useCallback(async (state: SyncedGameState) => {
+    if (!battleState || !battleState.isPlayer1) return; // Only host syncs
+
+    const { data: battleData } = await supabase
+      .from('active_battles')
+      .select('game_state')
+      .eq('id', battleState.battleId)
+      .single();
+
+    if (!battleData) return;
+
+    const gameState = battleData.game_state as unknown as MultiplayerGameState;
+    const updatedState: MultiplayerGameState = {
+      ...gameState,
+      syncedState: state
+    };
+
+    await supabase
+      .from('active_battles')
+      .update({ game_state: updatedState as unknown as Record<string, never> })
+      .eq('id', battleState.battleId);
+  }, [battleState]);
 
   // Report game end
   const reportGameEnd = useCallback(async (winnerId: string | null) => {
@@ -199,23 +231,25 @@ export function useMultiplayerBattle(
           if (!currentBattleState || !gameState) return;
 
           // Get opponent's new placements
-          const opponentPlacements = currentBattleState.isPlayer1 
-            ? gameState.player2Placements || []
-            : gameState.player1Placements || [];
-
-          // Filter to only new placements
-          const newPlacements = opponentPlacements.filter(
-            p => p.timestamp > lastProcessedTimestampRef.current
+          const allPlacements = gameState.placements || [];
+          const opponentPlacements = allPlacements.filter(
+            p => p.isPlayer1 !== currentBattleState.isPlayer1 &&
+                 p.timestamp > lastProcessedTimestampRef.current
           );
 
-          if (newPlacements.length > 0) {
+          if (opponentPlacements.length > 0) {
             // Update last processed timestamp
             lastProcessedTimestampRef.current = Math.max(
-              ...newPlacements.map(p => p.timestamp)
+              ...opponentPlacements.map(p => p.timestamp)
             );
             
             // Queue these placements for processing
-            setPendingOpponentPlacements(prev => [...prev, ...newPlacements]);
+            setPendingOpponentPlacements(prev => [...prev, ...opponentPlacements]);
+          }
+
+          // For Player 2, receive synced game state from Player 1
+          if (!currentBattleState.isPlayer1 && gameState.syncedState) {
+            setSyncedGameState(gameState.syncedState);
           }
 
           // Check if game ended
@@ -252,6 +286,7 @@ export function useMultiplayerBattle(
     }
     setBattleState(null);
     setPendingOpponentPlacements([]);
+    setSyncedGameState(null);
     setIsConnected(false);
     lastProcessedTimestampRef.current = 0;
   }, []);
@@ -260,9 +295,11 @@ export function useMultiplayerBattle(
     battleState,
     isConnected,
     pendingOpponentPlacements,
+    syncedGameState,
     createBattle,
     joinBattle,
     sendCardPlacement,
+    syncGameState,
     reportGameEnd,
     consumePlacement,
     disconnect
