@@ -58,7 +58,7 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
           )}
           style={{
             left: '50%',
-            bottom: '115px', // Right above the king tower crown
+            bottom: '160px', // Above the player king tower
             transform: 'translateX(-50%)'
           }}
         >
@@ -76,7 +76,7 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
           )}
           style={{
             left: '50%',
-            top: '70px', // Right above the enemy king tower crown
+            top: '105px', // Above the enemy king tower
             transform: 'translateX(-50%)'
           }}
         >
