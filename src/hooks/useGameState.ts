@@ -1066,19 +1066,8 @@ export function useGameState(
               }
             }
             
-            // THIRD PRIORITY: Closest enemy building (no distance limit for buildings)
-            if (!currentTarget) {
-              closestDist = Infinity;
-              for (const building of validEnemyBuildings) {
-                const dist = getDistance(unit.position, building.position);
-                if (dist < closestDist) {
-                  closestDist = dist;
-                  currentTarget = building;
-                }
-              }
-            }
-            
-            // FOURTH PRIORITY: Closest tower (no distance limit for towers)
+            // THIRD PRIORITY: Closest tower (no distance limit for towers)
+            // Towers take priority over enemy buildings
             if (!currentTarget) {
               closestDist = Infinity;
               for (const tower of validEnemyTowers) {
@@ -1086,6 +1075,18 @@ export function useGameState(
                 if (dist < closestDist) {
                   closestDist = dist;
                   currentTarget = tower;
+                }
+              }
+            }
+            
+            // FOURTH PRIORITY: Closest enemy building (no distance limit for buildings)
+            if (!currentTarget) {
+              closestDist = Infinity;
+              for (const building of validEnemyBuildings) {
+                const dist = getDistance(unit.position, building.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = building;
                 }
               }
             }
@@ -1292,19 +1293,8 @@ export function useGameState(
               }
             }
             
-            // THIRD PRIORITY: Closest player building (no distance limit for buildings)
-            if (!currentTarget) {
-              closestDist = Infinity;
-              for (const building of validPlayerBuildings) {
-                const dist = getDistance(unit.position, building.position);
-                if (dist < closestDist) {
-                  closestDist = dist;
-                  currentTarget = building;
-                }
-              }
-            }
-            
-            // FOURTH PRIORITY: Closest tower (no distance limit for towers)
+            // THIRD PRIORITY: Closest tower (no distance limit for towers)
+            // Towers take priority over player buildings
             if (!currentTarget) {
               closestDist = Infinity;
               for (const tower of validPlayerTowers) {
@@ -1312,6 +1302,18 @@ export function useGameState(
                 if (dist < closestDist) {
                   closestDist = dist;
                   currentTarget = tower;
+                }
+              }
+            }
+            
+            // FOURTH PRIORITY: Closest player building (no distance limit for buildings)
+            if (!currentTarget) {
+              closestDist = Infinity;
+              for (const building of validPlayerBuildings) {
+                const dist = getDistance(unit.position, building.position);
+                if (dist < closestDist) {
+                  closestDist = dist;
+                  currentTarget = building;
                 }
               }
             }
