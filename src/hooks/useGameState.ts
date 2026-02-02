@@ -727,43 +727,76 @@ export function useGameState(
       
       if (hostState.units) {
         // Host's enemy units are our player units (and vice versa)
-        // Also mirror Y positions (ARENA_HEIGHT - y) for perspective swap
-        const ARENA_HEIGHT = 568; // Match the constant
-        
-        newPlayerUnits = hostState.units
-          .filter(u => u.isEnemy) // Host's enemies = our units
-          .map(u => {
-            // Find existing unit to preserve properties not synced
-            const existing = prev.playerUnits.find(eu => eu.id === u.id);
-            if (existing) {
-              // Update existing unit with synced data
+        // Mirror Y positions (ARENA_HEIGHT - y) for perspective swap
+        const mirror = (p: { x: number; y: number }) => ({ x: p.x, y: ARENA_HEIGHT - p.y });
+        const dist = (a: Position, b: Position) => Math.hypot(a.x - b.x, a.y - b.y);
+
+        const buildUnitList = (
+          incoming: NonNullable<typeof hostState.units>,
+          existingUnits: Unit[],
+          owner: 'player' | 'enemy'
+        ): Unit[] => {
+          const usedExistingIds = new Set<string>();
+
+          return incoming
+            .map(u => {
+              const mirroredPos = mirror(u.position);
+
+              // 1) Prefer exact ID match
+              let match = existingUnits.find(eu => eu.id === u.id);
+
+              // 2) If IDs differ across clients (common), try matching by cardId + proximity
+              if (!match) {
+                const candidates = existingUnits
+                  .filter(eu => !usedExistingIds.has(eu.id) && eu.cardId === u.cardId)
+                  .map(eu => ({ eu, d: dist(eu.position, mirroredPos) }))
+                  .sort((a, b) => a.d - b.d);
+
+                if (candidates[0] && candidates[0].d <= 60) {
+                  match = candidates[0].eu;
+                }
+              }
+
+              if (match) {
+                usedExistingIds.add(match.id);
+                return {
+                  ...match,
+                  id: u.id, // adopt host ID going forward
+                  position: mirroredPos,
+                  health: u.health,
+                  maxHealth: u.maxHealth,
+                  state: (u.state as 'idle' | 'moving' | 'attacking') || match.state,
+                };
+              }
+
+              // 3) If still missing, create a new unit so we don't "drop" it (which looks like a freeze)
+              const card = getCardById(u.cardId);
+              if (!card) return null;
+              const created = spawnUnit(card, mirroredPos, owner, 1);
+
               return {
-                ...existing,
-                position: { x: u.position.x, y: ARENA_HEIGHT - u.position.y },
+                ...created,
+                id: u.id,
+                position: mirroredPos,
                 health: u.health,
                 maxHealth: u.maxHealth,
-                state: (u.state as 'idle' | 'moving' | 'attacking') || existing.state,
+                state: (u.state as 'idle' | 'moving' | 'attacking') || created.state,
               };
-            }
-            // New unit - create minimal entry (will be filled on next sync or card lookup)
-            return null;
-          }).filter((u): u is Unit => u !== null);
-        
-        newEnemyUnits = hostState.units
-          .filter(u => !u.isEnemy) // Host's player units = our enemies
-          .map(u => {
-            const existing = prev.enemyUnits.find(eu => eu.id === u.id);
-            if (existing) {
-              return {
-                ...existing,
-                position: { x: u.position.x, y: ARENA_HEIGHT - u.position.y },
-                health: u.health,
-                maxHealth: u.maxHealth,
-                state: (u.state as 'idle' | 'moving' | 'attacking') || existing.state,
-              };
-            }
-            return null;
-          }).filter((u): u is Unit => u !== null);
+            })
+            .filter((u): u is Unit => u !== null);
+        };
+
+        newPlayerUnits = buildUnitList(
+          hostState.units.filter(u => u.isEnemy),
+          prev.playerUnits,
+          'player'
+        );
+
+        newEnemyUnits = buildUnitList(
+          hostState.units.filter(u => !u.isEnemy),
+          prev.enemyUnits,
+          'enemy'
+        );
       }
 
       // Swap win/loss status (their win = our loss)
@@ -787,7 +820,7 @@ export function useGameState(
         gameStatus: adjustedStatus
       };
     });
-  }, []);
+  }, [spawnUnit]);
 
   // Main game loop
   useEffect(() => {
