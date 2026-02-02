@@ -2023,34 +2023,23 @@ export function useGameState(
               }
               
               case 'soul-summon': {
-                // Skeleton King: Gain souls from nearby deaths, summon skeletons
-                // Count nearby dead enemies
+                // Skeleton King: Gain souls from nearby deaths
+                // Souls are collected passively - player must manually activate to summon skeletons
+                // This matches Clash Royale's behavior where the ability button activates the summon
                 const SOUL_RANGE = 100;
                 const soulsGained = deadEnemies.filter(e => 
                   getDistance(unit.position, e.position) <= SOUL_RANGE
                 ).length;
                 
-                ability.stacks += soulsGained;
-                
-                // Summon skeletons when enough souls (4 souls = 4 skeletons)
-                if (ability.stacks >= 4 && now - ability.lastActivationTime > 3000) {
-                  const skeletonCard = getCardById('skeletons');
-                  if (skeletonCard) {
-                    const numToSpawn = Math.min(ability.stacks, 8); // Max 8 at once
-                    for (let i = 0; i < numToSpawn; i++) {
-                      const offsetX = (i % 4 - 1.5) * 15;
-                      const offsetY = Math.floor(i / 4) * 15;
-                      const spawnPos = {
-                        x: unit.position.x + offsetX,
-                        y: unit.position.y + (owner === 'player' ? -25 : 25) + offsetY
-                      };
-                      unitsToAdd.push(spawnUnit(skeletonCard, spawnPos, owner, unit.level));
-                      addSpawnEffect(spawnPos, owner, '💀');
-                    }
-                    ability.stacks -= numToSpawn;
-                    ability.lastActivationTime = now;
+                // Collect souls up to the maximum of 16
+                if (soulsGained > 0) {
+                  ability.stacks = Math.min(16, ability.stacks + soulsGained);
+                  // Visual feedback when collecting souls
+                  if (ability.stacks >= 6) {
+                    // Show ready indicator (handled by ability button glow)
                   }
                 }
+                // No auto-summon - player activates manually via ability button
                 break;
               }
               
