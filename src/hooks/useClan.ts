@@ -303,6 +303,46 @@ export function useClan(user: User | null, playerName: string, trophies: number)
     return { success: true };
   }, [user, userMembership, userClan]);
 
+  // Delete all clans (admin function)
+  const deleteAllClans = useCallback(async () => {
+    if (!user) return { success: false, error: 'Not logged in' };
+
+    // Delete all members first (foreign key constraint)
+    const { error: membersError } = await supabase
+      .from('clan_members')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+    if (membersError) {
+      console.error('Error deleting members:', membersError);
+      return { success: false, error: membersError.message };
+    }
+
+    // Delete all messages
+    await supabase
+      .from('clan_messages')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // Delete all clans
+    const { error: clansError } = await supabase
+      .from('clans')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (clansError) {
+      console.error('Error deleting clans:', clansError);
+      return { success: false, error: clansError.message };
+    }
+
+    setUserClan(null);
+    setUserMembership(null);
+    setClanMembers([]);
+    setClanMessages([]);
+    setAvailableClans([]);
+    return { success: true };
+  }, [user]);
+
   // Kick a member (leader/co-leader only)
   const kickMember = useCallback(async (memberId: string) => {
     if (!userMembership || !['leader', 'co-leader'].includes(userMembership.role)) {
@@ -421,6 +461,7 @@ export function useClan(user: User | null, playerName: string, trophies: number)
     joinClan,
     leaveClan,
     deleteClan,
+    deleteAllClans,
     kickMember,
     promoteMember,
     sendMessage,
