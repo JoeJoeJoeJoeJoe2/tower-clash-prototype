@@ -46,6 +46,7 @@ export function GameScreen() {
     opponentName: string;
     opponentBannerId: string;
     opponentLevel: number;
+    opponentTrophies: number;
     isChallenger: boolean;
   } | null>(null);
   
@@ -188,16 +189,18 @@ export function GameScreen() {
     const opponentId = isChallenger ? acceptedBattle.to_user_id : acceptedBattle.from_user_id;
     const opponentName = isChallenger ? acceptedBattle.to_player_name : acceptedBattle.from_player_name;
     
-    // Find opponent in online players by name to get their banner and level
+    // Find opponent in online players by name to get their banner, level, and trophies
     const opponent = onlinePlayers.find(p => p.player_name === opponentName);
     const opponentBannerId = opponent?.banner_id || 'banner-blue';
     const opponentLevel = opponent?.level || 1;
+    const opponentTrophies = opponent?.trophies || 0;
     
     // Store the battle data for matchmaking screen
     setFriendlyBattleData({
       opponentName,
       opponentBannerId,
       opponentLevel,
+      opponentTrophies,
       isChallenger
     });
     
