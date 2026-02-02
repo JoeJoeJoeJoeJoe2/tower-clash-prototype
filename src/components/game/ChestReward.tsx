@@ -80,7 +80,7 @@ export function ChestReward({ onGenerateReward, onClose }: ChestRewardProps) {
     <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex flex-col z-50">
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="flex flex-col items-center gap-6 max-w-md w-full mx-auto p-4 pb-24">
+        <div className="flex flex-col items-center gap-6 max-w-md w-full mx-auto p-4 pb-24 pt-24">
           {/* Chest */}
           <div 
             className={cn(
