@@ -690,6 +690,16 @@ export function useGameState(
     playerElixir: number;
     enemyElixir: number;
     gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
+    units?: Array<{
+      id: string;
+      cardId: string;
+      position: { x: number; y: number };
+      health: number;
+      maxHealth: number;
+      isEnemy: boolean;
+      state?: string;
+      currentTarget?: { x: number; y: number } | null;
+    }>;
   }) => {
     setGameState(prev => {
       // Apply tower health from host (these are THEIR perspective, so swap for us)
@@ -711,6 +721,51 @@ export function useGameState(
         return tower;
       });
 
+      // Apply units from host if provided (swap isEnemy and mirror positions)
+      let newPlayerUnits = prev.playerUnits;
+      let newEnemyUnits = prev.enemyUnits;
+      
+      if (hostState.units) {
+        // Host's enemy units are our player units (and vice versa)
+        // Also mirror Y positions (ARENA_HEIGHT - y) for perspective swap
+        const ARENA_HEIGHT = 568; // Match the constant
+        
+        newPlayerUnits = hostState.units
+          .filter(u => u.isEnemy) // Host's enemies = our units
+          .map(u => {
+            // Find existing unit to preserve properties not synced
+            const existing = prev.playerUnits.find(eu => eu.id === u.id);
+            if (existing) {
+              // Update existing unit with synced data
+              return {
+                ...existing,
+                position: { x: u.position.x, y: ARENA_HEIGHT - u.position.y },
+                health: u.health,
+                maxHealth: u.maxHealth,
+                state: (u.state as 'idle' | 'moving' | 'attacking') || existing.state,
+              };
+            }
+            // New unit - create minimal entry (will be filled on next sync or card lookup)
+            return null;
+          }).filter((u): u is Unit => u !== null);
+        
+        newEnemyUnits = hostState.units
+          .filter(u => !u.isEnemy) // Host's player units = our enemies
+          .map(u => {
+            const existing = prev.enemyUnits.find(eu => eu.id === u.id);
+            if (existing) {
+              return {
+                ...existing,
+                position: { x: u.position.x, y: ARENA_HEIGHT - u.position.y },
+                health: u.health,
+                maxHealth: u.maxHealth,
+                state: (u.state as 'idle' | 'moving' | 'attacking') || existing.state,
+              };
+            }
+            return null;
+          }).filter((u): u is Unit => u !== null);
+      }
+
       // Swap win/loss status (their win = our loss)
       let adjustedStatus = hostState.gameStatus;
       if (hostState.gameStatus === 'player-wins') {
@@ -723,6 +778,8 @@ export function useGameState(
         ...prev,
         playerTowers: newPlayerTowers,
         enemyTowers: newEnemyTowers,
+        playerUnits: newPlayerUnits,
+        enemyUnits: newEnemyUnits,
         timeRemaining: hostState.timeRemaining,
         // Swap elixir: their player elixir = our enemy elixir
         playerElixir: hostState.enemyElixir,
