@@ -134,7 +134,7 @@ export function GameUI({
   useEffect(() => {
     if (!isMultiplayer || !isHost || !onSyncGameState) return;
 
-    // Sync every 500ms to keep client in sync
+    // Sync every 100ms for responsive gameplay (was 500ms)
     const syncInterval = setInterval(() => {
       if (gameState.gameStatus === 'playing') {
         onSyncGameState({
@@ -144,10 +144,31 @@ export function GameUI({
           timeRemaining: gameState.timeRemaining,
           playerElixir: gameState.playerElixir,
           enemyElixir: gameState.enemyElixir,
-          gameStatus: gameState.gameStatus
+          gameStatus: gameState.gameStatus,
+          // Include all units for full sync
+          units: [
+            ...gameState.playerUnits.map(u => ({
+              id: u.id,
+              cardId: u.cardId,
+              position: u.position,
+              health: u.health,
+              maxHealth: u.maxHealth,
+              isEnemy: false,
+              state: u.state,
+            })),
+            ...gameState.enemyUnits.map(u => ({
+              id: u.id,
+              cardId: u.cardId,
+              position: u.position,
+              health: u.health,
+              maxHealth: u.maxHealth,
+              isEnemy: true,
+              state: u.state,
+            }))
+          ]
         });
       }
-    }, 500);
+    }, 100);
 
     // Also sync immediately when game ends
     if (gameState.gameStatus !== 'playing') {
@@ -163,7 +184,7 @@ export function GameUI({
     }
 
     return () => clearInterval(syncInterval);
-  }, [isMultiplayer, isHost, onSyncGameState, gameState.gameStatus, gameState.playerTowers, gameState.enemyTowers, gameState.timeRemaining, gameState.playerElixir, gameState.enemyElixir]);
+  }, [isMultiplayer, isHost, onSyncGameState, gameState.gameStatus, gameState.playerTowers, gameState.enemyTowers, gameState.playerUnits, gameState.enemyUnits, gameState.timeRemaining, gameState.playerElixir, gameState.enemyElixir]);
 
   // CLIENT: Apply synced state from host
   useEffect(() => {
