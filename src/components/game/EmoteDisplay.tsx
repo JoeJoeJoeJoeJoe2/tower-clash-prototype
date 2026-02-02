@@ -44,11 +44,11 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
   // King tower positions (relative to arena: 340x500)
   // Player king: y = 450 (ARENA_HEIGHT - 50)
   // Enemy king: y = 50
-  // Emotes should appear above each king tower
+  // Emotes should appear right above the crown on each king tower
   
   return (
     <>
-      {/* Player emote - above player king tower (bottom of arena) */}
+      {/* Player emote - right above player king tower crown */}
       {playerEmote && (
         <div
           key={playerEmote.id}
@@ -58,7 +58,7 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
           )}
           style={{
             left: '50%',
-            bottom: '70px', // Position above player king tower
+            bottom: '115px', // Right above the king tower crown
             transform: 'translateX(-50%)'
           }}
         >
@@ -66,7 +66,7 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
         </div>
       )}
 
-      {/* Enemy emote - above enemy king tower (top of arena) */}
+      {/* Enemy emote - right above enemy king tower crown */}
       {enemyEmote && (
         <div
           key={enemyEmote.id}
@@ -76,7 +76,7 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
           )}
           style={{
             left: '50%',
-            top: '15px', // Position above enemy king tower
+            top: '70px', // Right above the enemy king tower crown
             transform: 'translateX(-50%)'
           }}
         >
