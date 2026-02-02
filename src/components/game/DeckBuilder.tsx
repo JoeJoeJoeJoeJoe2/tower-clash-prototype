@@ -345,70 +345,73 @@ export function DeckBuilder({
         </p>
       </div>
 
-      {/* Card Info Tooltip */}
+      {/* Card Info Tooltip with backdrop */}
       {selectedCard && (() => {
         const balance = getBalanceInfo(selectedCard.id);
         const isNerfed = balance && balance.nerfLevel > 0;
         const nerfMultiplier = isNerfed ? (1 - balance.nerfLevel * 0.1) : 1;
         
         return (
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg p-3 shadow-lg min-w-64 z-50">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">{selectedCard.emoji}</span>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold">{selectedCard.name}</h3>
-                  {isNerfed && (
-                    <span className="bg-gradient-to-r from-orange-600 to-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <TrendingDown className="w-2.5 h-2.5" />
-                      -{balance.nerfLevel * 10}%
-                    </span>
-                  )}
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="relative bg-card border-2 border-primary/50 rounded-xl p-4 shadow-2xl min-w-72 max-w-sm mx-4">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-4xl">{selectedCard.emoji}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg">{selectedCard.name}</h3>
+                    {isNerfed && (
+                      <span className="bg-gradient-to-r from-orange-600 to-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <TrendingDown className="w-2.5 h-2.5" />
+                        -{balance.nerfLevel * 10}%
+                      </span>
+                    )}
+                  </div>
+                  <span className={cn(
+                    'text-sm capitalize font-medium',
+                    selectedCard.rarity === 'common' && 'text-slate-400',
+                    selectedCard.rarity === 'rare' && 'text-blue-400',
+                    selectedCard.rarity === 'epic' && 'text-purple-400',
+                    selectedCard.rarity === 'legendary' && 'text-amber-400',
+                    selectedCard.rarity === 'champion' && 'text-pink-400'
+                  )}>
+                    {selectedCard.rarity}
+                  </span>
                 </div>
-                <span className={cn(
-                  'text-xs capitalize',
-                  selectedCard.rarity === 'common' && 'text-slate-400',
-                  selectedCard.rarity === 'rare' && 'text-blue-400',
-                  selectedCard.rarity === 'epic' && 'text-purple-400',
-                  selectedCard.rarity === 'legendary' && 'text-amber-400',
-                  selectedCard.rarity === 'champion' && 'text-pink-400'
-                )}>
-                  {selectedCard.rarity}
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">{selectedCard.description}</p>
+              
+              {/* Stats with nerf indication */}
+              <div className="flex gap-6 text-sm bg-muted/30 rounded-lg p-2 justify-center">
+                <span className={cn("flex items-center gap-1", isNerfed && 'text-orange-400')}>
+                  ❤️ {isNerfed ? Math.round(selectedCard.health * nerfMultiplier) : selectedCard.health}
+                  {isNerfed && <span className="text-xs text-muted-foreground line-through">{selectedCard.health}</span>}
                 </span>
+                <span className={cn("flex items-center gap-1", isNerfed && 'text-orange-400')}>
+                  ⚔️ {isNerfed ? Math.round(selectedCard.damage * nerfMultiplier) : selectedCard.damage}
+                  {isNerfed && <span className="text-xs text-muted-foreground line-through">{selectedCard.damage}</span>}
+                </span>
+                <span className="flex items-center gap-1">⚡ {selectedCard.elixirCost}</span>
               </div>
+              
+              {/* Nerf details */}
+              {isNerfed && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-orange-400">
+                    ⚠️ This card was nerfed {balance.nerfLevel} time{balance.nerfLevel > 1 ? 's' : ''} for winning too many games
+                  </p>
+                </div>
+              )}
+              
+              {/* Win streak warning */}
+              {balance && balance.winStreak > 0 && !isNerfed && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-yellow-500">
+                    🔥 Win streak: {balance.winStreak}/3 - will be nerfed after {3 - balance.winStreak} more MVP wins
+                  </p>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground mb-2">{selectedCard.description}</p>
-            
-            {/* Stats with nerf indication */}
-            <div className="flex gap-4 text-xs">
-              <span className={isNerfed ? 'text-orange-400' : ''}>
-                ❤️ {isNerfed ? Math.round(selectedCard.health * nerfMultiplier) : selectedCard.health}
-                {isNerfed && <span className="text-[9px] text-muted-foreground line-through ml-1">{selectedCard.health}</span>}
-              </span>
-              <span className={isNerfed ? 'text-orange-400' : ''}>
-                ⚔️ {isNerfed ? Math.round(selectedCard.damage * nerfMultiplier) : selectedCard.damage}
-                {isNerfed && <span className="text-[9px] text-muted-foreground line-through ml-1">{selectedCard.damage}</span>}
-              </span>
-              <span>⚡ {selectedCard.elixirCost}</span>
-            </div>
-            
-            {/* Nerf details */}
-            {isNerfed && (
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <p className="text-[10px] text-orange-400">
-                  ⚠️ This card was nerfed {balance.nerfLevel} time{balance.nerfLevel > 1 ? 's' : ''} for winning too many games
-                </p>
-              </div>
-            )}
-            
-            {/* Win streak warning */}
-            {balance && balance.winStreak > 0 && !isNerfed && (
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <p className="text-[10px] text-yellow-500">
-                  🔥 Win streak: {balance.winStreak}/3 - will be nerfed after {3 - balance.winStreak} more MVP wins
-                </p>
-              </div>
-            )}
           </div>
         );
       })()}
