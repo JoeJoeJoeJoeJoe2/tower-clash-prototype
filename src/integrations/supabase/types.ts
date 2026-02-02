@@ -95,6 +95,30 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          player_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          player_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          player_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       online_players: {
         Row: {
           banner_id: string

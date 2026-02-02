@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Search, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Users, Crown, Shield, MessageSquare, Send, Trophy, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
 import { OnlinePlayer } from '@/hooks/useOnlinePresence';
 import { BattleRequest } from '@/hooks/useBattleRequests';
 import { OnlinePlayersPanel } from './OnlinePlayersPanel';
+import { useChat } from '@/hooks/useChat';
 
 interface ClanScreenProps {
   playerName: string;
@@ -23,20 +24,6 @@ interface ClanScreenProps {
   onSignOut: () => void;
   onSignIn: () => void;
 }
-
-interface ChatMessage {
-  id: string;
-  sender: string;
-  message: string;
-  timestamp: Date;
-  isSystem?: boolean;
-}
-
-const mockChatMessages: ChatMessage[] = [
-  { id: '1', sender: 'DragonSlayer', message: 'Good game everyone! 🎮', timestamp: new Date(Date.now() - 300000) },
-  { id: '2', sender: 'ShadowKnight', message: 'Anyone want to practice?', timestamp: new Date(Date.now() - 180000) },
-  { id: '3', sender: 'System', message: 'IceQueen joined the clan!', timestamp: new Date(Date.now() - 60000), isSystem: true },
-];
 
 type Tab = 'online' | 'chat' | 'members';
 
@@ -56,21 +43,26 @@ export function ClanScreen({
   onSignIn
 }: ClanScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('online');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(mockChatMessages);
   const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { messages: chatMessages, loading: chatLoading, sendMessage } = useChat(user);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || sending || !user) return;
     
-    const message: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: playerName,
-      message: newMessage.trim(),
-      timestamp: new Date()
-    };
-    
-    setChatMessages(prev => [...prev, message]);
-    setNewMessage('');
+    setSending(true);
+    const success = await sendMessage(newMessage, playerName);
+    if (success) {
+      setNewMessage('');
+    }
+    setSending(false);
   };
 
   return (
@@ -208,49 +200,79 @@ export function ClanScreen({
           <>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {chatMessages.map((msg) => (
-                <div 
-                  key={msg.id}
-                  className={cn(
-                    "rounded-lg p-2",
-                    msg.isSystem 
-                      ? "bg-yellow-900/30 border border-yellow-600/30 text-center" 
-                      : "bg-gray-800/50"
-                  )}
-                >
-                  {msg.isSystem ? (
-                    <p className="text-yellow-300 text-sm">{msg.message}</p>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-cyan-400 font-semibold text-sm">{msg.sender}</span>
-                        <span className="text-gray-600 text-xs">
-                          {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <p className="text-white text-sm">{msg.message}</p>
-                    </>
-                  )}
+              {!user ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 mx-auto text-gray-600 mb-3" />
+                  <p className="text-gray-400">Sign in to chat with other players!</p>
+                  <Button
+                    onClick={onSignIn}
+                    className="mt-4 bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600"
+                  >
+                    Sign In
+                  </Button>
                 </div>
-              ))}
+              ) : chatLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                </div>
+              ) : chatMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 mx-auto text-gray-600 mb-3" />
+                  <p className="text-gray-400">No messages yet. Be the first to say something!</p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div 
+                    key={msg.id}
+                    className={cn(
+                      "rounded-lg p-2",
+                      msg.user_id === user?.id 
+                        ? "bg-cyan-900/30 border border-cyan-600/30" 
+                        : "bg-gray-800/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        "font-semibold text-sm",
+                        msg.user_id === user?.id ? "text-cyan-300" : "text-cyan-400"
+                      )}>
+                        {msg.player_name}
+                        {msg.user_id === user?.id && " (you)"}
+                      </span>
+                      <span className="text-gray-600 text-xs">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-white text-sm">{msg.message}</p>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
-            <div className="p-3 bg-[#0a1525] border-t border-cyan-900/40">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500"
-                />
-                <Button onClick={handleSendMessage} className="bg-cyan-600 hover:bg-cyan-500">
-                  <Send className="w-5 h-5" />
-                </Button>
+            {user && (
+              <div className="p-3 bg-[#0a1525] border-t border-cyan-900/40">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    disabled={sending}
+                    className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 disabled:opacity-50"
+                  />
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={sending || !newMessage.trim()}
+                    className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50"
+                  >
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
 
