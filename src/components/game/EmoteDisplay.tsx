@@ -41,29 +41,44 @@ export function EmoteDisplay({ messages }: EmoteDisplayProps) {
     }
   }, [messages]);
 
+  // King tower positions (relative to arena: 340x500)
+  // Player king: y = 450 (ARENA_HEIGHT - 50)
+  // Enemy king: y = 50
+  // Emotes should appear above each king tower
+  
   return (
     <>
-      {/* Player emote (bottom) - only one at a time */}
+      {/* Player emote - above player king tower (bottom of arena) */}
       {playerEmote && (
         <div
           key={playerEmote.id}
           className={cn(
-            "absolute bottom-24 left-1/2 -translate-x-1/2 z-40",
+            "absolute z-40",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
+          style={{
+            left: '50%',
+            bottom: '70px', // Position above player king tower
+            transform: 'translateX(-50%)'
+          }}
         >
           <EmoteBubble content={playerEmote.content} isText={playerEmote.isText} isPlayer={true} />
         </div>
       )}
 
-      {/* Enemy emote (top) - only one at a time */}
+      {/* Enemy emote - above enemy king tower (top of arena) */}
       {enemyEmote && (
         <div
           key={enemyEmote.id}
           className={cn(
-            "absolute top-12 left-1/2 -translate-x-1/2 z-40",
+            "absolute z-40",
             "animate-in zoom-in-75 fade-in duration-200"
           )}
+          style={{
+            left: '50%',
+            top: '15px', // Position above enemy king tower
+            transform: 'translateX(-50%)'
+          }}
         >
           <EmoteBubble content={enemyEmote.content} isText={enemyEmote.isText} isPlayer={false} />
         </div>
