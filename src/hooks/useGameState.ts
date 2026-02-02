@@ -777,14 +777,24 @@ export function useGameState(
       setGameState(prev => {
         if (prev.gameStatus !== 'playing') return prev;
         
-        // For non-host in multiplayer, only run visual updates - the host syncs authoritative state
-        // We still need to process some local things like card selection, but skip game simulation
+        // For non-host in multiplayer, still update elixir and time locally for responsiveness
+        // Tower health and game status come from host via applyHostState
         if (isMultiplayerRef.current && !isHostRef.current) {
-          // Only update time-based things that don't affect game state
+          // Calculate elixir regen rate
+          const isSuddenDeathNow = prev.timeRemaining <= SUDDEN_DEATH_TIME;
+          const elixirRate = isSuddenDeathNow 
+            ? BASE_ELIXIR_REGEN_RATE * SUDDEN_DEATH_ELIXIR_MULTIPLIER 
+            : BASE_ELIXIR_REGEN_RATE;
+          
           return {
             ...prev,
-            // Keep hand/deck for card selection
-            // Tower health and game status come from host via applyHostState
+            // Update elixir locally so player can see and play cards
+            playerElixir: Math.min(10, prev.playerElixir + elixirRate * delta),
+            // Update time locally for display (host will override with accurate time)
+            timeRemaining: Math.max(0, prev.timeRemaining - delta),
+            isSuddenDeath: isSuddenDeathNow,
+            // Update card cooldowns
+            playerCardCooldowns: prev.playerCardCooldowns.map(cd => Math.max(0, cd - delta)),
           };
         }
 

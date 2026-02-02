@@ -11,6 +11,7 @@ interface MatchmakingScreenProps {
     opponentName: string;
     opponentBannerId: string;
     opponentLevel: number;
+    opponentTrophies: number;
     isChallenger: boolean;
   } | null;
 }
@@ -144,7 +145,7 @@ export function MatchmakingScreen({ progress, onReady, isFriendlyBattle, friendl
       return {
         name: friendlyBattleData.opponentName,
         banner: opponentBanner || allBanners[0],
-        trophies: playerTrophies, // Approximate, real value would need to be passed
+        trophies: friendlyBattleData.opponentTrophies ?? 0,
         level: friendlyBattleData.opponentLevel
       };
     }
