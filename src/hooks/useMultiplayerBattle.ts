@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Position } from '@/types/game';
+import { GameStateDelta, GameStateSnapshot } from './useMultiplayerSync';
 
 export interface MultiplayerBattleState {
   battleId: string;
@@ -21,6 +22,7 @@ export interface CardPlacement {
   isPlayer1: boolean;
 }
 
+// Legacy full sync (used for initial sync / reconnection)
 export interface SyncedGameState {
   timestamp: number;
   playerTowers: Array<{ id: string; health: number; maxHealth: number }>;
@@ -29,6 +31,7 @@ export interface SyncedGameState {
   playerElixir: number;
   enemyElixir: number;
   gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
+  isSuddenDeath?: boolean;
   // Include units for full sync
   units?: Array<{
     id: string;
@@ -37,6 +40,7 @@ export interface SyncedGameState {
     health: number;
     maxHealth: number;
     isEnemy: boolean;
+    state?: 'idle' | 'moving' | 'attacking';
   }>;
 }
 
@@ -44,6 +48,9 @@ interface MultiplayerGameState {
   placements: CardPlacement[];
   lastProcessed: number;
 }
+
+// Re-export delta types for convenience
+export type { GameStateDelta, GameStateSnapshot };
 
 export function useMultiplayerBattle(
   user: User | null,
@@ -55,6 +62,8 @@ export function useMultiplayerBattle(
   const [battleState, setBattleState] = useState<MultiplayerBattleState | null>(null);
   const [pendingOpponentPlacements, setPendingOpponentPlacements] = useState<CardPlacement[]>([]);
   const [syncedGameState, setSyncedGameState] = useState<SyncedGameState | null>(null);
+  const [pendingDeltas, setPendingDeltas] = useState<GameStateDelta[]>([]);
+  const [latestSnapshot, setLatestSnapshot] = useState<GameStateSnapshot | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const lastProcessedTimestampRef = useRef<number>(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -225,6 +234,7 @@ export function useMultiplayerBattle(
   }, [battleState, user]);
 
   // Sync game state via broadcast only (no database write for speed)
+  // Now supports both full snapshots and deltas
   const syncGameState = useCallback((state: SyncedGameState) => {
     if (!battleState || !battleState.isPlayer1) return;
 
@@ -234,6 +244,32 @@ export function useMultiplayerBattle(
         type: 'broadcast',
         event: 'game_state_sync',
         payload: state
+      });
+    }
+  }, [battleState]);
+
+  // NEW: Send delta updates for efficient sync (preferred over full state)
+  const syncDelta = useCallback((delta: GameStateDelta) => {
+    if (!battleState || !battleState.isPlayer1) return;
+
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'game_delta_sync',
+        payload: delta
+      });
+    }
+  }, [battleState]);
+
+  // Send full snapshot (for initial sync or reconnection)
+  const syncSnapshot = useCallback((snapshot: GameStateSnapshot) => {
+    if (!battleState || !battleState.isPlayer1) return;
+
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'game_snapshot_sync',
+        payload: snapshot
       });
     }
   }, [battleState]);
@@ -346,6 +382,26 @@ export function useMultiplayerBattle(
           setSyncedGameState(state);
         }
       })
+      .on('broadcast', { event: 'game_delta_sync' }, (payload) => {
+        const delta = payload.payload as GameStateDelta;
+        const currentBattleState = battleStateRef.current;
+        
+        // Only Player 2 receives delta updates
+        if (currentBattleState && !currentBattleState.isPlayer1) {
+          setPendingDeltas(prev => [...prev, delta]);
+        }
+      })
+      .on('broadcast', { event: 'game_snapshot_sync' }, (payload) => {
+        const snapshot = payload.payload as GameStateSnapshot;
+        const currentBattleState = battleStateRef.current;
+        
+        // Only Player 2 receives snapshots
+        if (currentBattleState && !currentBattleState.isPlayer1) {
+          setLatestSnapshot(snapshot);
+          // Clear pending deltas when a full snapshot arrives
+          setPendingDeltas([]);
+        }
+      })
       .on('broadcast', { event: 'game_end' }, (payload) => {
         const { winnerId } = payload.payload as { winnerId: string | null };
         setBattleState(prev => prev ? {
@@ -430,8 +486,20 @@ export function useMultiplayerBattle(
     setBattleState(null);
     setPendingOpponentPlacements([]);
     setSyncedGameState(null);
+    setPendingDeltas([]);
+    setLatestSnapshot(null);
     setIsConnected(false);
     lastProcessedTimestampRef.current = 0;
+  }, []);
+
+  // Helper to consume a delta after processing
+  const consumeDelta = useCallback(() => {
+    setPendingDeltas(prev => prev.slice(1));
+  }, []);
+
+  // Helper to clear snapshot after applying
+  const clearSnapshot = useCallback(() => {
+    setLatestSnapshot(null);
   }, []);
 
   return {
@@ -439,13 +507,19 @@ export function useMultiplayerBattle(
     isConnected,
     pendingOpponentPlacements,
     syncedGameState,
+    pendingDeltas,
+    latestSnapshot,
     createBattle,
     joinBattle,
     markReady,
     sendCardPlacement,
     syncGameState,
+    syncDelta,
+    syncSnapshot,
     reportGameEnd,
     consumePlacement,
+    consumeDelta,
+    clearSnapshot,
     disconnect
   };
 }

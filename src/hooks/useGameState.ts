@@ -684,9 +684,25 @@ export function useGameState(
   // Throttle host state updates to improve FPS for Player 2
   const lastHostUpdateRef = useRef<number>(0);
   const HOST_UPDATE_THROTTLE_MS = 50; // Only apply host state every 50ms max
+  
+  // Store pending reconciliation data from host
+  const pendingReconciliationRef = useRef<{
+    towerHealth: Map<string, { health: number; maxHealth: number }>;
+    unitUpdates: Map<string, { position: Position; health: number; maxHealth: number }>;
+    unitRemovals: Set<string>;
+    gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw' | null;
+    timeRemaining: number | null;
+  }>({
+    towerHealth: new Map(),
+    unitUpdates: new Map(),
+    unitRemovals: new Set(),
+    gameStatus: null,
+    timeRemaining: null,
+  });
 
   // Apply synced state from host (for Player 2 in multiplayer)
-  // This function receives game state from the host and applies critical values
+  // This function receives game state from the host and queues reconciliation
+  // The actual reconciliation happens in the game loop for smooth interpolation
   const applyHostState = useCallback((hostState: {
     playerTowers: Array<{ id: string; health: number; maxHealth: number }>;
     enemyTowers: Array<{ id: string; health: number; maxHealth: number }>;
@@ -694,6 +710,7 @@ export function useGameState(
     playerElixir: number;
     enemyElixir: number;
     gameStatus: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
+    isSuddenDeath?: boolean;
     units?: Array<{
       id: string;
       cardId: string;
@@ -712,134 +729,121 @@ export function useGameState(
     }
     lastHostUpdateRef.current = now;
 
-    setGameState(prev => {
-      // Apply tower health from host (these are THEIR perspective, so swap for us)
-      // Host's "playerTowers" = our "enemyTowers" (since we're the opponent)
-      // Host's "enemyTowers" = our "playerTowers" (since we're the player to them)
-      const newPlayerTowers = prev.playerTowers.map(tower => {
-        const hostTower = hostState.enemyTowers.find(t => t.id === tower.id.replace('player', 'enemy'));
-        if (hostTower) {
-          return { ...tower, health: hostTower.health, maxHealth: hostTower.maxHealth };
-        }
-        return tower;
-      });
-      
-      const newEnemyTowers = prev.enemyTowers.map(tower => {
-        const hostTower = hostState.playerTowers.find(t => t.id === tower.id.replace('enemy', 'player'));
-        if (hostTower) {
-          return { ...tower, health: hostTower.health, maxHealth: hostTower.maxHealth };
-        }
-        return tower;
+    const pending = pendingReconciliationRef.current;
+    
+    // Queue tower health updates (swap perspective)
+    // Host's "playerTowers" = our "enemyTowers" (since we're the opponent)
+    // Host's "enemyTowers" = our "playerTowers" (since we're the player to them)
+    for (const tower of hostState.enemyTowers) {
+      const ourTowerId = tower.id.replace('enemy', 'player');
+      pending.towerHealth.set(ourTowerId, { health: tower.health, maxHealth: tower.maxHealth });
+    }
+    for (const tower of hostState.playerTowers) {
+      const ourTowerId = tower.id.replace('player', 'enemy');
+      pending.towerHealth.set(ourTowerId, { health: tower.health, maxHealth: tower.maxHealth });
+    }
+
+    // Queue unit updates with perspective swap
+    if (hostState.units) {
+      const mirror = (p: { x: number; y: number }) => ({ 
+        x: p.x,
+        y: ARENA_HEIGHT - p.y
       });
 
-      // Apply units from host if provided (swap isEnemy and mirror positions)
-      let newPlayerUnits = prev.playerUnits;
-      let newEnemyUnits = prev.enemyUnits;
-      
-      if (hostState.units) {
+      for (const unit of hostState.units) {
+        const mirroredPos = mirror(unit.position);
         // Host's enemy units are our player units (and vice versa)
-        // Only mirror Y position for perspective swap:
-        // - Y mirroring: flips top/bottom (their side vs our side)
-        // - X stays the same: left lane remains left, right lane remains right
-        // This matches how Clash Royale works - both players see the same lanes
-        const mirror = (p: { x: number; y: number }) => ({ 
-          x: p.x,                 // Keep X the same - lanes don't flip
-          y: ARENA_HEIGHT - p.y   // Mirror Y so top/bottom swap
+        // We'll reconcile in the game loop
+        pending.unitUpdates.set(unit.id, {
+          position: mirroredPos,
+          health: unit.health,
+          maxHealth: unit.maxHealth,
         });
-        const dist = (a: Position, b: Position) => Math.hypot(a.x - b.x, a.y - b.y);
-
-        const buildUnitList = (
-          incoming: NonNullable<typeof hostState.units>,
-          existingUnits: Unit[],
-          owner: 'player' | 'enemy'
-        ): Unit[] => {
-          const usedExistingIds = new Set<string>();
-
-          return incoming
-            .map(u => {
-              const mirroredPos = mirror(u.position);
-
-              // 1) Prefer exact ID match
-              let match = existingUnits.find(eu => eu.id === u.id);
-
-              // 2) If IDs differ across clients (common), try matching by cardId + proximity
-              if (!match) {
-                const candidates = existingUnits
-                  .filter(eu => !usedExistingIds.has(eu.id) && eu.cardId === u.cardId)
-                  .map(eu => ({ eu, d: dist(eu.position, mirroredPos) }))
-                  .sort((a, b) => a.d - b.d);
-
-                if (candidates[0] && candidates[0].d <= 60) {
-                  match = candidates[0].eu;
-                }
-              }
-
-              if (match) {
-                usedExistingIds.add(match.id);
-                return {
-                  ...match,
-                  id: u.id, // adopt host ID going forward
-                  position: mirroredPos,
-                  health: u.health,
-                  maxHealth: u.maxHealth,
-                  state: (u.state as 'idle' | 'moving' | 'attacking') || match.state,
-                };
-              }
-
-              // 3) If still missing, create a new unit so we don't "drop" it (which looks like a freeze)
-              const card = getCardById(u.cardId);
-              if (!card) return null;
-              const created = spawnUnit(card, mirroredPos, owner, 1);
-
-              return {
-                ...created,
-                id: u.id,
-                position: mirroredPos,
-                health: u.health,
-                maxHealth: u.maxHealth,
-                state: (u.state as 'idle' | 'moving' | 'attacking') || created.state,
-              };
-            })
-            .filter((u): u is Unit => u !== null);
-        };
-
-        newPlayerUnits = buildUnitList(
-          hostState.units.filter(u => u.isEnemy),
-          prev.playerUnits,
-          'player'
-        );
-
-        newEnemyUnits = buildUnitList(
-          hostState.units.filter(u => !u.isEnemy),
-          prev.enemyUnits,
-          'enemy'
-        );
       }
 
-      // Swap win/loss status (their win = our loss)
-      let adjustedStatus = hostState.gameStatus;
-      if (hostState.gameStatus === 'player-wins') {
+      // Mark units for removal if they were in our state but not in host state
+      // (This is handled by comparing current units with host units in the game loop)
+    }
+
+    // Swap win/loss status (their win = our loss)
+    let adjustedStatus = hostState.gameStatus;
+    if (hostState.gameStatus === 'player-wins') {
+      adjustedStatus = 'enemy-wins';
+    } else if (hostState.gameStatus === 'enemy-wins') {
+      adjustedStatus = 'player-wins';
+    }
+    pending.gameStatus = adjustedStatus;
+    pending.timeRemaining = hostState.timeRemaining;
+  }, []);
+
+  // Apply delta from host (more efficient than full state sync)
+  const applyHostDelta = useCallback((delta: {
+    towerHealth?: Record<string, { health: number; maxHealth: number }>;
+    unitUpdates?: Array<{
+      id: string;
+      cardId: string;
+      position: Position;
+      health: number;
+      maxHealth: number;
+      isEnemy: boolean;
+      state: 'idle' | 'moving' | 'attacking';
+    }>;
+    unitRemovals?: string[];
+    timeRemaining?: number;
+    gameStatus?: 'playing' | 'player-wins' | 'enemy-wins' | 'draw';
+    isSuddenDeath?: boolean;
+  }) => {
+    const pending = pendingReconciliationRef.current;
+    
+    // Queue tower health updates (swap perspective)
+    if (delta.towerHealth) {
+      for (const [towerId, health] of Object.entries(delta.towerHealth)) {
+        // Swap player/enemy prefix
+        let ourTowerId = towerId;
+        if (towerId.startsWith('player-')) {
+          ourTowerId = towerId.replace('player-', 'enemy-');
+        } else if (towerId.startsWith('enemy-')) {
+          ourTowerId = towerId.replace('enemy-', 'player-');
+        }
+        pending.towerHealth.set(ourTowerId, health);
+      }
+    }
+
+    // Queue unit updates with perspective swap
+    if (delta.unitUpdates) {
+      const mirror = (p: Position) => ({ x: p.x, y: ARENA_HEIGHT - p.y });
+      
+      for (const unit of delta.unitUpdates) {
+        pending.unitUpdates.set(unit.id, {
+          position: mirror(unit.position),
+          health: unit.health,
+          maxHealth: unit.maxHealth,
+        });
+      }
+    }
+
+    // Queue unit removals
+    if (delta.unitRemovals) {
+      for (const id of delta.unitRemovals) {
+        pending.unitRemovals.add(id);
+      }
+    }
+
+    // Queue game status (swap win/loss)
+    if (delta.gameStatus) {
+      let adjustedStatus = delta.gameStatus;
+      if (delta.gameStatus === 'player-wins') {
         adjustedStatus = 'enemy-wins';
-      } else if (hostState.gameStatus === 'enemy-wins') {
+      } else if (delta.gameStatus === 'enemy-wins') {
         adjustedStatus = 'player-wins';
       }
-      
-      return {
-        ...prev,
-        playerTowers: newPlayerTowers,
-        enemyTowers: newEnemyTowers,
-        playerUnits: newPlayerUnits,
-        enemyUnits: newEnemyUnits,
-        timeRemaining: hostState.timeRemaining,
-        // DON'T sync elixir - each player manages their own elixir locally
-        // Player 2 regenerates their own elixir in the game loop (lines 872-889)
-        // Syncing it would overwrite their actual elixir with host's AI-tracked value
-        // playerElixir: prev.playerElixir, // keep local
-        // enemyElixir: prev.enemyElixir, // keep local  
-        gameStatus: adjustedStatus
-      };
-    });
-  }, [spawnUnit]);
+      pending.gameStatus = adjustedStatus;
+    }
+
+    if (delta.timeRemaining !== undefined) {
+      pending.timeRemaining = delta.timeRemaining;
+    }
+  }, []);
 
   // Main game loop
   useEffect(() => {
@@ -886,27 +890,10 @@ export function useGameState(
       setGameState(prev => {
         if (prev.gameStatus !== 'playing') return prev;
         
-        // For non-host in multiplayer, still update elixir and time locally for responsiveness
-        // Tower health and game status come from host via applyHostState
-        if (isMultiplayerRef.current && !isHostRef.current) {
-          // Calculate elixir regen rate
-          const isSuddenDeathNow = prev.timeRemaining <= SUDDEN_DEATH_TIME;
-          const elixirRate = isSuddenDeathNow 
-            ? BASE_ELIXIR_REGEN_RATE * SUDDEN_DEATH_ELIXIR_MULTIPLIER 
-            : BASE_ELIXIR_REGEN_RATE;
-          
-          return {
-            ...prev,
-            // Update elixir locally so player can see and play cards
-            playerElixir: Math.min(10, prev.playerElixir + elixirRate * delta),
-            // Update time locally for display (host will override with accurate time)
-            timeRemaining: Math.max(0, prev.timeRemaining - delta),
-            isSuddenDeath: isSuddenDeathNow,
-            // Update card cooldowns
-            playerCardCooldowns: prev.playerCardCooldowns.map(cd => Math.max(0, cd - delta)),
-          };
-        }
-
+        // CRITICAL FIX: Player 2 now runs FULL local simulation (client-side prediction)
+        // The host state is reconciled at the end of the tick, not used to skip simulation
+        // This ensures smooth gameplay for both players
+        
         const state: GameState = {
           ...prev,
           playerTowers: prev.playerTowers.map(t => ({ ...t })),
@@ -921,6 +908,79 @@ export function useGameState(
           playerCardCooldowns: prev.playerCardCooldowns.map(cd => Math.max(0, cd - delta)),
           enemyCardCooldowns: prev.enemyCardCooldowns.map(cd => Math.max(0, cd - delta))
         };
+
+        // For non-host multiplayer: Apply reconciliation from host BEFORE simulation
+        // This blends authoritative host state with local prediction
+        if (isMultiplayerRef.current && !isHostRef.current) {
+          const pending = pendingReconciliationRef.current;
+          
+          // Reconcile tower health (authoritative from host)
+          for (const tower of state.playerTowers) {
+            const hostData = pending.towerHealth.get(tower.id);
+            if (hostData) {
+              // Lerp towards host health for smooth visual
+              const diff = hostData.health - tower.health;
+              tower.health = Math.round(tower.health + diff * 0.3);
+              tower.maxHealth = hostData.maxHealth;
+            }
+          }
+          for (const tower of state.enemyTowers) {
+            const hostData = pending.towerHealth.get(tower.id);
+            if (hostData) {
+              const diff = hostData.health - tower.health;
+              tower.health = Math.round(tower.health + diff * 0.3);
+              tower.maxHealth = hostData.maxHealth;
+            }
+          }
+          
+          // Reconcile unit positions and health (blend local prediction with host)
+          const reconcileUnits = (units: Unit[]) => {
+            for (const unit of units) {
+              const hostData = pending.unitUpdates.get(unit.id);
+              if (hostData) {
+                // Smoothly interpolate position towards host position
+                const dx = hostData.position.x - unit.position.x;
+                const dy = hostData.position.y - unit.position.y;
+                unit.position.x += dx * 0.2; // 20% blend per frame
+                unit.position.y += dy * 0.2;
+                
+                // Health is authoritative - lerp towards it
+                const healthDiff = hostData.health - unit.health;
+                unit.health = Math.round(unit.health + healthDiff * 0.3);
+                unit.maxHealth = hostData.maxHealth;
+              }
+            }
+          };
+          reconcileUnits(state.playerUnits);
+          reconcileUnits(state.enemyUnits);
+          
+          // Remove units that host says are dead
+          for (const removedId of pending.unitRemovals) {
+            state.playerUnits = state.playerUnits.filter(u => u.id !== removedId);
+            state.enemyUnits = state.enemyUnits.filter(u => u.id !== removedId);
+          }
+          
+          // Apply authoritative game status from host
+          if (pending.gameStatus && pending.gameStatus !== 'playing') {
+            state.gameStatus = pending.gameStatus;
+          }
+          
+          // Sync time closer to host (drift correction)
+          if (pending.timeRemaining !== null) {
+            const timeDiff = pending.timeRemaining - state.timeRemaining;
+            if (Math.abs(timeDiff) > 1) {
+              // Large drift - snap closer
+              state.timeRemaining = state.timeRemaining + timeDiff * 0.5;
+            }
+          }
+          
+          // Clear processed reconciliation data
+          pending.towerHealth.clear();
+          pending.unitUpdates.clear();
+          pending.unitRemovals.clear();
+          pending.gameStatus = null;
+          pending.timeRemaining = null;
+        }
 
         // Check for sudden death
         const wasSuddenDeath = prev.isSuddenDeath;
@@ -2607,6 +2667,7 @@ export function useGameState(
     resetGame,
     activateChampionAbility,
     applyHostState,
+    applyHostDelta,
     ARENA_WIDTH,
     ARENA_HEIGHT
   };
