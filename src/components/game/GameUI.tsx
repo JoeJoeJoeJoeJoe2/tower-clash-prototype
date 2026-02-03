@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { CardDefinition, Position } from '@/types/game';
 import { Arena } from './Arena';
@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Zap, X, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentArena } from '@/data/arenas';
-import { MultiplayerBattleState, CardPlacement, SyncedGameState } from '@/hooks/useMultiplayerBattle';
+import { MultiplayerBattleState, CardPlacement, SyncedGameState, GameStateDelta } from '@/hooks/useMultiplayerBattle';
 import { getCardById } from '@/data/cards';
+import { useHostDeltaSync } from '@/hooks/useMultiplayerSync';
 
 interface GameUIProps {
   playerDeck: string[];
@@ -36,9 +37,12 @@ interface GameUIProps {
   battleState?: MultiplayerBattleState | null;
   pendingOpponentPlacements?: CardPlacement[];
   syncedGameState?: SyncedGameState | null; // Game state synced from host (for non-host players)
+  pendingDeltas?: GameStateDelta[]; // Delta updates from host
   onSendCardPlacement?: (cardId: string, cardIndex: number, position: Position) => void;
-  onSyncGameState?: (state: SyncedGameState) => void; // For host to sync state to client
+  onSyncGameState?: (state: SyncedGameState) => void; // For host to sync state to client (legacy)
+  onSyncDelta?: (delta: GameStateDelta) => void; // For host to sync delta to client (preferred)
   onConsumePlacement?: () => void;
+  onConsumeDelta?: () => void;
   opponentLevel?: number; // Opponent's actual level for multiplayer
 }
 
@@ -77,12 +81,22 @@ export function GameUI({
   battleState,
   pendingOpponentPlacements = [],
   syncedGameState,
+  pendingDeltas = [],
   onSendCardPlacement,
   onSyncGameState,
+  onSyncDelta,
   onConsumePlacement,
+  onConsumeDelta,
   opponentLevel = 1
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, applyHostState, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel, isHost);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, applyHostState, applyHostDelta, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel, isHost);
+  
+  // Delta sync hook for host
+  const { computeDelta } = useHostDeltaSync();
+  
+  // Ref to track last sync time for delta broadcasting
+  const lastDeltaSyncRef = useRef<number>(0);
+  const DELTA_SYNC_INTERVAL = 100; // Send deltas every 100ms
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
@@ -130,48 +144,60 @@ export function GameUI({
     onConsumePlacement?.();
   }, [isMultiplayer, pendingOpponentPlacements, playEnemyCard, onConsumePlacement]);
 
-  // HOST: Sync game state to the client periodically
+  // HOST: Sync game state using delta broadcasting (more efficient)
   useEffect(() => {
-    if (!isMultiplayer || !isHost || !onSyncGameState) return;
+    if (!isMultiplayer || !isHost) return;
 
-    // Sync every 100ms for responsive gameplay (was 500ms)
-    const syncInterval = setInterval(() => {
-      if (gameState.gameStatus === 'playing') {
-        onSyncGameState({
-          timestamp: Date.now(),
-          playerTowers: gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
-          enemyTowers: gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
-          timeRemaining: gameState.timeRemaining,
-          playerElixir: gameState.playerElixir,
-          enemyElixir: gameState.enemyElixir,
-          gameStatus: gameState.gameStatus,
-          // Include all units for full sync
-          units: [
-            ...gameState.playerUnits.map(u => ({
+    // Use requestAnimationFrame-driven sync for smooth performance
+    let animationId: number;
+    
+    const syncTick = () => {
+      const now = Date.now();
+      
+      // Only sync at intervals to avoid overwhelming the network
+      if (now - lastDeltaSyncRef.current >= DELTA_SYNC_INTERVAL) {
+        lastDeltaSyncRef.current = now;
+        
+        if (gameState.gameStatus === 'playing') {
+          // Compute delta (only changed values)
+          const delta = computeDelta(
+            gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+            gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+            gameState.playerUnits.map(u => ({
               id: u.id,
               cardId: u.cardId,
               position: u.position,
               health: u.health,
               maxHealth: u.maxHealth,
-              isEnemy: false,
               state: u.state,
             })),
-            ...gameState.enemyUnits.map(u => ({
+            gameState.enemyUnits.map(u => ({
               id: u.id,
               cardId: u.cardId,
               position: u.position,
               health: u.health,
               maxHealth: u.maxHealth,
-              isEnemy: true,
               state: u.state,
-            }))
-          ]
-        });
+            })),
+            gameState.timeRemaining,
+            gameState.gameStatus,
+            gameState.isSuddenDeath
+          );
+          
+          // Only send if there are actual changes
+          if (delta && onSyncDelta) {
+            onSyncDelta(delta);
+          }
+        }
       }
-    }, 100);
+      
+      animationId = requestAnimationFrame(syncTick);
+    };
+    
+    animationId = requestAnimationFrame(syncTick);
 
-    // Also sync immediately when game ends
-    if (gameState.gameStatus !== 'playing') {
+    // Also send full state sync on game end for reliability
+    if (gameState.gameStatus !== 'playing' && onSyncGameState) {
       onSyncGameState({
         timestamp: Date.now(),
         playerTowers: gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
@@ -179,19 +205,30 @@ export function GameUI({
         timeRemaining: gameState.timeRemaining,
         playerElixir: gameState.playerElixir,
         enemyElixir: gameState.enemyElixir,
-        gameStatus: gameState.gameStatus
+        gameStatus: gameState.gameStatus,
+        isSuddenDeath: gameState.isSuddenDeath,
       });
     }
 
-    return () => clearInterval(syncInterval);
-  }, [isMultiplayer, isHost, onSyncGameState, gameState.gameStatus, gameState.playerTowers, gameState.enemyTowers, gameState.playerUnits, gameState.enemyUnits, gameState.timeRemaining, gameState.playerElixir, gameState.enemyElixir]);
+    return () => cancelAnimationFrame(animationId);
+  }, [isMultiplayer, isHost, onSyncDelta, onSyncGameState, computeDelta, gameState]);
 
-  // CLIENT: Apply synced state from host
+  // CLIENT: Apply synced state from host (legacy full sync)
   useEffect(() => {
     if (!isMultiplayer || isHost || !syncedGameState) return;
     
     applyHostState(syncedGameState);
   }, [isMultiplayer, isHost, syncedGameState, applyHostState]);
+
+  // CLIENT: Apply delta updates from host (preferred)
+  useEffect(() => {
+    if (!isMultiplayer || isHost || pendingDeltas.length === 0) return;
+    
+    // Process the first pending delta
+    const delta = pendingDeltas[0];
+    applyHostDelta(delta);
+    onConsumeDelta?.();
+  }, [isMultiplayer, isHost, pendingDeltas, applyHostDelta, onConsumeDelta]);
 
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {

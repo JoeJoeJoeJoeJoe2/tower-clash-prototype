@@ -108,12 +108,15 @@ export function GameScreen() {
     isConnected,
     pendingOpponentPlacements,
     syncedGameState,
+    pendingDeltas,
     createBattle,
     markReady,
     sendCardPlacement,
     syncGameState,
+    syncDelta,
     reportGameEnd,
     consumePlacement,
+    consumeDelta,
     disconnect
   } = useMultiplayerBattle(
     user,
@@ -409,9 +412,12 @@ export function GameScreen() {
           battleState={battleState}
           pendingOpponentPlacements={pendingOpponentPlacements}
           syncedGameState={syncedGameState}
+          pendingDeltas={pendingDeltas}
           onSendCardPlacement={sendCardPlacement}
           onSyncGameState={syncGameState}
+          onSyncDelta={syncDelta}
           onConsumePlacement={consumePlacement}
+          onConsumeDelta={consumeDelta}
           opponentLevel={battleState?.opponentLevel || friendlyBattleData?.opponentLevel || 1}
         />
       )}
