@@ -280,10 +280,20 @@ export function useMultiplayerBattle(
     }
 
     if (newData.status === 'active') {
-      setBattleState(prev => prev ? {
-        ...prev,
-        status: 'active'
-      } : null);
+      setBattleState(prev => {
+        // If this is player1 (host) and we just became active, broadcast to player2
+        if (prev && prev.status !== 'active' && prev.isPlayer1 && broadcastChannelRef.current) {
+          broadcastChannelRef.current.send({
+            type: 'broadcast',
+            event: 'battle_start',
+            payload: {}
+          });
+        }
+        return prev ? {
+          ...prev,
+          status: 'active'
+        } : null;
+      });
     }
 
     if (newData.status === 'finished') {
@@ -319,6 +329,13 @@ export function useMultiplayerBattle(
             setPendingOpponentPlacements(prev => [...prev, placement]);
           }
         }
+      })
+      .on('broadcast', { event: 'battle_start' }, () => {
+        // Instantly transition to 'active' when the host broadcasts battle start
+        setBattleState(prev => prev ? {
+          ...prev,
+          status: 'active'
+        } : null);
       })
       .on('broadcast', { event: 'game_state_sync' }, (payload) => {
         const state = payload.payload as SyncedGameState;
@@ -364,11 +381,9 @@ export function useMultiplayerBattle(
 
     channelRef.current = dbChannel;
 
-    // Polling fallback - less frequent since broadcast is primary
+    // CRITICAL: Poll immediately and frequently while waiting for 'active' status
+    // The ready->active transition happens via DB trigger, so we must poll to detect it
     const pollForUpdates = async () => {
-      const currentBattleState = battleStateRef.current;
-      if (!currentBattleState) return;
-
       try {
         const { data } = await supabase
           .from('active_battles')
@@ -383,10 +398,14 @@ export function useMultiplayerBattle(
         console.error('Polling error:', error);
       }
 
-      pollTimeoutId = setTimeout(pollForUpdates, 500);
+      // Poll faster (200ms) while waiting for 'active', slower (500ms) once active
+      const currentStatus = battleStateRef.current?.status;
+      const pollInterval = currentStatus === 'active' ? 500 : 200;
+      pollTimeoutId = setTimeout(pollForUpdates, pollInterval);
     };
 
-    pollTimeoutId = setTimeout(pollForUpdates, 500);
+    // Start polling IMMEDIATELY (not after delay) to catch 'active' status quickly
+    pollForUpdates();
 
     return () => {
       if (pollTimeoutId) clearTimeout(pollTimeoutId);
