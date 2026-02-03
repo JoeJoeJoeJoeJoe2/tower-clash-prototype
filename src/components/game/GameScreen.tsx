@@ -4,7 +4,7 @@ import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
-import { useBattleRequests, BattleRequest } from '@/hooks/useBattleRequests';
+import { useBattleRequests } from '@/hooks/useBattleRequests';
 import { useMultiplayerBattle } from '@/hooks/useMultiplayerBattle';
 import { getCardLevel } from '@/lib/cardLevels';
 import { HomeNavigator } from './HomeNavigator';
@@ -16,6 +16,7 @@ import { PlayerProfile } from './PlayerProfile';
 import { AuthScreen } from './AuthScreen';
 import { BattleRequestModal } from './BattleRequestModal';
 import { getBannerById } from '@/data/banners';
+import { supabase } from '@/integrations/supabase/client';
 
 // Convert cardCopies to cardLevels
 function getCardLevelsFromCopies(cardCopies: Record<string, number>): Record<string, number> {
@@ -51,6 +52,7 @@ export function GameScreen() {
     opponentLevel: number;
     opponentTrophies: number;
     isChallenger: boolean;
+    opponentId?: string;
   } | null>(null);
   
   // Auth and multiplayer hooks
@@ -188,7 +190,7 @@ export function GameScreen() {
     }
   };
 
-  // Start friendly battle - create the active battle record
+  // Start friendly battle - store opponent info, let matchmaking handle battle creation/join
   const handleStartFriendlyBattle = useCallback(async () => {
     if (!acceptedBattle || !user) return;
 
@@ -201,97 +203,118 @@ export function GameScreen() {
     const opponentId = isChallenger ? acceptedBattle.to_user_id : acceptedBattle.from_user_id;
     const opponentName = isChallenger ? acceptedBattle.to_player_name : acceptedBattle.from_player_name;
     
-    // Find opponent in online players by name to get their banner, level, and trophies
+    // Find opponent in online players
     const opponent = onlinePlayers.find(p => p.player_name === opponentName);
     const opponentBannerId = opponent?.banner_id || 'banner-blue';
     const opponentLevel = opponent?.level || 1;
     const opponentTrophies = opponent?.trophies || 0;
     
-    // Store the battle data for matchmaking screen
+    // Store battle data for matchmaking screen
     setFriendlyBattleData({
       opponentName,
       opponentBannerId,
       opponentLevel,
       opponentTrophies,
-      isChallenger
+      isChallenger,
+      opponentId // Store for later use
     });
     
-    // Only the challenger creates the battle
-    if (isChallenger) {
-      const newBattleId = await createBattle(
-        opponentId,
-        opponentName,
-        opponentBannerId,
-        opponentLevel,
+    setIsFriendlyBattle(true);
+    clearAcceptedBattle();
+    setScreen('loading');
+  }, [acceptedBattle, user, onlinePlayers, clearAcceptedBattle]);
+
+  // Gate: loading screen just plays animation, no battle ID blocking
+  useEffect(() => {
+    if (screen !== 'loading') return;
+    if (!loadingComplete) return;
+    setScreen('matchmaking');
+  }, [screen, loadingComplete]);
+
+  // Polling ref to track active poll
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Gate: matchmaking handles battle creation, ready sync, and status='active' check
+  useEffect(() => {
+    if (screen !== 'matchmaking') return;
+    if (!matchmakingComplete) return;
+
+    // Single-player / AI battles keep the old flow
+    if (!isFriendlyBattle) {
+      setScreen('battle');
+      return;
+    }
+
+    if (!user || !friendlyBattleData) return;
+
+    // Step 1: Challenger creates battle immediately
+    if (friendlyBattleData.isChallenger && !activeBattleId) {
+      createBattle(
+        friendlyBattleData.opponentId!,
+        friendlyBattleData.opponentName,
+        friendlyBattleData.opponentBannerId,
+        friendlyBattleData.opponentLevel,
         true
-      );
+      ).then(newBattleId => {
+        if (newBattleId) setActiveBattleId(newBattleId);
+      });
+      return;
+    }
+
+    // Step 2: Non-challenger polls for battle
+    if (!friendlyBattleData.isChallenger && !activeBattleId) {
+      if (pollIntervalRef.current) return; // Already polling
       
-      if (newBattleId) {
-        setActiveBattleId(newBattleId);
-      }
-    } else {
-      // Non-challenger waits for battle to be created and fetches it
-      // Poll for the battle to be created
-      const pollForBattle = async () => {
-        const { data } = await (await import('@/integrations/supabase/client')).supabase
+      const poll = async () => {
+        const { data } = await supabase
           .from('active_battles')
           .select('id')
-          .eq('player1_id', opponentId)
+          .eq('player1_id', friendlyBattleData.opponentId!)
           .eq('player2_id', user.id)
-          // Battle is created as 'waiting' and flips to 'active' when both are ready
           .in('status', ['waiting', 'active'])
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
         
         if (data) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
           setActiveBattleId(data.id);
-        } else {
-          // Retry after a short delay
-          setTimeout(pollForBattle, 500);
         }
       };
-      pollForBattle();
-    }
-    
-    setIsFriendlyBattle(true);
-    clearAcceptedBattle();
-    setScreen('loading');
-  }, [acceptedBattle, user, onlinePlayers, createBattle, clearAcceptedBattle]);
-
-  // Gate: don't leave loading until we have a battle id (for friendly battles).
-  useEffect(() => {
-    if (screen !== 'loading') return;
-    if (!loadingComplete) return;
-
-    if (isFriendlyBattle && !activeBattleId) return;
-
-    setScreen('matchmaking');
-  }, [screen, loadingComplete, isFriendlyBattle, activeBattleId]);
-
-  // Gate: don't enter battle until BOTH players have marked ready and the authoritative battle record flips to 'active'.
-  useEffect(() => {
-    if (screen !== 'matchmaking') return;
-    if (!matchmakingComplete) return;
-
-    // Single-player / AI battles keep the old flow.
-    if (!isFriendlyBattle) {
-      setScreen('battle');
+      
+      poll(); // Initial poll
+      pollIntervalRef.current = setInterval(poll, 500);
       return;
     }
 
-    if (!activeBattleId) return;
-
-    // Mark ready once (idempotent). DB trigger flips battle.status -> 'active' once both are ready.
-    if (!readySentRef.current) {
+    // Step 3: Mark ready once we have battle ID
+    if (activeBattleId && !readySentRef.current) {
       readySentRef.current = true;
-      void markReady();
+      markReady();
     }
 
-    if (battleState?.status !== 'active') return;
+    // Step 4: Enter battle when status is 'active'
+    if (battleState?.status === 'active') {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      setScreen('battle');
+    }
+  }, [screen, matchmakingComplete, isFriendlyBattle, activeBattleId, battleState?.status, markReady, user, friendlyBattleData, createBattle]);
 
-    setScreen('battle');
-  }, [screen, matchmakingComplete, isFriendlyBattle, activeBattleId, battleState?.status, markReady]);
+  // Cleanup polling on unmount or screen change
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [screen]);
 
   const handleSignOut = async () => {
     await signOut();
