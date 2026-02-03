@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ChestReward } from '@/types/game';
 import { useProgression } from '@/hooks/useProgression';
 import { useCardBalance } from '@/hooks/useCardBalance';
@@ -42,6 +42,9 @@ export function GameScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [isFriendlyBattle, setIsFriendlyBattle] = useState(false);
   const [activeBattleId, setActiveBattleId] = useState<string | null>(null);
+  const [loadingComplete, setLoadingComplete] = useState(false);
+  const [matchmakingComplete, setMatchmakingComplete] = useState(false);
+  const readySentRef = useRef(false);
   const [friendlyBattleData, setFriendlyBattleData] = useState<{
     opponentName: string;
     opponentBannerId: string;
@@ -104,6 +107,7 @@ export function GameScreen() {
     pendingOpponentPlacements,
     syncedGameState,
     createBattle,
+    markReady,
     sendCardPlacement,
     syncGameState,
     reportGameEnd,
@@ -161,6 +165,9 @@ export function GameScreen() {
     setIsFriendlyBattle(false);
     setActiveBattleId(null);
     setFriendlyBattleData(null);
+    setLoadingComplete(false);
+    setMatchmakingComplete(false);
+    readySentRef.current = false;
     disconnect();
     setScreen('home');
   };
@@ -184,6 +191,11 @@ export function GameScreen() {
   // Start friendly battle - create the active battle record
   const handleStartFriendlyBattle = useCallback(async () => {
     if (!acceptedBattle || !user) return;
+
+    // Reset start-gating flags
+    setLoadingComplete(false);
+    setMatchmakingComplete(false);
+    readySentRef.current = false;
     
     const isChallenger = acceptedBattle.from_user_id === user.id;
     const opponentId = isChallenger ? acceptedBattle.to_user_id : acceptedBattle.from_user_id;
@@ -226,7 +238,8 @@ export function GameScreen() {
           .select('id')
           .eq('player1_id', opponentId)
           .eq('player2_id', user.id)
-          .eq('status', 'active')
+          // Battle is created as 'waiting' and flips to 'active' when both are ready
+          .in('status', ['waiting', 'active'])
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -245,6 +258,40 @@ export function GameScreen() {
     clearAcceptedBattle();
     setScreen('loading');
   }, [acceptedBattle, user, onlinePlayers, createBattle, clearAcceptedBattle]);
+
+  // Gate: don't leave loading until we have a battle id (for friendly battles).
+  useEffect(() => {
+    if (screen !== 'loading') return;
+    if (!loadingComplete) return;
+
+    if (isFriendlyBattle && !activeBattleId) return;
+
+    setScreen('matchmaking');
+  }, [screen, loadingComplete, isFriendlyBattle, activeBattleId]);
+
+  // Gate: don't enter battle until BOTH players have marked ready and the authoritative battle record flips to 'active'.
+  useEffect(() => {
+    if (screen !== 'matchmaking') return;
+    if (!matchmakingComplete) return;
+
+    // Single-player / AI battles keep the old flow.
+    if (!isFriendlyBattle) {
+      setScreen('battle');
+      return;
+    }
+
+    if (!activeBattleId) return;
+
+    // Mark ready once (idempotent). DB trigger flips battle.status -> 'active' once both are ready.
+    if (!readySentRef.current) {
+      readySentRef.current = true;
+      void markReady();
+    }
+
+    if (battleState?.status !== 'active') return;
+
+    setScreen('battle');
+  }, [screen, matchmakingComplete, isFriendlyBattle, activeBattleId, battleState?.status, markReady]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -299,13 +346,13 @@ export function GameScreen() {
       )}
 
       {screen === 'loading' && (
-        <LoadingScreen onComplete={() => setScreen('matchmaking')} />
+        <LoadingScreen onComplete={() => setLoadingComplete(true)} />
       )}
 
       {screen === 'matchmaking' && (
         <MatchmakingScreen
           progress={progress}
-          onReady={() => setScreen('battle')}
+          onReady={() => setMatchmakingComplete(true)}
           isFriendlyBattle={isFriendlyBattle}
           friendlyBattleData={friendlyBattleData}
         />

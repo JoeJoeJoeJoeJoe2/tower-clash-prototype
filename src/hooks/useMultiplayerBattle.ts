@@ -86,7 +86,8 @@ export function useMultiplayerBattle(
           player2_banner_id: opponentBannerId,
           player1_level: playerLevel,
           player2_level: opponentLevel,
-          status: 'active',
+          // Server-authoritative start: both players must mark ready; DB trigger flips to 'active'
+          status: 'waiting',
           game_state: {
             placements: [],
             lastProcessed: 0
@@ -105,6 +106,50 @@ export function useMultiplayerBattle(
 
     return null;
   }, [user, playerName, playerBannerId, playerLevel]);
+
+  // Mark this player as ready in the shared authoritative battle record.
+  // When both are ready, the DB trigger flips status -> 'active' atomically.
+  const markReady = useCallback(async (): Promise<boolean> => {
+    if (!user || !battleId) return false;
+
+    try {
+      // Prefer already-known role, otherwise derive from DB.
+      let isPlayer1: boolean | null = battleStateRef.current?.isPlayer1 ?? null;
+
+      if (isPlayer1 === null) {
+        const { data, error } = await supabase
+          .from('active_battles')
+          .select('player1_id, player2_id')
+          .eq('id', battleId)
+          .single();
+
+        if (error || !data) {
+          console.error('Failed to mark ready (lookup battle role):', error);
+          return false;
+        }
+
+        isPlayer1 = data.player1_id === user.id;
+      }
+
+      const update = isPlayer1 ? { player1_ready: true } : { player2_ready: true };
+
+      const { error } = await supabase
+        .from('active_battles')
+        // Types may lag immediately after migration; cast to avoid TS rejecting new columns.
+        .update(update as unknown as Record<string, never>)
+        .eq('id', battleId);
+
+      if (error) {
+        console.error('Failed to mark ready:', error);
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Failed to mark ready:', e);
+      return false;
+    }
+  }, [user, battleId]);
 
   const joinBattle = useCallback(async (id: string) => {
     if (!user) return;
@@ -232,6 +277,13 @@ export function useMultiplayerBattle(
         ...opponentPlacements.map(p => p.timestamp)
       );
       setPendingOpponentPlacements(prev => [...prev, ...opponentPlacements]);
+    }
+
+    if (newData.status === 'active') {
+      setBattleState(prev => prev ? {
+        ...prev,
+        status: 'active'
+      } : null);
     }
 
     if (newData.status === 'finished') {
@@ -370,6 +422,7 @@ export function useMultiplayerBattle(
     syncedGameState,
     createBattle,
     joinBattle,
+    markReady,
     sendCardPlacement,
     syncGameState,
     reportGameEnd,
