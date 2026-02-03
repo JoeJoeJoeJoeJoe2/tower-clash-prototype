@@ -303,6 +303,93 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          active_deck_id: string
+          banner_id: string
+          card_copies: Json
+          chests_available: number
+          claimed_trophy_rewards: number[]
+          created_at: string
+          current_deck: string[]
+          deck_slots: Json
+          evolution_shards: number
+          gold: number
+          id: string
+          last_free_chest_date: string | null
+          level: number
+          losses: number
+          owned_banner_ids: string[]
+          owned_card_ids: string[]
+          player_name: string
+          selected_tower_troop_id: string
+          tower_copies: Json
+          trophies: number
+          unlocked_evolutions: string[]
+          unlocked_tower_troop_ids: string[]
+          updated_at: string
+          wild_card_counts: Json
+          wins: number
+          xp: number
+        }
+        Insert: {
+          active_deck_id?: string
+          banner_id?: string
+          card_copies?: Json
+          chests_available?: number
+          claimed_trophy_rewards?: number[]
+          created_at?: string
+          current_deck?: string[]
+          deck_slots?: Json
+          evolution_shards?: number
+          gold?: number
+          id: string
+          last_free_chest_date?: string | null
+          level?: number
+          losses?: number
+          owned_banner_ids?: string[]
+          owned_card_ids?: string[]
+          player_name?: string
+          selected_tower_troop_id?: string
+          tower_copies?: Json
+          trophies?: number
+          unlocked_evolutions?: string[]
+          unlocked_tower_troop_ids?: string[]
+          updated_at?: string
+          wild_card_counts?: Json
+          wins?: number
+          xp?: number
+        }
+        Update: {
+          active_deck_id?: string
+          banner_id?: string
+          card_copies?: Json
+          chests_available?: number
+          claimed_trophy_rewards?: number[]
+          created_at?: string
+          current_deck?: string[]
+          deck_slots?: Json
+          evolution_shards?: number
+          gold?: number
+          id?: string
+          last_free_chest_date?: string | null
+          level?: number
+          losses?: number
+          owned_banner_ids?: string[]
+          owned_card_ids?: string[]
+          player_name?: string
+          selected_tower_troop_id?: string
+          tower_copies?: Json
+          trophies?: number
+          unlocked_evolutions?: string[]
+          unlocked_tower_troop_ids?: string[]
+          updated_at?: string
+          wild_card_counts?: Json
+          wins?: number
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

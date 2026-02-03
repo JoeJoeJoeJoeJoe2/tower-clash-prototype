@@ -1,12 +1,20 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 import { Position } from '@/types/game';
 
 /**
  * Delta-based multiplayer sync for host-authoritative model with client-side prediction.
  * 
- * Host (Player 1): Runs authoritative simulation, broadcasts deltas
- * Guest (Player 2): Runs local prediction, reconciles with host state
+ * Host (Player 1): Runs authoritative simulation, broadcasts deltas at 10-15 TPS
+ * Guest (Player 2): Runs local prediction at 60 FPS, reconciles with host state
+ * 
+ * Performance targets:
+ * - Render loop: 60 FPS (requestAnimationFrame)
+ * - Network sync: 10-15 updates per second (66-100ms intervals)
+ * - Database writes: Throttled to prevent credit drain
  */
+
+// Network sync rate (milliseconds between broadcasts)
+export const SYNC_TICK_RATE = 80; // ~12.5 TPS (sweet spot between responsiveness and cost)
 
 // What changed since last sync
 export interface GameStateDelta {
@@ -310,7 +318,7 @@ export function useGuestReconciliation(arenaHeight: number) {
 
   const shouldApplyHostUpdate = useCallback((): boolean => {
     const now = Date.now();
-    // Throttle host updates to max 20 per second (50ms)
+    // Throttle host updates to max 20 per second (50ms) for smooth interpolation
     if (now - lastHostUpdateRef.current < 50) {
       return false;
     }
@@ -330,4 +338,42 @@ export function useGuestReconciliation(arenaHeight: number) {
     shouldApplyHostUpdate,
     reset 
   };
+}
+
+/**
+ * Hook for throttling sync broadcasts to save credits while maintaining gameplay feel.
+ * Uses a tick accumulator pattern to ensure consistent 10-15 TPS regardless of frame rate.
+ */
+export function useSyncRateLimiter() {
+  const lastBroadcastRef = useRef<number>(0);
+  const accumulatorRef = useRef<number>(0);
+  
+  const shouldBroadcast = useCallback((deltaTime: number): boolean => {
+    accumulatorRef.current += deltaTime * 1000; // Convert to ms
+    
+    if (accumulatorRef.current >= SYNC_TICK_RATE) {
+      accumulatorRef.current = accumulatorRef.current % SYNC_TICK_RATE; // Keep remainder
+      lastBroadcastRef.current = Date.now();
+      return true;
+    }
+    return false;
+  }, []);
+
+  const forceBroadcast = useCallback((): boolean => {
+    const now = Date.now();
+    // Allow forced broadcast if at least 50ms has passed (important events)
+    if (now - lastBroadcastRef.current >= 50) {
+      lastBroadcastRef.current = now;
+      accumulatorRef.current = 0;
+      return true;
+    }
+    return false;
+  }, []);
+
+  const reset = useCallback(() => {
+    lastBroadcastRef.current = 0;
+    accumulatorRef.current = 0;
+  }, []);
+
+  return { shouldBroadcast, forceBroadcast, reset };
 }
