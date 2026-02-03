@@ -23,10 +23,13 @@ export type Database = {
           player1_id: string
           player1_level: number
           player1_name: string
+          player1_ready: boolean
           player2_banner_id: string
           player2_id: string
           player2_level: number
           player2_name: string
+          player2_ready: boolean
+          started_at: string | null
           status: string
           winner_id: string | null
         }
@@ -38,10 +41,13 @@ export type Database = {
           player1_id: string
           player1_level?: number
           player1_name: string
+          player1_ready?: boolean
           player2_banner_id?: string
           player2_id: string
           player2_level?: number
           player2_name: string
+          player2_ready?: boolean
+          started_at?: string | null
           status?: string
           winner_id?: string | null
         }
@@ -53,10 +59,13 @@ export type Database = {
           player1_id?: string
           player1_level?: number
           player1_name?: string
+          player1_ready?: boolean
           player2_banner_id?: string
           player2_id?: string
           player2_level?: number
           player2_name?: string
+          player2_ready?: boolean
+          started_at?: string | null
           status?: string
           winner_id?: string | null
         }
@@ -261,13 +270,11 @@ export type Database = {
         }
         Relationships: []
       }
-    }
-    Views: {
       online_players_public: {
         Row: {
           banner_id: string | null
           created_at: string | null
-          id: string | null
+          id: string
           is_online: boolean | null
           last_seen: string | null
           level: number | null
@@ -277,7 +284,7 @@ export type Database = {
         Insert: {
           banner_id?: string | null
           created_at?: string | null
-          id?: string | null
+          id: string
           is_online?: boolean | null
           last_seen?: string | null
           level?: number | null
@@ -287,7 +294,7 @@ export type Database = {
         Update: {
           banner_id?: string | null
           created_at?: string | null
-          id?: string | null
+          id?: string
           is_online?: boolean | null
           last_seen?: string | null
           level?: number | null
@@ -296,6 +303,9 @@ export type Database = {
         }
         Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
     }
     Functions: {
       cleanup_expired_requests: { Args: never; Returns: undefined }
