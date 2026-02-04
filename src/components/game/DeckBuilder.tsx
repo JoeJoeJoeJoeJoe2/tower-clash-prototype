@@ -1,14 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { CardDefinition, DeckSlot } from '@/types/game';
 import { allCards } from '@/data/cards';
 import { GameCard } from './GameCard';
 import { TowerTroopSelector } from './TowerTroopSelector';
 import { WildCardUpgradeModal } from './WildCardUpgradeModal';
+import { CardEvolutionSelector } from './CardEvolutionSelector';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Swords, Check, X, Info, ArrowLeft, Plus, TrendingDown } from 'lucide-react';
+import { Swords, Check, X, Info, ArrowLeft, Plus, TrendingDown, Search } from 'lucide-react';
 import { getCardLevel, getLevelMultiplier } from '@/lib/cardLevels';
+import { hasEvolution, getEvolution } from '@/data/evolutions';
 
 export interface CardBalanceInfo {
   cardId: string;
@@ -35,6 +38,8 @@ interface DeckBuilderProps {
   // Wild card props
   wildCardCounts?: Record<string, number>;
   onUseWildCards?: (cardId: string, amount: number) => boolean;
+  // Evolution props
+  unlockedEvolutions?: string[];
 }
 
 export function DeckBuilder({ 
@@ -52,7 +57,8 @@ export function DeckBuilder({
   unlockedTowerTroopIds = ['default'],
   onSelectTowerTroop,
   wildCardCounts = {},
-  onUseWildCards
+  onUseWildCards,
+  unlockedEvolutions = []
 }: DeckBuilderProps) {
   const [editingDeckId, setEditingDeckId] = useState<string>(activeDeckId);
   const currentSlot = deckSlots.find(s => s.id === editingDeckId);
@@ -60,6 +66,8 @@ export function DeckBuilder({
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [upgradeModalCard, setUpgradeModalCard] = useState<CardDefinition | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [evolutionSelectorCard, setEvolutionSelectorCard] = useState<CardDefinition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -89,6 +97,18 @@ export function DeckBuilder({
   }, [editingDeckId, deckSlots]);
 
   const ownedCards = allCards.filter(c => ownedCardIds.includes(c.id));
+  
+  // Filter cards based on search query
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) return ownedCards;
+    const query = searchQuery.toLowerCase();
+    return ownedCards.filter(card => 
+      card.name.toLowerCase().includes(query) ||
+      card.rarity.toLowerCase().includes(query) ||
+      card.type.toLowerCase().includes(query)
+    );
+  }, [ownedCards, searchQuery]);
+  
   const deckCards = selectedDeck.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
 
   // Get balance info for a card
@@ -96,13 +116,41 @@ export function DeckBuilder({
     return cardBalanceInfo.find(b => b.cardId === cardId);
   };
 
-  const toggleCard = (cardId: string) => {
-    if (selectedDeck.includes(cardId)) {
-      setSelectedDeck(prev => prev.filter(id => id !== cardId));
+  const toggleCard = (cardId: string, useEvolution: boolean = false) => {
+    const finalCardId = useEvolution ? `evo-${cardId}` : cardId;
+    const baseCardId = cardId.replace('evo-', '');
+    
+    // Check if any version of this card is in deck
+    const normalInDeck = selectedDeck.includes(baseCardId);
+    const evoInDeck = selectedDeck.includes(`evo-${baseCardId}`);
+    
+    if (normalInDeck || evoInDeck) {
+      // Remove whichever version is in deck
+      setSelectedDeck(prev => prev.filter(id => id !== baseCardId && id !== `evo-${baseCardId}`));
     } else if (selectedDeck.length < 8) {
-      setSelectedDeck(prev => [...prev, cardId]);
+      setSelectedDeck(prev => [...prev, finalCardId]);
     }
     // If deck is full and card not in deck, do nothing (block add)
+  };
+  
+  // Handle card double-click with evolution check
+  const handleCardDoubleClick = (card: CardDefinition) => {
+    const baseCardId = card.id.replace('evo-', '');
+    const hasUnlockedEvolution = unlockedEvolutions.includes(baseCardId) && hasEvolution(baseCardId);
+    const isInDeck = selectedDeck.includes(card.id) || selectedDeck.includes(`evo-${card.id}`);
+    
+    // If removing from deck, just remove it
+    if (isInDeck) {
+      toggleCard(card.id);
+      return;
+    }
+    
+    // If adding and has unlocked evolution, show selector
+    if (hasUnlockedEvolution && selectedDeck.length < 8) {
+      setEvolutionSelectorCard(card);
+    } else {
+      toggleCard(card.id);
+    }
   };
 
   const handleSave = () => {
@@ -264,12 +312,34 @@ export function DeckBuilder({
         </div>
       )}
       <div className="bg-card/30 rounded-xl p-4 border border-border w-full max-w-md">
+        {/* Search Bar */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search cards..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 bg-background/50"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        
         <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-medium">Your Cards ({ownedCards.length})</span>
+          <span className="text-sm font-medium">
+            {searchQuery ? `Results (${filteredCards.length})` : `Your Cards (${ownedCards.length})`}
+          </span>
         </div>
         
         <div className="grid grid-cols-4 gap-2 p-1">
-          {ownedCards.map(card => {
+          {filteredCards.map(card => {
             const inDeck = selectedDeck.includes(card.id);
             const balance = getBalanceInfo(card.id);
             const isNerfed = balance && balance.nerfLevel > 0;
@@ -313,7 +383,7 @@ export function DeckBuilder({
                     clearTimeout(clickTimeoutRef.current);
                     clickTimeoutRef.current = null;
                   }
-                  toggleCard(card.id);
+                  handleCardDoubleClick(card);
                 }}
               >
                 <GameCard 
@@ -488,6 +558,24 @@ export function DeckBuilder({
           cardCopies={cardCopies}
           wildCardCounts={wildCardCounts}
           onUseWildCards={onUseWildCards}
+        />
+      )}
+
+      {/* Evolution Selector Modal */}
+      {evolutionSelectorCard && (
+        <CardEvolutionSelector
+          card={evolutionSelectorCard}
+          isOpen={!!evolutionSelectorCard}
+          onClose={() => setEvolutionSelectorCard(null)}
+          onSelectNormal={() => {
+            toggleCard(evolutionSelectorCard.id, false);
+            setEvolutionSelectorCard(null);
+          }}
+          onSelectEvolution={() => {
+            toggleCard(evolutionSelectorCard.id, true);
+            setEvolutionSelectorCard(null);
+          }}
+          cardLevel={getCardLevel(cardCopies[evolutionSelectorCard.id] || 0)}
         />
       )}
     </div>
