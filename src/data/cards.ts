@@ -983,7 +983,25 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function createDeck(cardIds: string[], shuffle = true): CardDefinition[] {
-  const cards = cardIds.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
+  const cards = cardIds.map(id => {
+    // Handle evo- prefixed cards
+    const isEvo = id.startsWith('evo-');
+    const baseId = isEvo ? id.replace('evo-', '') : id;
+    const baseCard = allCards.find(c => c.id === baseId);
+    
+    if (!baseCard) return null;
+    
+    if (isEvo) {
+      // Return the card with evolution flag and modified ID
+      return {
+        ...baseCard,
+        id: id, // Keep the evo- prefix
+        isEvolved: true
+      } as CardDefinition;
+    }
+    return baseCard;
+  }).filter(Boolean) as CardDefinition[];
+  
   return shuffle ? shuffleArray(cards) : cards;
 }
 
@@ -994,7 +1012,21 @@ export function drawHand(deck: CardDefinition[]): { hand: CardDefinition[], rema
 }
 
 export function getCardById(id: string): CardDefinition | undefined {
-  return allCards.find(c => c.id === id);
+  // Handle evo- prefixed cards
+  const isEvo = id.startsWith('evo-');
+  const baseId = isEvo ? id.replace('evo-', '') : id;
+  const baseCard = allCards.find(c => c.id === baseId);
+  
+  if (!baseCard) return undefined;
+  
+  if (isEvo) {
+    return {
+      ...baseCard,
+      id: id, // Keep the evo- prefix
+      isEvolved: true
+    } as CardDefinition;
+  }
+  return baseCard;
 }
 
 // Get effective move speed based on size

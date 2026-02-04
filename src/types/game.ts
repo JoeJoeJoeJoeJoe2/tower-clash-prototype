@@ -70,6 +70,9 @@ export interface CardDefinition {
   
   // Evolution cycle tracking (runtime only - tracks if card has cycled)
   hasEvoCycled?: boolean;
+  
+  // Evolution flag - indicates this is an evolved version of a card
+  isEvolved?: boolean;
 }
 
 export interface Unit {
