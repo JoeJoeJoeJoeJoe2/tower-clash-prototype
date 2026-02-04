@@ -4,6 +4,13 @@ import { createDeck, drawHand, getCardById, SIZE_SPEED_MULTIPLIERS } from '@/dat
 import { makeAIDecision } from './useAI';
 import { getEvolution, hasEvolution } from '@/data/evolutions';
 import { getTowerTroopById } from '@/data/towerTroops';
+import { 
+  applyEvolutionOnAttack, 
+  applyEvolutionOnDeath, 
+  getEvolutionRageBonus, 
+  getEvolutionDamageReduction,
+  EvolutionState 
+} from '@/lib/evolutionEffects';
 
 export const ARENA_WIDTH = 340;
 export const ARENA_HEIGHT = 500;
@@ -368,6 +375,9 @@ export function useGameState(
   
   // Track how many times each card has been played (for evolution cycling)
   const cardPlayCountRef = useRef<Map<string, number>>(new Map());
+  
+  // Track evolution state per unit (for evolution special effects)
+  const evolutionStateRef = useRef<Map<string, EvolutionState>>(new Map());
   
   // Track previous tower health to detect when towers are destroyed
   const prevTowerHealthRef = useRef<Map<string, number>>(new Map());
@@ -1233,9 +1243,17 @@ export function useGameState(
               const distToTarget = getDistance(unit.position, currentTarget.position);
               if (distToTarget <= unit.range) {
                 unit.state = 'attacking';
-                if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
+                // Apply evolution rage bonus for buildings-targeting units
+                const rageBonus = getEvolutionRageBonus(unit, evolutionStateRef.current, now);
+                const effectiveAttackSpeed = unit.attackSpeed * rageBonus.attackSpeedMultiplier;
+                if (now - unit.lastAttackTime > 1000 / effectiveAttackSpeed) {
                   unit.lastAttackTime = now;
-                  const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                  let damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                  // Apply evolution damage multiplier (Royal Giant shockwave, etc.)
+                  if (unit.isEvolved) {
+                    const evoEffect = applyEvolutionOnAttack(unit, { id: currentTarget.id, position: currentTarget.position, isFlying: false }, evolutionStateRef.current, now);
+                    if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                   trackCardDamage(unit.cardId, damage, 'player');
@@ -1351,9 +1369,39 @@ export function useGameState(
             const distToTarget = getDistance(unit.position, currentTarget.position);
             if (distToTarget <= unit.range) {
               unit.state = 'attacking';
-              if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
+              // Apply evolution rage bonus for attack speed
+              const rageBonus = getEvolutionRageBonus(unit, evolutionStateRef.current, now);
+              const effectiveAttackSpeed = unit.attackSpeed * rageBonus.attackSpeedMultiplier;
+              if (now - unit.lastAttackTime > 1000 / effectiveAttackSpeed) {
                 unit.lastAttackTime = now;
-                const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                let damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                
+                // Apply evolution on-attack effects
+                if (unit.isEvolved) {
+                  const evoEffect = applyEvolutionOnAttack(
+                    unit, 
+                    { id: currentTarget.id, position: currentTarget.position, isFlying: 'isFlying' in currentTarget ? (currentTarget as Unit).isFlying : false },
+                    evolutionStateRef.current,
+                    now
+                  );
+                  if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
+                  if (evoEffect.healthHeal) unit.health = Math.min(unit.maxHealth * 2, unit.health + evoEffect.healthHeal);
+                  if (evoEffect.statusEffectsToApply && 'statusEffects' in currentTarget) {
+                    evoEffect.statusEffectsToApply.forEach(sa => { if (sa.targetId === currentTarget!.id) (currentTarget as Unit).statusEffects.push(sa.effect); });
+                  }
+                  if (evoEffect.unitsToSpawn) {
+                    evoEffect.unitsToSpawn.forEach(spawn => {
+                      const spawnCard = getCardById(spawn.cardId);
+                      if (spawnCard) {
+                        for (let i = 0; i < spawn.count; i++) {
+                          const spawnedUnit = spawnUnit(spawnCard, spawn.position, spawn.owner, unit.level, false);
+                          if (spawn.owner === 'player') state.playerUnits.push(spawnedUnit);
+                          else state.enemyUnits.push(spawnedUnit);
+                        }
+                      }
+                    });
+                  }
+                }
                 
                 // Handle splash damage
                 if (unit.splashRadius && unit.splashRadius > 0) {
@@ -1468,9 +1516,16 @@ export function useGameState(
               const distToTarget = getDistance(unit.position, currentTarget.position);
               if (distToTarget <= unit.range) {
                 unit.state = 'attacking';
-                if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
+                // Apply evolution rage bonus for enemy buildings-targeting units
+                const rageBonus = getEvolutionRageBonus(unit, evolutionStateRef.current, now);
+                const effectiveAttackSpeed = unit.attackSpeed * rageBonus.attackSpeedMultiplier;
+                if (now - unit.lastAttackTime > 1000 / effectiveAttackSpeed) {
                   unit.lastAttackTime = now;
-                  const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                  let damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                  if (unit.isEvolved) {
+                    const evoEffect = applyEvolutionOnAttack(unit, { id: currentTarget.id, position: currentTarget.position, isFlying: false }, evolutionStateRef.current, now);
+                    if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                 }
@@ -1585,9 +1640,18 @@ export function useGameState(
             const distToTarget = getDistance(unit.position, currentTarget.position);
             if (distToTarget <= unit.range) {
               unit.state = 'attacking';
-              if (now - unit.lastAttackTime > 1000 / unit.attackSpeed) {
+              // Apply evolution rage bonus for enemy units
+              const rageBonus = getEvolutionRageBonus(unit, evolutionStateRef.current, now);
+              const effectiveAttackSpeed = unit.attackSpeed * rageBonus.attackSpeedMultiplier;
+              if (now - unit.lastAttackTime > 1000 / effectiveAttackSpeed) {
                 unit.lastAttackTime = now;
-                const damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                let damage = Math.round(unit.damage * DAMAGE_MULTIPLIER);
+                // Apply evolution effects for enemy evolved units too
+                if (unit.isEvolved) {
+                  const evoEffect = applyEvolutionOnAttack(unit, { id: currentTarget.id, position: currentTarget.position, isFlying: 'isFlying' in currentTarget ? (currentTarget as Unit).isFlying : false }, evolutionStateRef.current, now);
+                  if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
+                  if (evoEffect.healthHeal) unit.health = Math.min(unit.maxHealth * 2, unit.health + evoEffect.healthHeal);
+                }
                 
                 // Handle splash damage (including buildings)
                 if (unit.splashRadius && unit.splashRadius > 0) {
