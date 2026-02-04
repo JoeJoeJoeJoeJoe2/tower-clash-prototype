@@ -86,6 +86,7 @@ export function CardsPage({
             onSelectTowerTroop={onSelectTowerTroop}
             wildCardCounts={progress.wildCardCounts}
             onUseWildCards={onUseWildCards}
+            unlockedEvolutions={progress.unlockedEvolutions}
           />
         ) : (
           <CardCollection
