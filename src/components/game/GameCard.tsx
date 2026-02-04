@@ -44,6 +44,8 @@ export function GameCard({
     large: 'w-24 h-32'
   };
 
+  const isEvolved = card.isEvolved === true;
+  
   return (
     <div
       className={cn(
@@ -53,7 +55,9 @@ export function GameCard({
         !canAfford && 'disabled grayscale-[50%]',
         isSelected && 'selected ring-2 ring-primary scale-110 -translate-y-2',
         rarityGlow[card.rarity],
-        onClick && 'cursor-pointer hover:scale-105 hover:-translate-y-1'
+        onClick && 'cursor-pointer hover:scale-105 hover:-translate-y-1',
+        // Evolution glow effect
+        isEvolved && 'ring-2 ring-amber-400 shadow-lg shadow-amber-500/50'
       )}
       onClick={() => onClick?.()}
     >
@@ -98,6 +102,12 @@ export function GameCard({
         card.rarity === 'champion' && 'bg-pink-400'
       )} />
 
+      {/* Evolution indicator */}
+      {isEvolved && (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center z-20 animate-pulse" title="Evolved">
+          <span className="text-[8px]">✨</span>
+        </div>
+      )}
       {/* Level indicator - bottom left to avoid conflict with selection checkmark */}
       {showLevel && level > 0 && (
         <div className={cn(

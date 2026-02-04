@@ -39,7 +39,7 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, car
               canAfford={elixir >= card.elixirCost}
               onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
               size="small"
-              level={cardLevels[card.id] || 1}
+              level={cardLevels[card.id.replace('evo-', '')] || 1}
               showLevel={true}
             />
           </div>
