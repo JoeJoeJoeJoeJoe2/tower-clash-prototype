@@ -109,7 +109,25 @@ export function DeckBuilder({
     );
   }, [ownedCards, searchQuery]);
   
-  const deckCards = selectedDeck.map(id => allCards.find(c => c.id === id)!).filter(Boolean);
+  // Map deck IDs to cards, handling evo- prefix
+  const deckCards = selectedDeck.map(id => {
+    const isEvo = id.startsWith('evo-');
+    const baseId = isEvo ? id.replace('evo-', '') : id;
+    const baseCard = allCards.find(c => c.id === baseId);
+    if (!baseCard) return null;
+    
+    if (isEvo) {
+      const evolution = getEvolution(baseId);
+      return {
+        ...baseCard,
+        id: id, // Keep the evo- prefix for deck management
+        name: `Evo ${baseCard.name}`,
+        emoji: evolution?.emoji || baseCard.emoji,
+        isEvolved: true
+      } as CardDefinition & { isEvolved?: boolean };
+    }
+    return baseCard;
+  }).filter(Boolean) as (CardDefinition & { isEvolved?: boolean })[];
 
   // Get balance info for a card
   const getBalanceInfo = (cardId: string): CardBalanceInfo | undefined => {
@@ -260,22 +278,36 @@ export function DeckBuilder({
               >
                 {card ? (
                   <div className="relative flex flex-col items-center">
+                    {/* Evolution glow effect */}
+                    {(card as CardDefinition & { isEvolved?: boolean }).isEvolved && (
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-amber-500/20 to-transparent pointer-events-none z-0" />
+                    )}
                     <GameCard 
                       card={card} 
                       size="small"
-                      onClick={() => toggleCard(card.id)}
-                      level={getCardLevel(cardCopies[card.id] || 0)}
+                      onClick={() => {
+                        // Remove the card (either normal or evo version)
+                        setSelectedDeck(prev => prev.filter(id => id !== card.id));
+                      }}
+                      level={getCardLevel(cardCopies[card.id.replace('evo-', '')] || 0)}
                       showLevel={true}
                     />
                     <button
-                      onClick={() => toggleCard(card.id)}
+                      onClick={() => setSelectedDeck(prev => prev.filter(id => id !== card.id))}
                       className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center hover:scale-110 transition-transform z-20"
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
+                    {/* Evolution indicator */}
+                    {(card as CardDefinition & { isEvolved?: boolean }).isEvolved && (
+                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center z-20" title="Evolved">
+                        <span className="text-[8px]">✨</span>
+                      </div>
+                    )}
                     {/* Nerf indicator on deck cards */}
                     {(() => {
-                      const balance = getBalanceInfo(card.id);
+                      const baseId = card.id.replace('evo-', '');
+                      const balance = getBalanceInfo(baseId);
                       if (balance && balance.nerfLevel > 0) {
                         return (
                           <div className="absolute -top-1 -left-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center z-20" title={`Nerfed ${balance.nerfLevel}x`}>
@@ -287,8 +319,8 @@ export function DeckBuilder({
                     })()}
                     <div className="mt-1 text-center w-full">
                       <div className="text-[8px] text-muted-foreground flex justify-center gap-1">
-                        <span>❤️{Math.floor(card.health * getLevelMultiplier(getCardLevel(cardCopies[card.id] || 0)))}</span>
-                        <span>⚔️{Math.floor(card.damage * getLevelMultiplier(getCardLevel(cardCopies[card.id] || 0)))}</span>
+                        <span>❤️{Math.floor(card.health * getLevelMultiplier(getCardLevel(cardCopies[card.id.replace('evo-', '')] || 0)))}</span>
+                        <span>⚔️{Math.floor(card.damage * getLevelMultiplier(getCardLevel(cardCopies[card.id.replace('evo-', '')] || 0)))}</span>
                       </div>
                     </div>
                   </div>
