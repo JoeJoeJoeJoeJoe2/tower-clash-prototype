@@ -102,10 +102,13 @@ export function GameCard({
         card.rarity === 'champion' && 'bg-pink-400'
       )} />
 
-      {/* Evolution indicator */}
+      {/* Evolution indicator - clear text badge, colorblind-friendly */}
       {isEvolved && (
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center z-20 animate-pulse" title="Evolved">
-          <span className="text-[8px]">✨</span>
+        <div 
+          className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-black border-2 border-white rounded-full flex items-center justify-center z-30 shadow-lg"
+          title="Evolved Card"
+        >
+          <span className="text-[7px] font-black text-white tracking-wider">EVO</span>
         </div>
       )}
       {/* Level indicator - bottom left to avoid conflict with selection checkmark */}
