@@ -151,6 +151,29 @@ export const Unit = memo(function Unit({ unit }: UnitProps) {
           />
         )}
       </div>
+
+      {/* Evolution orbiting indicator - colorblind-friendly with text */}
+      {unit.isEvolved && (
+        <div 
+          className="absolute pointer-events-none"
+          style={{
+            width: '60px',
+            height: '60px',
+            top: '-15px',
+            left: '-15px',
+            animation: 'orbit 3s linear infinite'
+          }}
+        >
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-black border-2 border-white rounded-full shadow-lg"
+            style={{ 
+              animation: 'counter-orbit 3s linear infinite'
+            }}
+          >
+            <span className="text-[6px] font-black text-white tracking-wider">EVO</span>
+          </div>
+        </div>
+      )}
       
       {/* Soul stacks indicator for Skeleton King */}
       {hasSoulStacks && (

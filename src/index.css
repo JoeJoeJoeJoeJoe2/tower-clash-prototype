@@ -309,4 +309,15 @@
   .animate-bounce-subtle {
     animation: bounce-subtle 1s ease-in-out infinite;
   }
+
+  /* Evolution orbiting animation */
+  @keyframes orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes counter-orbit {
+    from { transform: translateX(-50%) rotate(0deg); }
+    to { transform: translateX(-50%) rotate(-360deg); }
+  }
 }
