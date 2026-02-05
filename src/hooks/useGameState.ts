@@ -2402,6 +2402,53 @@ export function useGameState(
           }
         }
 
+        // Process evolution death effects before removing dead units
+        const processDeathEffects = (units: Unit[], owner: 'player' | 'enemy') => {
+          units.forEach(unit => {
+            if (unit.health <= 0 && unit.isEvolved) {
+              const deathEffect = applyEvolutionOnDeath(unit, evolutionStateRef.current, now);
+              
+              // Spawn units on death (e.g., Lumberjack ghost)
+              if (deathEffect.unitsToSpawn) {
+                deathEffect.unitsToSpawn.forEach(spawn => {
+                  const spawnCard = getCardById(spawn.cardId);
+                  if (spawnCard) {
+                    for (let i = 0; i < spawn.count; i++) {
+                      const spawnedUnit = spawnUnit(spawnCard, spawn.position, spawn.owner, unit.level, false);
+                      if (spawn.owner === 'player') state.playerUnits.push(spawnedUnit);
+                      else state.enemyUnits.push(spawnedUnit);
+                      addSpawnEffect(spawn.position, spawn.owner, spawnCard.emoji);
+                    }
+                  }
+                });
+              }
+              
+              // Trigger rage effect on death (Lumberjack)
+              if (deathEffect.shouldTriggerRage) {
+                // Apply rage buff to nearby friendly units
+                const friendlyUnits = owner === 'player' ? state.playerUnits : state.enemyUnits;
+                friendlyUnits.forEach(ally => {
+                  const dist = Math.sqrt(
+                    Math.pow(ally.position.x - unit.position.x, 2) + 
+                    Math.pow(ally.position.y - unit.position.y, 2)
+                  );
+                  if (dist <= 200) { // 5 tile radius
+                    ally.statusEffects.push({
+                      type: 'damage', // Used as rage marker
+                      value: 1.35,
+                      remainingDuration: 7.5,
+                      sourceId: unit.id
+                    });
+                  }
+                });
+              }
+            }
+          });
+        };
+        
+        processDeathEffects(state.playerUnits, 'player');
+        processDeathEffects(state.enemyUnits, 'enemy');
+
         // Remove dead units
         state.playerUnits = state.playerUnits.filter(u => u.health > 0);
         state.enemyUnits = state.enemyUnits.filter(u => u.health > 0);

@@ -6,7 +6,7 @@ interface GameCardProps {
   isSelected?: boolean;
   canAfford?: boolean;
   onClick?: () => void;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'tiny' | 'small' | 'medium' | 'large';
   showDetails?: boolean;
   level?: number; // Card level 1-15
   showLevel?: boolean; // Whether to display level on card
@@ -39,11 +39,11 @@ export function GameCard({
   showLevel = false
 }: GameCardProps) {
   const sizeClasses = {
+    tiny: 'w-10 h-12',
     small: 'w-12 h-[60px]',
     medium: 'w-16 h-[88px]',
     large: 'w-24 h-32'
   };
-
   const isEvolved = card.isEvolved === true;
   
   return (
@@ -75,22 +75,24 @@ export function GameCard({
       >
         <span className={cn(
           'transition-transform duration-200',
-          size === 'small' ? 'text-xl' : size === 'medium' ? 'text-2xl' : 'text-4xl',
+          size === 'tiny' ? 'text-lg' : size === 'small' ? 'text-xl' : size === 'medium' ? 'text-2xl' : 'text-4xl',
           isSelected && 'animate-bounce'
         )}>
           {card.emoji}
         </span>
       </div>
       
-      {/* Card name */}
-      <div className="w-full text-center">
-        <span className={cn(
-          'font-bold text-white drop-shadow-md leading-tight',
-          size === 'small' ? 'text-[8px]' : size === 'medium' ? 'text-[9px]' : 'text-xs'
-        )}>
-          {card.name}
-        </span>
-      </div>
+      {/* Card name - hide on tiny size */}
+      {size !== 'tiny' && (
+        <div className="w-full text-center">
+          <span className={cn(
+            'font-bold text-white drop-shadow-md leading-tight',
+            size === 'small' ? 'text-[8px]' : size === 'medium' ? 'text-[9px]' : 'text-xs'
+          )}>
+            {card.name}
+          </span>
+        </div>
+      )}
 
       {/* Rarity indicator */}
       <div className={cn(
@@ -112,7 +114,7 @@ export function GameCard({
         </div>
       )}
       {/* Level indicator - bottom left to avoid conflict with selection checkmark */}
-      {showLevel && level > 0 && (
+      {showLevel && level > 0 && size !== 'tiny' && (
         <div className={cn(
           'absolute -bottom-1.5 -left-1 rounded-sm flex items-center justify-center font-bold text-white shadow-md',
           size === 'small' ? 'px-1 py-0.5 text-[7px]' : size === 'medium' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-1 text-xs',
