@@ -127,9 +127,9 @@ export function EvolutionShardsModal({
         </p>
       </div>
 
-      {/* Cards Grid - Smaller cards, 5 columns */}
+      {/* Cards Grid - 4 columns with labels */}
       <ScrollArea className="flex-1 px-2 mt-2">
-        <div className="grid grid-cols-5 gap-1.5 pb-40">
+        <div className="grid grid-cols-4 gap-2 pb-32">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -142,7 +142,7 @@ export function EvolutionShardsModal({
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
                 className={cn(
-                  "relative rounded-lg p-0.5 transition-all",
+                  "relative rounded-lg p-1 transition-all flex flex-col items-center",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105",
                   !isSelected && isOwned && !isEvolved && "hover:bg-purple-500/10",
                   (!isOwned || isEvolved) && !isSelected && "opacity-50"
@@ -168,16 +168,22 @@ export function EvolutionShardsModal({
                   )}
                 </div>
 
+                {/* Card name label */}
+                <span className={cn(
+                  "text-[7px] font-medium leading-tight text-center mt-0.5 line-clamp-1 w-full px-0.5",
+                  isEvolved ? "text-purple-300" : isOwned ? "text-foreground/80" : "text-muted-foreground"
+                )}>
+                  {card.name}
+                </span>
+
                 {/* Cycle indicator */}
                 {evolution && (
-                  <div className="flex justify-center gap-0.5 mt-0.5">
-                    <span className={cn(
-                      "text-[8px] font-medium",
-                      isEvolved ? "text-purple-400" : "text-purple-500/50"
-                    )}>
-                      {evolution.cycles}⚡
-                    </span>
-                  </div>
+                  <span className={cn(
+                    "text-[7px] font-medium",
+                    isEvolved ? "text-purple-400" : "text-purple-500/50"
+                  )}>
+                    {evolution.cycles}⚡
+                  </span>
                 )}
               </button>
             );
@@ -185,8 +191,8 @@ export function EvolutionShardsModal({
         </div>
       </ScrollArea>
 
-      {/* Bottom action area - Compact buttons */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-slate-950 via-slate-950 to-transparent">
+      {/* Bottom action area - Fixed position with safe area */}
+      <div className="sticky bottom-0 left-0 right-0 p-2 pb-3 bg-gradient-to-t from-slate-950 via-slate-950/95 to-slate-950/80">
         {selectedCardId && selectedEvolution ? (
           <div className="bg-purple-900/50 rounded-lg p-2 mb-2 border border-purple-500/30">
             <div className="flex items-center gap-1.5 mb-1">
@@ -202,7 +208,7 @@ export function EvolutionShardsModal({
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1 h-9 text-sm font-bold rounded-lg"
+            className="flex-1 h-8 text-xs font-bold rounded-lg"
           >
             Close
           </Button>
@@ -212,7 +218,7 @@ export function EvolutionShardsModal({
               onClick={handleUnlock}
               disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
               className={cn(
-                "flex-1 h-9 text-sm font-bold rounded-lg border-b-2",
+                "flex-1 h-8 text-xs font-bold rounded-lg border-b-2",
                 canUnlock && isSelectedOwned && !isSelectedEvolved
                   ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
                   : "bg-muted border-muted-foreground/20 text-muted-foreground"
