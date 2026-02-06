@@ -204,11 +204,11 @@ export function EvolutionShardsModal({
           </div>
         ) : null}
 
-        <div className="flex gap-1 px-1">
+        <div className="flex justify-center gap-2">
           <Button
             onClick={onClose}
             variant="outline"
-            className="h-8 px-3 text-[11px] font-bold rounded-md flex-shrink-0"
+            className="h-8 min-w-[70px] text-[11px] font-bold rounded-md"
           >
             Close
           </Button>
@@ -218,18 +218,18 @@ export function EvolutionShardsModal({
               onClick={handleUnlock}
               disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
               className={cn(
-                "h-8 px-3 text-[11px] font-bold rounded-md border-b-2 flex-shrink-0",
+                "h-8 min-w-[90px] text-[11px] font-bold rounded-md border-b-2",
                 canUnlock && isSelectedOwned && !isSelectedEvolved
                   ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
                   : "bg-muted border-muted-foreground/20 text-muted-foreground"
               )}
             >
               {isSelectedEvolved ? (
-                '✓ Evolved'
+                'Evolved ✓'
               ) : !isSelectedOwned ? (
                 'Not Owned'
               ) : canUnlock ? (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center justify-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Unlock
                 </span>
