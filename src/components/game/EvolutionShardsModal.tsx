@@ -121,15 +121,15 @@ export function EvolutionShardsModal({
       </div>
 
       {/* Info banner */}
-      <div className="flex-shrink-0 mx-2 mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30">
+      <div className="flex-shrink-0 mx-auto mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30 w-[calc(100%-16px)] max-w-md">
         <p className="text-[9px] text-purple-200/80 text-center">
           {evolutions.length} evolutions available! Select a card to view its ability.
         </p>
       </div>
 
       {/* Cards Grid - Scrollable area */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
-        <div className="grid grid-cols-4 gap-1.5">
+      <div className="flex-1 overflow-y-auto py-2 min-h-0 w-full">
+        <div className="grid grid-cols-4 gap-1.5 w-full max-w-md mx-auto px-2">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -191,53 +191,55 @@ export function EvolutionShardsModal({
         </div>
       </div>
 
-      {/* Bottom action area - Fixed height */}
-      <div className="flex-shrink-0 px-1 py-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20">
-        {selectedCardId && selectedEvolution ? (
-          <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30 mx-1">
-            <div className="flex items-center gap-1 mb-0.5">
-              <Sparkles className="w-3 h-3 text-purple-400 flex-shrink-0" />
-              <span className="text-[10px] font-bold text-purple-300 truncate">{selectedEvolution.name}</span>
-              <span className="text-[8px] text-purple-400/70 ml-auto flex-shrink-0">{selectedEvolution.cycles}⚡</span>
+      {/* Bottom action area - Fixed height, centered */}
+      <div className="flex-shrink-0 py-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
+        <div className="max-w-md mx-auto px-2">
+          {selectedCardId && selectedEvolution ? (
+            <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Sparkles className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                <span className="text-[10px] font-bold text-purple-300 truncate">{selectedEvolution.name}</span>
+                <span className="text-[8px] text-purple-400/70 ml-auto flex-shrink-0">{selectedEvolution.cycles}⚡</span>
+              </div>
+              <p className="text-[8px] text-purple-200/70 leading-snug line-clamp-2">{selectedEvolution.specialEffect}</p>
             </div>
-            <p className="text-[8px] text-purple-200/70 leading-snug line-clamp-2">{selectedEvolution.specialEffect}</p>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className="flex justify-center gap-2">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="h-8 min-w-[70px] text-[11px] font-bold rounded-md"
-          >
-            Close
-          </Button>
-          
-          {selectedCardId && (
+          <div className="flex justify-center gap-2 w-full">
             <Button
-              onClick={handleUnlock}
-              disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
-              className={cn(
-                "h-8 min-w-[90px] text-[11px] font-bold rounded-md border-b-2",
-                canUnlock && isSelectedOwned && !isSelectedEvolved
-                  ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
-                  : "bg-muted border-muted-foreground/20 text-muted-foreground"
-              )}
+              onClick={onClose}
+              variant="outline"
+              className="h-8 px-6 text-[11px] font-bold rounded-md"
             >
-              {isSelectedEvolved ? (
-                'Evolved ✓'
-              ) : !isSelectedOwned ? (
-                'Not Owned'
-              ) : canUnlock ? (
-                <span className="flex items-center justify-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  Unlock
-                </span>
-              ) : (
-                `Need ${EVOLUTION_SHARDS_REQUIRED - evolutionShards}`
-              )}
+              Close
             </Button>
-          )}
+            
+            {selectedCardId && (
+              <Button
+                onClick={handleUnlock}
+                disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
+                className={cn(
+                  "h-8 px-4 text-[11px] font-bold rounded-md border-b-2",
+                  canUnlock && isSelectedOwned && !isSelectedEvolved
+                    ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
+                    : "bg-muted border-muted-foreground/20 text-muted-foreground"
+                )}
+              >
+                {isSelectedEvolved ? (
+                  'Evolved ✓'
+                ) : !isSelectedOwned ? (
+                  'Not Owned'
+                ) : canUnlock ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Unlock
+                  </span>
+                ) : (
+                  `Need ${EVOLUTION_SHARDS_REQUIRED - evolutionShards}`
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
