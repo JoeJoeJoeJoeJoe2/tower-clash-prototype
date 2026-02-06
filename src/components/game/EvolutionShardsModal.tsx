@@ -95,9 +95,9 @@ export function EvolutionShardsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-hidden">
       {/* Header - Compact */}
-      <div className="relative bg-gradient-to-b from-purple-900/50 to-transparent px-3 py-2 border-b border-purple-500/30">
+      <div className="flex-shrink-0 relative bg-gradient-to-b from-purple-900/50 to-transparent px-3 py-2 border-b border-purple-500/30">
         <button 
           onClick={onClose}
           className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
@@ -106,30 +106,30 @@ export function EvolutionShardsModal({
         </button>
         
         <div className="text-center">
-          <h1 className="text-lg font-bold text-foreground flex items-center justify-center gap-1.5">
+          <h1 className="text-base font-bold text-foreground flex items-center justify-center gap-1.5">
             <Sparkles className="w-4 h-4 text-purple-400" />
             Evolution Shards
           </h1>
-          <div className="flex items-center justify-center gap-1 mt-0.5">
+          <div className="flex items-center justify-center gap-1">
             <div className="bg-purple-600/30 rounded-full px-2 py-0.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-purple-400" />
-              <span className="text-purple-300 font-bold text-sm">{evolutionShards}</span>
-              <span className="text-purple-400/70 text-xs">/ {EVOLUTION_SHARDS_REQUIRED}</span>
+              <span className="text-purple-300 font-bold text-xs">{evolutionShards}</span>
+              <span className="text-purple-400/70 text-[10px]">/ {EVOLUTION_SHARDS_REQUIRED}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Info banner - More compact */}
-      <div className="mx-3 mt-2 bg-purple-900/30 rounded-lg p-2 border border-purple-500/30">
-        <p className="text-[10px] text-purple-200/80 text-center leading-tight">
-          {evolutions.length} evolutions available! Select a card to view its special ability.
+      {/* Info banner */}
+      <div className="flex-shrink-0 mx-2 mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30">
+        <p className="text-[9px] text-purple-200/80 text-center">
+          {evolutions.length} evolutions available! Select a card to view its ability.
         </p>
       </div>
 
-      {/* Cards Grid - 4 columns with labels */}
-      <ScrollArea className="flex-1 px-2 mt-2">
-        <div className="grid grid-cols-4 gap-2 pb-32">
+      {/* Cards Grid - Scrollable area */}
+      <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
+        <div className="grid grid-cols-4 gap-1.5">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -154,8 +154,8 @@ export function EvolutionShardsModal({
                   {/* Evolved checkmark */}
                   {isEvolved && (
                     <div className="absolute inset-0 bg-purple-900/60 rounded flex items-center justify-center">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
                       </div>
                     </div>
                   )}
@@ -170,7 +170,7 @@ export function EvolutionShardsModal({
 
                 {/* Card name label */}
                 <span className={cn(
-                  "text-[7px] font-medium leading-tight text-center mt-0.5 line-clamp-1 w-full px-0.5",
+                  "text-[6px] font-medium leading-tight text-center mt-0.5 line-clamp-1 w-full",
                   isEvolved ? "text-purple-300" : isOwned ? "text-foreground/80" : "text-muted-foreground"
                 )}>
                   {card.name}
@@ -179,7 +179,7 @@ export function EvolutionShardsModal({
                 {/* Cycle indicator */}
                 {evolution && (
                   <span className={cn(
-                    "text-[7px] font-medium",
+                    "text-[6px] font-medium",
                     isEvolved ? "text-purple-400" : "text-purple-500/50"
                   )}>
                     {evolution.cycles}⚡
@@ -189,18 +189,18 @@ export function EvolutionShardsModal({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
-      {/* Bottom action area - Fixed position with safe area */}
-      <div className="sticky bottom-0 left-0 right-0 p-2 pb-3 bg-gradient-to-t from-slate-950 via-slate-950/95 to-slate-950/80">
+      {/* Bottom action area - Fixed height */}
+      <div className="flex-shrink-0 p-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20">
         {selectedCardId && selectedEvolution ? (
-          <div className="bg-purple-900/50 rounded-lg p-2 mb-2 border border-purple-500/30">
-            <div className="flex items-center gap-1.5 mb-1">
+          <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
+            <div className="flex items-center gap-1 mb-0.5">
               <Sparkles className="w-3 h-3 text-purple-400" />
-              <span className="text-xs font-bold text-purple-300">{selectedEvolution.name}</span>
-              <span className="text-[10px] text-purple-400/70 ml-auto">{selectedEvolution.cycles} cycle{selectedEvolution.cycles > 1 ? 's' : ''}</span>
+              <span className="text-[10px] font-bold text-purple-300">{selectedEvolution.name}</span>
+              <span className="text-[8px] text-purple-400/70 ml-auto">{selectedEvolution.cycles} cycle{selectedEvolution.cycles > 1 ? 's' : ''}</span>
             </div>
-            <p className="text-[10px] text-purple-200/70 leading-snug">{selectedEvolution.specialEffect}</p>
+            <p className="text-[8px] text-purple-200/70 leading-snug">{selectedEvolution.specialEffect}</p>
           </div>
         ) : null}
 
@@ -208,7 +208,7 @@ export function EvolutionShardsModal({
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1 h-8 text-xs font-bold rounded-lg"
+            className="flex-1 h-7 text-[10px] font-bold rounded-md"
           >
             Close
           </Button>
@@ -218,7 +218,7 @@ export function EvolutionShardsModal({
               onClick={handleUnlock}
               disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
               className={cn(
-                "flex-1 h-8 text-xs font-bold rounded-lg border-b-2",
+                "flex-1 h-7 text-[10px] font-bold rounded-md border-b-2",
                 canUnlock && isSelectedOwned && !isSelectedEvolved
                   ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
                   : "bg-muted border-muted-foreground/20 text-muted-foreground"
@@ -230,7 +230,7 @@ export function EvolutionShardsModal({
                 'Not Owned'
               ) : canUnlock ? (
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+                  <Sparkles className="w-2.5 h-2.5" />
                   Unlock
                 </span>
               ) : (
