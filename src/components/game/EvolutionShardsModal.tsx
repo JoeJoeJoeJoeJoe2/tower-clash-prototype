@@ -192,23 +192,23 @@ export function EvolutionShardsModal({
       </div>
 
       {/* Bottom action area - Fixed height */}
-      <div className="flex-shrink-0 p-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20">
+      <div className="flex-shrink-0 px-1 py-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20">
         {selectedCardId && selectedEvolution ? (
-          <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
+          <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30 mx-1">
             <div className="flex items-center gap-1 mb-0.5">
-              <Sparkles className="w-3 h-3 text-purple-400" />
-              <span className="text-[10px] font-bold text-purple-300">{selectedEvolution.name}</span>
-              <span className="text-[8px] text-purple-400/70 ml-auto">{selectedEvolution.cycles} cycle{selectedEvolution.cycles > 1 ? 's' : ''}</span>
+              <Sparkles className="w-3 h-3 text-purple-400 flex-shrink-0" />
+              <span className="text-[10px] font-bold text-purple-300 truncate">{selectedEvolution.name}</span>
+              <span className="text-[8px] text-purple-400/70 ml-auto flex-shrink-0">{selectedEvolution.cycles}⚡</span>
             </div>
-            <p className="text-[8px] text-purple-200/70 leading-snug">{selectedEvolution.specialEffect}</p>
+            <p className="text-[8px] text-purple-200/70 leading-snug line-clamp-2">{selectedEvolution.specialEffect}</p>
           </div>
         ) : null}
 
-        <div className="flex gap-2">
+        <div className="flex gap-1 px-1">
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1 h-7 text-[10px] font-bold rounded-md"
+            className="h-8 px-3 text-[11px] font-bold rounded-md flex-shrink-0"
           >
             Close
           </Button>
@@ -218,7 +218,7 @@ export function EvolutionShardsModal({
               onClick={handleUnlock}
               disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
               className={cn(
-                "flex-1 h-7 text-[10px] font-bold rounded-md border-b-2",
+                "h-8 px-3 text-[11px] font-bold rounded-md border-b-2 flex-shrink-0",
                 canUnlock && isSelectedOwned && !isSelectedEvolved
                   ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
                   : "bg-muted border-muted-foreground/20 text-muted-foreground"
@@ -230,11 +230,11 @@ export function EvolutionShardsModal({
                 'Not Owned'
               ) : canUnlock ? (
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" />
+                  <Sparkles className="w-3 h-3" />
                   Unlock
                 </span>
               ) : (
-                `Need ${EVOLUTION_SHARDS_REQUIRED - evolutionShards} more`
+                `Need ${EVOLUTION_SHARDS_REQUIRED - evolutionShards}`
               )}
             </Button>
           )}
