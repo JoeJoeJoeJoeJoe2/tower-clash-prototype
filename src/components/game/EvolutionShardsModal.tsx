@@ -96,40 +96,31 @@ export function EvolutionShardsModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-hidden">
-      {/* Header - Compact */}
-      <div className="flex-shrink-0 relative bg-gradient-to-b from-purple-900/50 to-transparent px-2 py-1 border-b border-purple-500/30">
+      {/* Back button */}
+      <div className="flex-shrink-0 px-2 py-1">
         <button 
           onClick={onClose}
-          className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        
-        <div className="text-center">
-          <h1 className="text-sm font-bold text-foreground flex items-center justify-center gap-1">
+      </div>
+
+      {/* Cards Grid - Scrollable area */}
+      <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
+        <div className="max-w-[240px] px-1">
+          {/* Title directly above cards */}
+          <div className="flex items-center gap-1 mb-1 px-0.5">
             <Sparkles className="w-4 h-4 text-purple-400" />
-            Evolution Shards
-          </h1>
-          <div className="flex items-center justify-center gap-1">
-            <div className="bg-purple-600/30 rounded-full px-2 py-0.5 flex items-center gap-1">
+            <h1 className="text-sm font-bold text-foreground">Evolution Shards</h1>
+            <div className="bg-purple-600/30 rounded-full px-2 py-0.5 flex items-center gap-1 ml-auto">
               <Sparkles className="w-3 h-3 text-purple-400" />
               <span className="text-purple-300 font-bold text-xs">{evolutionShards}</span>
               <span className="text-purple-400/70 text-[10px]">/ {EVOLUTION_SHARDS_REQUIRED}</span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Info banner */}
-      <div className="flex-shrink-0 ml-2 mr-2 mt-0.5 bg-purple-900/30 rounded p-1 border border-purple-500/30 max-w-md">
-        <p className="text-[8px] text-purple-200/80 text-center">
-          {evolutions.length} evolutions available! Select a card to view its ability.
-        </p>
-      </div>
-
-      {/* Cards Grid - Scrollable area */}
-      <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
-        <div className="grid grid-cols-5 gap-1 w-full max-w-md px-1">
+          <div className="grid grid-cols-5 gap-1 w-full">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -188,12 +179,13 @@ export function EvolutionShardsModal({
               </button>
             );
           })}
+          </div>
         </div>
       </div>
 
       {/* Bottom action area - Fixed height, centered */}
       <div className="flex-shrink-0 py-1 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
-        <div className="max-w-md px-2">
+        <div className="max-w-[240px] px-2">
           {selectedCardId && selectedEvolution ? (
             <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
               <div className="flex items-center gap-1 mb-0.5">
