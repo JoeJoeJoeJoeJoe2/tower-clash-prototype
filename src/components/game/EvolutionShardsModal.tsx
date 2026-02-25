@@ -97,7 +97,7 @@ export function EvolutionShardsModal({
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-hidden">
       {/* Header - Compact */}
-      <div className="flex-shrink-0 relative bg-gradient-to-b from-purple-900/50 to-transparent px-3 py-2 border-b border-purple-500/30">
+      <div className="flex-shrink-0 relative bg-gradient-to-b from-purple-900/50 to-transparent px-2 py-1 border-b border-purple-500/30">
         <button 
           onClick={onClose}
           className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
@@ -106,7 +106,7 @@ export function EvolutionShardsModal({
         </button>
         
         <div className="text-center">
-          <h1 className="text-base font-bold text-foreground flex items-center justify-center gap-1.5">
+          <h1 className="text-sm font-bold text-foreground flex items-center justify-center gap-1">
             <Sparkles className="w-4 h-4 text-purple-400" />
             Evolution Shards
           </h1>
@@ -121,15 +121,15 @@ export function EvolutionShardsModal({
       </div>
 
       {/* Info banner */}
-      <div className="flex-shrink-0 ml-2 mr-2 mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30 max-w-md">
-        <p className="text-[9px] text-purple-200/80 text-center">
+      <div className="flex-shrink-0 ml-2 mr-2 mt-0.5 bg-purple-900/30 rounded p-1 border border-purple-500/30 max-w-md">
+        <p className="text-[8px] text-purple-200/80 text-center">
           {evolutions.length} evolutions available! Select a card to view its ability.
         </p>
       </div>
 
       {/* Cards Grid - Scrollable area */}
-      <div className="flex-1 overflow-y-auto py-2 min-h-0 w-full">
-        <div className="grid grid-cols-4 gap-1.5 w-full max-w-md px-2">
+      <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
+        <div className="grid grid-cols-5 gap-1 w-full max-w-md px-1">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -142,7 +142,7 @@ export function EvolutionShardsModal({
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
                 className={cn(
-                  "relative rounded-lg p-1 transition-all flex flex-col items-center",
+                  "relative rounded p-0.5 transition-all flex flex-col items-center",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105",
                   !isSelected && isOwned && !isEvolved && "hover:bg-purple-500/10",
                   (!isOwned || isEvolved) && !isSelected && "opacity-50"
@@ -170,7 +170,7 @@ export function EvolutionShardsModal({
 
                 {/* Card name label */}
                 <span className={cn(
-                  "text-[6px] font-medium leading-tight text-center mt-0.5 line-clamp-1 w-full",
+                  "text-[5px] font-medium leading-tight text-center mt-0.5 line-clamp-1 w-full",
                   isEvolved ? "text-purple-300" : isOwned ? "text-foreground/80" : "text-muted-foreground"
                 )}>
                   {card.name}
@@ -179,7 +179,7 @@ export function EvolutionShardsModal({
                 {/* Cycle indicator */}
                 {evolution && (
                   <span className={cn(
-                    "text-[6px] font-medium",
+                    "text-[5px] font-medium",
                     isEvolved ? "text-purple-400" : "text-purple-500/50"
                   )}>
                     {evolution.cycles}⚡
@@ -192,7 +192,7 @@ export function EvolutionShardsModal({
       </div>
 
       {/* Bottom action area - Fixed height, centered */}
-      <div className="flex-shrink-0 py-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
+      <div className="flex-shrink-0 py-1 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
         <div className="max-w-md px-2">
           {selectedCardId && selectedEvolution ? (
             <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
@@ -209,7 +209,7 @@ export function EvolutionShardsModal({
             <Button
               onClick={onClose}
               variant="outline"
-              className="h-8 px-6 text-[11px] font-bold rounded-md"
+              className="h-7 px-4 text-[10px] font-bold rounded-md"
             >
               Close
             </Button>
@@ -219,7 +219,7 @@ export function EvolutionShardsModal({
                 onClick={handleUnlock}
                 disabled={!canUnlock || !isSelectedOwned || isSelectedEvolved}
                 className={cn(
-                  "h-8 px-4 text-[11px] font-bold rounded-md border-b-2",
+                  "h-7 px-3 text-[10px] font-bold rounded-md border-b-2",
                   canUnlock && isSelectedOwned && !isSelectedEvolved
                     ? "bg-gradient-to-b from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 border-purple-900 text-white"
                     : "bg-muted border-muted-foreground/20 text-muted-foreground"
