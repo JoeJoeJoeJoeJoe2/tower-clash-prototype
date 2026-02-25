@@ -121,7 +121,7 @@ export function EvolutionShardsModal({
       </div>
 
       {/* Info banner */}
-      <div className="flex-shrink-0 mx-auto mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30 w-[calc(100%-16px)] max-w-md">
+      <div className="flex-shrink-0 ml-2 mr-2 mt-1 bg-purple-900/30 rounded-lg p-1.5 border border-purple-500/30 max-w-md">
         <p className="text-[9px] text-purple-200/80 text-center">
           {evolutions.length} evolutions available! Select a card to view its ability.
         </p>
@@ -129,7 +129,7 @@ export function EvolutionShardsModal({
 
       {/* Cards Grid - Scrollable area */}
       <div className="flex-1 overflow-y-auto py-2 min-h-0 w-full">
-        <div className="grid grid-cols-4 gap-1.5 w-full max-w-md mx-auto px-2">
+        <div className="grid grid-cols-4 gap-1.5 w-full max-w-md px-2">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -193,7 +193,7 @@ export function EvolutionShardsModal({
 
       {/* Bottom action area - Fixed height, centered */}
       <div className="flex-shrink-0 py-2 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
-        <div className="max-w-md mx-auto px-2">
+        <div className="max-w-md px-2">
           {selectedCardId && selectedEvolution ? (
             <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
               <div className="flex items-center gap-1 mb-0.5">
@@ -205,7 +205,7 @@ export function EvolutionShardsModal({
             </div>
           ) : null}
 
-          <div className="flex justify-center gap-2 w-full">
+          <div className="flex justify-start gap-2 w-full">
             <Button
               onClick={onClose}
               variant="outline"
