@@ -217,6 +217,28 @@ export const allCards: CardDefinition[] = [
     count: 1,
     size: 'tiny'
   },
+  {
+    id: 'electro-spirit',
+    name: 'Electro Spirit',
+    type: 'troop',
+    elixirCost: 1,
+    emoji: '⚡',
+    health: 190,
+    damage: 91,
+    attackSpeed: 1.0,
+    moveSpeed: 55,
+    range: 30,
+    hitSpeed: 1.0,
+    description: 'Jumps and chains lightning between enemies',
+    rarity: 'common',
+    color: '#a78bfa',
+    deployCooldown: 0.5,
+    isFlying: false,
+    targetType: 'both',
+    splashRadius: 45,
+    count: 1,
+    size: 'tiny'
+  },
 
   // ==================== RARE TROOPS ====================
   // Medium cost, stronger stats, specialized roles
