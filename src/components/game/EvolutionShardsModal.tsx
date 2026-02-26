@@ -107,10 +107,10 @@ export function EvolutionShardsModal({
         </div>
 
         {/* Cards Grid - Scrollable area */}
-        <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
-          <div className="px-2">
+        <div className="flex-1 overflow-y-auto min-h-0 w-full">
+          <div className="px-1">
           {/* Title directly above cards */}
-          <div className="flex items-center gap-1 mb-1 px-0.5">
+          <div className="flex items-center gap-1 mb-0.5 px-0.5">
             <Sparkles className="w-4 h-4 text-purple-400" />
             <h1 className="text-sm font-bold text-foreground">Evolution Shards</h1>
             <div className="bg-purple-600/30 rounded-full px-2 py-0.5 flex items-center gap-1 ml-auto">
@@ -120,7 +120,7 @@ export function EvolutionShardsModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-0.5 w-full">
+          <div className="grid grid-cols-6 gap-0.5 w-full">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
