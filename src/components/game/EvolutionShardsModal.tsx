@@ -96,7 +96,7 @@ export function EvolutionShardsModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center overflow-y-auto">
-      <div className="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 rounded-lg border border-purple-500/30 flex flex-col max-w-[260px] max-h-[90vh] shadow-2xl">
+      <div className="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 rounded-lg border border-purple-500/30 flex flex-col w-[260px] max-h-[90vh] shadow-2xl mx-auto">
         {/* Back button */}
         <div className="flex-shrink-0 px-2 py-1">
           <button 
