@@ -120,7 +120,7 @@ export function EvolutionShardsModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-1 w-full">
+          <div className="grid grid-cols-5 gap-0.5 w-full">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
