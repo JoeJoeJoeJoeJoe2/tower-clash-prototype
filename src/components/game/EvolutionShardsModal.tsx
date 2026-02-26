@@ -95,20 +95,21 @@ export function EvolutionShardsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-x-hidden overflow-y-auto">
-      {/* Back button */}
-      <div className="flex-shrink-0 px-2 py-1">
-        <button 
-          onClick={onClose}
-          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-      </div>
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center pt-8 overflow-y-auto">
+      <div className="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 rounded-lg border border-purple-500/30 flex flex-col max-w-[260px] max-h-[90vh] shadow-2xl">
+        {/* Back button */}
+        <div className="flex-shrink-0 px-2 py-1">
+          <button 
+            onClick={onClose}
+            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        </div>
 
-      {/* Cards Grid - Scrollable area */}
-      <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
-        <div className="max-w-[240px] px-1">
+        {/* Cards Grid - Scrollable area */}
+        <div className="flex-1 overflow-y-auto py-1 min-h-0 w-full">
+          <div className="px-2">
           {/* Title directly above cards */}
           <div className="flex items-center gap-1 mb-1 px-0.5">
             <Sparkles className="w-4 h-4 text-purple-400" />
@@ -183,9 +184,8 @@ export function EvolutionShardsModal({
         </div>
       </div>
 
-      {/* Bottom action area - Fixed height, centered */}
-      <div className="flex-shrink-0 py-1 bg-gradient-to-t from-slate-950 via-slate-950 to-slate-950/90 border-t border-purple-500/20 w-full">
-        <div className="max-w-[240px] px-2">
+        {/* Bottom action area */}
+        <div className="flex-shrink-0 py-1 border-t border-purple-500/20 w-full px-2">
           {selectedCardId && selectedEvolution ? (
             <div className="bg-purple-900/50 rounded-lg p-1.5 mb-1.5 border border-purple-500/30">
               <div className="flex items-center gap-1 mb-0.5">
