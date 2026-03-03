@@ -2766,6 +2766,15 @@ export function useGameState(
     }
   }
 
+  // Expose card play counts for UI (evo cycle tracking)
+  const getCardPlayCounts = useCallback(() => {
+    const counts: Record<string, number> = {};
+    cardPlayCountRef.current.forEach((count, cardId) => {
+      counts[cardId] = count;
+    });
+    return counts;
+  }, []);
+
   return {
     gameState,
     projectiles,
@@ -2779,6 +2788,7 @@ export function useGameState(
     activateChampionAbility,
     applyHostState,
     applyHostDelta,
+    getCardPlayCounts,
     ARENA_WIDTH,
     ARENA_HEIGHT
   };
