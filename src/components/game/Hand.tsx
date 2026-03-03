@@ -1,6 +1,7 @@
 import { CardDefinition } from '@/types/game';
 import { GameCard } from './GameCard';
 import { cn } from '@/lib/utils';
+import { getEvolution, hasEvolution } from '@/data/evolutions';
 
 interface HandProps {
   cards: CardDefinition[];
@@ -8,10 +9,12 @@ interface HandProps {
   selectedIndex: number | null;
   onCardSelect: (index: number) => void;
   nextCard?: CardDefinition;
-  cardLevels: Record<string, number>; // Card ID -> level
+  cardLevels: Record<string, number>;
+  cardPlayCounts?: Record<string, number>;
+  unlockedEvolutions?: string[];
 }
 
-export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, cardLevels }: HandProps) {
+export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, cardLevels, cardPlayCounts = {}, unlockedEvolutions = [] }: HandProps) {
   return (
     <div className="flex gap-0.5 justify-center items-end">
       {/* Next card preview */}
@@ -31,17 +34,58 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, car
       {cards.map((card, index) => {
         if (!card) return null;
         
+        const baseCardId = card.id.replace('evo-', '');
+        const hasEvo = hasEvolution(baseCardId) && unlockedEvolutions.includes(baseCardId);
+        const evolution = hasEvo ? getEvolution(baseCardId) : null;
+        const cyclesRequired = evolution?.cycles || 1;
+        const playCount = cardPlayCounts[card.id] || 0;
+        const evoReady = hasEvo && playCount >= cyclesRequired;
+        const cycleProgress = hasEvo ? Math.min(playCount, cyclesRequired) : 0;
+        
         return (
           <div key={`${card.id}-${index}`} className="relative">
-            <GameCard
-              card={card}
-              isSelected={selectedIndex === index}
-              canAfford={elixir >= card.elixirCost}
-              onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
-              size="small"
-              level={cardLevels[card.id.replace('evo-', '')] || 1}
-              showLevel={true}
-            />
+            <div className={cn(
+              'rounded-lg transition-all duration-300',
+              evoReady && 'ring-2 ring-purple-500 shadow-lg shadow-purple-500/50'
+            )}>
+              <GameCard
+                card={card}
+                isSelected={selectedIndex === index}
+                canAfford={elixir >= card.elixirCost}
+                onClick={() => onCardSelect(selectedIndex === index ? -1 : index)}
+                size="small"
+                level={cardLevels[baseCardId] || 1}
+                showLevel={true}
+              />
+            </div>
+            
+            {/* Evo cycle indicator */}
+            {hasEvo && (
+              <div className={cn(
+                'absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-px z-20'
+              )}>
+                {Array.from({ length: cyclesRequired }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'w-2 h-2 rounded-full border',
+                      i < cycleProgress
+                        ? 'bg-purple-500 border-purple-300 shadow-sm shadow-purple-400/50'
+                        : 'bg-muted/60 border-purple-500/30'
+                    )}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* EVO READY flash text */}
+            {evoReady && (
+              <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20">
+                <span className="text-[6px] font-black text-purple-300 uppercase tracking-wider animate-pulse">
+                  EVO
+                </span>
+              </div>
+            )}
           </div>
         );
       })}

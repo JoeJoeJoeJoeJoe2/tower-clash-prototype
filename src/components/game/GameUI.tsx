@@ -89,7 +89,7 @@ export function GameUI({
   onConsumeDelta,
   opponentLevel = 1
 }: GameUIProps) {
-  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, applyHostState, applyHostDelta, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel, isHost);
+  const { gameState, projectiles, spawnEffects, damageNumbers, crownAnimations, playCard, playEnemyCard, selectCard, activateChampionAbility, applyHostState, applyHostDelta, getCardPlayCounts, ARENA_WIDTH, ARENA_HEIGHT } = useGameState(playerDeck, cardLevels, towerLevels, onTrackDamage, getBalancedCardStats, isMultiplayer, unlockedEvolutions, selectedTowerTroopId, opponentLevel, isHost);
   
   // Delta sync hook for host
   const { computeDelta } = useHostDeltaSync();
@@ -360,6 +360,8 @@ export function GameUI({
               onCardSelect={handleCardSelect}
               nextCard={gameState.playerDeck[0]}
               cardLevels={cardLevels}
+              cardPlayCounts={getCardPlayCounts()}
+              unlockedEvolutions={unlockedEvolutions}
             />
             
             {/* Emote button + Elixir bar + Ability button row */}
