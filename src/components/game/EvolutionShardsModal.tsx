@@ -120,7 +120,7 @@ export function EvolutionShardsModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 w-full">
+          <div className="grid grid-cols-4 gap-0.5 w-full">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -140,7 +140,7 @@ export function EvolutionShardsModal({
                 )}
               >
                 <div className="relative">
-                  <GameCard card={card} size="tiny" canAfford={isOwned} />
+                  <GameCard card={card} size="small" canAfford={isOwned} />
                   
                   {/* Evolved checkmark */}
                   {isEvolved && (
