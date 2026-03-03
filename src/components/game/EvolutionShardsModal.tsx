@@ -133,7 +133,7 @@ export function EvolutionShardsModal({
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
                 className={cn(
-                  "relative rounded p-0.5 transition-all flex flex-col items-center",
+                  "relative rounded p-px transition-all flex flex-col items-center w-fit mx-auto",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105",
                   !isSelected && isOwned && !isEvolved && "hover:bg-purple-500/10",
                   (!isOwned || isEvolved) && !isSelected && "opacity-50"
