@@ -294,7 +294,7 @@ export function CardCollection({
           champion: 'border-pink-400'
         };
         return (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setSelectedCard(null)}>
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 pr-[30%]" onClick={() => setSelectedCard(null)}>
             <div
               className={cn('bg-card border-2 rounded-2xl p-5 max-w-[280px] w-full shadow-2xl', rarityBorder[selectedCard.rarity] || 'border-border')}
               onClick={(e) => e.stopPropagation()}
