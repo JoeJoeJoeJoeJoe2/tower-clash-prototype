@@ -108,7 +108,7 @@ export function EvolutionShardsModal({
 
         {/* Cards Grid - Scrollable area */}
         <div className="flex-1 overflow-y-auto min-h-0 w-full">
-          <div className="px-1">
+          <div className="px-0">
           {/* Title directly above cards */}
           <div className="flex items-center gap-1 mb-0.5 px-0.5">
             <Sparkles className="w-4 h-4 text-purple-400" />
@@ -133,7 +133,7 @@ export function EvolutionShardsModal({
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
                 className={cn(
-                  "relative rounded p-px transition-all flex flex-col items-center w-fit mx-auto",
+                  "relative rounded p-px transition-all flex flex-col items-center",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105",
                   !isSelected && isOwned && !isEvolved && "hover:bg-purple-500/10",
                   (!isOwned || isEvolved) && !isSelected && "opacity-50"
