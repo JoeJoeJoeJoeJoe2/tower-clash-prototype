@@ -3,13 +3,14 @@ import { allCards } from '@/data/cards';
 import { wildCards, WildCardRarity } from '@/data/wildCards';
 import { evolutions, getEvolution, EVOLUTION_SHARDS_REQUIRED } from '@/data/evolutions';
 import { GameCard } from './GameCard';
-import { Lock, Sparkles, Plus } from 'lucide-react';
+import { Lock, Sparkles, Plus, X, Swords, Heart, Droplets } from 'lucide-react';
 import { getCardLevel, getLevelProgress, MAX_LEVEL } from '@/lib/cardLevels';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { EvolutionShardsModal } from './EvolutionShardsModal';
+import { CardDefinition } from '@/types/game';
 
 interface CardCollectionProps {
   ownedCardIds: string[];
@@ -43,6 +44,7 @@ export function CardCollection({
   onUnlockEvolution
 }: CardCollectionProps) {
   const [showEvolutionModal, setShowEvolutionModal] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
   // Filter out tower troops (0 elixir cost)
   const collectibleCards = allCards.filter(c => c.elixirCost > 0);
   const ownedCount = collectibleCards.filter(c => ownedCardIds.includes(c.id)).length;
@@ -170,7 +172,7 @@ export function CardCollection({
                   const canUseWildCard = !isLocked && !isMaxLevel && wildCardCount > 0;
 
                   return (
-                    <div key={card.id} className="relative flex flex-col items-center">
+                    <div key={card.id} className="relative flex flex-col items-center cursor-pointer" onClick={() => setSelectedCard(card)}>
                       {/* Card */}
                       <div className="relative">
                         <GameCard 
@@ -279,6 +281,71 @@ export function CardCollection({
           onClose={() => setShowEvolutionModal(false)}
         />
       )}
+      {/* Card Detail Modal */}
+      {selectedCard && (() => {
+        const isLocked = !ownedCardIds.includes(selectedCard.id);
+        const copies = cardCopies[selectedCard.id] || 0;
+        const cardLevel = getCardLevel(copies);
+        const rarityBorder: Record<string, string> = {
+          common: 'border-slate-400',
+          rare: 'border-blue-400',
+          epic: 'border-purple-400',
+          legendary: 'border-amber-400',
+          champion: 'border-pink-400'
+        };
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setSelectedCard(null)}>
+            <div
+              className={cn('bg-card border-2 rounded-2xl p-5 max-w-[280px] w-full shadow-2xl', rarityBorder[selectedCard.rarity] || 'border-border')}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close */}
+              <button onClick={() => setSelectedCard(null)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Header */}
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <span className="text-5xl">{selectedCard.emoji}</span>
+                <h3 className="text-lg font-bold text-foreground">{selectedCard.name}</h3>
+                <span className={cn('text-xs font-semibold capitalize px-2 py-0.5 rounded-full', rarityConfig[selectedCard.rarity as Rarity]?.bgColor || 'bg-muted', 'text-white')}>
+                  {selectedCard.rarity}
+                </span>
+                {isLocked && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                    <Lock className="w-3 h-3" /> Not yet unlocked
+                  </div>
+                )}
+                {!isLocked && (
+                  <div className="text-xs text-amber-400 font-bold">Level {cardLevel}</div>
+                )}
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-muted-foreground text-center mb-4">{selectedCard.description}</p>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Droplets className="w-4 h-4 text-blue-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{selectedCard.elixirCost}</span>
+                  <span className="text-[9px] text-muted-foreground">Elixir</span>
+                </div>
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Heart className="w-4 h-4 text-red-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{selectedCard.health}</span>
+                  <span className="text-[9px] text-muted-foreground">HP</span>
+                </div>
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Swords className="w-4 h-4 text-orange-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{selectedCard.damage}</span>
+                  <span className="text-[9px] text-muted-foreground">DMG</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </ScrollArea>
   );
 }
