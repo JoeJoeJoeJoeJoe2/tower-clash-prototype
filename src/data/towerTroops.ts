@@ -84,19 +84,6 @@ export const TOWER_TROOPS: TowerTroop[] = [
     pancakeInterval: 4, // Throw pancake every 4 seconds
     pancakeBuffAmount: 0.15, // 15% stat boost per pancake
   },
-  {
-    id: 'archer-queen',
-    name: 'Archer Queen',
-    emoji: '👑',
-    description: 'Long range precision shots. Can cloak briefly.',
-    rarity: 'legendary',
-    color: '#10b981',
-    healthMultiplier: 0.8,
-    damageMultiplier: 1.3,
-    attackSpeedMultiplier: 0.85,
-    rangeMultiplier: 1.3,
-    hasSplash: false,
-  },
 ];
 
 export function getTowerTroopById(id: string): TowerTroop {
