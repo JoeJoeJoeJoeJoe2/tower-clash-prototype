@@ -277,6 +277,7 @@ export function CardCollection({
           evolutionShards={evolutionShards}
           ownedCardIds={ownedCardIds}
           unlockedEvolutions={unlockedEvolutions}
+          cardCopies={cardCopies}
           onUnlockEvolution={onUnlockEvolution}
           onClose={() => setShowEvolutionModal(false)}
         />
