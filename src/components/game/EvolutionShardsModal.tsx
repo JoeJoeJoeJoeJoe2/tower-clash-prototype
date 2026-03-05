@@ -108,7 +108,7 @@ export function EvolutionShardsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto pr-[30%]">
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto">
         {/* Header row */}
         <div className="flex-shrink-0 flex items-center gap-1 px-1 py-0.5">
           <button 
@@ -127,7 +127,7 @@ export function EvolutionShardsModal({
 
         {/* Cards Grid */}
         <div className="flex-1 overflow-y-auto min-h-0 w-full">
-          <div className="grid grid-cols-4 gap-0 w-fit">
+          <div className="grid grid-cols-4 gap-1.5 w-fit">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
