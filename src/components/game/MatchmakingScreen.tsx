@@ -179,7 +179,17 @@ export function MatchmakingScreen({ progress, onReady, isFriendlyBattle, friendl
 
   useEffect(() => {
     if (phase !== 'ready') return;
-    setTimeout(onReady, 400);
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          setTimeout(onReady, 400);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(countdownInterval);
   }, [phase, onReady]);
 
   return (
@@ -344,6 +354,12 @@ export function MatchmakingScreen({ progress, onReady, isFriendlyBattle, friendl
             >
               VS
             </div>
+            {countdown > 0 && phase === 'ready' && (
+              <div className="mt-4 sm:mt-6 text-4xl sm:text-5xl font-bold text-white animate-pulse">{countdown}</div>
+            )}
+            {countdown === 0 && (
+              <div className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-bold text-green-400 animate-bounce">GO!</div>
+            )}
           </div>
 
           {/* Enemy Banner - Top Right, slides from top-right */}

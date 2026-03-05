@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Swords, Crown, Loader2 } from 'lucide-react';
 import { BattleRequest } from '@/hooks/useBattleRequests';
@@ -14,11 +14,21 @@ export function BattleRequestModal({
   isChallenger,
   onStartBattle 
 }: BattleRequestModalProps) {
+  const [countdown, setCountdown] = useState(3);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onStartBattle();
-    }, 500);
-    return () => clearTimeout(timer);
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onStartBattle();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [onStartBattle]);
 
   const opponentName = isChallenger ? battle.to_player_name : battle.from_player_name;
@@ -45,10 +55,12 @@ export function BattleRequestModal({
           <p className="text-gray-400 text-sm mt-1">No trophies at stake!</p>
         </div>
 
-        <div className="text-4xl font-black text-white mb-4">⚔️</div>
+        <div className="text-4xl font-black text-white mb-4">
+          {countdown > 0 ? countdown : '⚔️'}
+        </div>
 
         <p className="text-gray-400 text-sm">
-          Starting...
+          Starting in {countdown}...
         </p>
       </div>
     </div>
