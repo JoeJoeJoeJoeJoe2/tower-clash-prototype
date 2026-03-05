@@ -133,7 +133,7 @@ export function EvolutionShardsModal({
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-x-0 gap-y-0.5 w-full">
+          <div className="grid grid-cols-4 gap-x-0 gap-y-1 w-full">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
@@ -152,7 +152,7 @@ export function EvolutionShardsModal({
                   }
                 }}
                 className={cn(
-                  "relative rounded p-0 transition-all flex flex-col items-center w-auto",
+                  "relative rounded p-0 transition-all flex flex-col items-center justify-self-center",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105 z-10",
                   !isSelected && isOwned && !isEvolved && "hover:bg-purple-500/10",
                   (!isOwned || isEvolved) && !isSelected && "opacity-50"
