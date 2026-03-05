@@ -1,16 +1,27 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Sparkles, Check, Lock } from 'lucide-react';
+import { ChevronLeft, Sparkles, Check, Lock, X, Swords, Heart, Droplets } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { allCards } from '@/data/cards';
 import { evolutions, EVOLUTION_SHARDS_REQUIRED, getEvolution } from '@/data/evolutions';
 import { GameCard } from './GameCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CardDefinition } from '@/types/game';
+import { getCardLevel } from '@/lib/cardLevels';
+
+const rarityConfig: Record<string, { bgColor: string }> = {
+  common: { bgColor: 'bg-slate-500' },
+  rare: { bgColor: 'bg-blue-500' },
+  epic: { bgColor: 'bg-purple-500' },
+  legendary: { bgColor: 'bg-amber-500' },
+  champion: { bgColor: 'bg-pink-500' },
+};
 
 interface EvolutionShardsModalProps {
   evolutionShards: number;
   ownedCardIds: string[];
   unlockedEvolutions: string[];
+  cardCopies?: Record<string, number>;
   onUnlockEvolution: (cardId: string) => boolean;
   onClose: () => void;
 }
@@ -19,10 +30,12 @@ export function EvolutionShardsModal({
   evolutionShards,
   ownedCardIds,
   unlockedEvolutions,
+  cardCopies = {},
   onUnlockEvolution,
   onClose
 }: EvolutionShardsModalProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [detailCard, setDetailCard] = useState<CardDefinition | null>(null);
   
   // Get ALL evolution card IDs from the evolutions data
   const evolutionCardIds = evolutions.map(e => e.cardId);
@@ -131,7 +144,13 @@ export function EvolutionShardsModal({
             return (
               <button
                 key={card.id}
-                onClick={() => setSelectedCardId(card.id)}
+                onClick={() => {
+                  if (selectedCardId === card.id) {
+                    setDetailCard(card as CardDefinition);
+                  } else {
+                    setSelectedCardId(card.id);
+                  }
+                }}
                 className={cn(
                   "relative rounded p-0 transition-all flex flex-col items-center w-auto",
                   isSelected && "ring-2 ring-purple-400 bg-purple-500/20 scale-105 z-10",
@@ -232,6 +251,76 @@ export function EvolutionShardsModal({
             )}
           </div>
         </div>
+
+      {/* Card Detail Modal */}
+      {detailCard && (() => {
+        const isLocked = !ownedCardIds.includes(detailCard.id);
+        const copies = cardCopies[detailCard.id] || 0;
+        const cardLevel = getCardLevel(copies);
+        const evolution = getEvolution(detailCard.id);
+        const rarityBorder: Record<string, string> = {
+          common: 'border-slate-400',
+          rare: 'border-blue-400',
+          epic: 'border-purple-400',
+          legendary: 'border-amber-400',
+          champion: 'border-pink-400'
+        };
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4 pr-[30%]" onClick={() => setDetailCard(null)}>
+            <div
+              className={cn('bg-card border-2 rounded-2xl p-5 max-w-[280px] w-full shadow-2xl relative', rarityBorder[detailCard.rarity] || 'border-border')}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button onClick={() => setDetailCard(null)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <span className="text-5xl">{detailCard.emoji}</span>
+                <h3 className="text-lg font-bold text-foreground">{detailCard.name}</h3>
+                <span className={cn('text-xs font-semibold capitalize px-2 py-0.5 rounded-full text-white', rarityConfig[detailCard.rarity]?.bgColor || 'bg-muted')}>
+                  {detailCard.rarity}
+                </span>
+                {isLocked && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                    <Lock className="w-3 h-3" /> Not yet unlocked
+                  </div>
+                )}
+                {!isLocked && (
+                  <div className="text-xs text-amber-400 font-bold">Level {cardLevel}</div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mb-4">{detailCard.description}</p>
+              {evolution && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2 mb-4">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span className="text-xs font-bold text-purple-300">Evolution</span>
+                    <span className="text-[10px] text-purple-400/70 ml-auto">{evolution.cycles}⚡</span>
+                  </div>
+                  <p className="text-[10px] text-purple-200/70">{evolution.specialEffect}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Droplets className="w-4 h-4 text-blue-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{detailCard.elixirCost}</span>
+                  <span className="text-[9px] text-muted-foreground">Elixir</span>
+                </div>
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Heart className="w-4 h-4 text-red-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{detailCard.health}</span>
+                  <span className="text-[9px] text-muted-foreground">HP</span>
+                </div>
+                <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2">
+                  <Swords className="w-4 h-4 text-orange-400 mb-1" />
+                  <span className="text-xs font-bold text-foreground">{detailCard.damage}</span>
+                  <span className="text-[9px] text-muted-foreground">DMG</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
