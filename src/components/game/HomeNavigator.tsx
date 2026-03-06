@@ -10,6 +10,7 @@ import { CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
 import { ShopScreen } from './ShopScreen';
 import { TrophyRoad } from './TrophyRoad';
+import { EvolutionShardsModal } from './EvolutionShardsModal';
 import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
