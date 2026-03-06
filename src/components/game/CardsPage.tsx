@@ -99,6 +99,7 @@ export function CardsPage({
             unlockedEvolutions={progress.unlockedEvolutions}
             onUseWildCard={onUseWildCard}
             onUnlockEvolution={onUnlockEvolution}
+            onOpenEvolutions={onOpenEvolutions}
           />
         )}
       </div>
