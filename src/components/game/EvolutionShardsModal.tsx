@@ -126,8 +126,8 @@ export function EvolutionShardsModal({
         </div>
 
         {/* Cards Grid */}
-        <div className="flex-1 overflow-y-auto min-h-0 w-full">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="grid grid-cols-4 gap-1 w-fit">
           {sortedCards.map((card) => {
             if (!card) return null;
             const isOwned = ownedCardIds.includes(card.id);
