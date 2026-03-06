@@ -20,6 +20,7 @@ interface CardCollectionProps {
   unlockedEvolutions: string[];
   onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
   onUnlockEvolution?: (cardId: string) => boolean;
+  onOpenEvolutions?: () => void;
 }
 
 const rarityConfig = {
@@ -41,7 +42,8 @@ export function CardCollection({
   evolutionShards,
   unlockedEvolutions,
   onUseWildCard,
-  onUnlockEvolution
+  onUnlockEvolution,
+  onOpenEvolutions
 }: CardCollectionProps) {
   const [showEvolutionModal, setShowEvolutionModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
