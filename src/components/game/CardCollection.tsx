@@ -20,6 +20,7 @@ interface CardCollectionProps {
   unlockedEvolutions: string[];
   onUseWildCard?: (rarity: WildCardRarity, cardId: string) => void;
   onUnlockEvolution?: (cardId: string) => boolean;
+  onOpenEvolutions?: () => void;
 }
 
 const rarityConfig = {
@@ -41,7 +42,8 @@ export function CardCollection({
   evolutionShards,
   unlockedEvolutions,
   onUseWildCard,
-  onUnlockEvolution
+  onUnlockEvolution,
+  onOpenEvolutions
 }: CardCollectionProps) {
   const [showEvolutionModal, setShowEvolutionModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
@@ -70,7 +72,7 @@ export function CardCollection({
           
           {/* Evolution Shards Display - Clickable */}
           <button
-            onClick={() => setShowEvolutionModal(true)}
+            onClick={() => onOpenEvolutions ? onOpenEvolutions() : setShowEvolutionModal(true)}
             className="flex items-center gap-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg px-3 py-2 border border-purple-500/30 hover:from-purple-600/30 hover:to-pink-600/30 transition-colors"
           >
             <Sparkles className="w-5 h-5 text-purple-400" />

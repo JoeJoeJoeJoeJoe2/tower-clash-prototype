@@ -10,12 +10,14 @@ import { CardBalanceInfo } from './DeckBuilder';
 import { ClanScreen } from './ClanScreen';
 import { ShopScreen } from './ShopScreen';
 import { TrophyRoad } from './TrophyRoad';
+import { EvolutionShardsModal } from './EvolutionShardsModal';
 import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
-type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan';
+type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan' | 'evolutions';
 
 const SCREENS: HomeScreen[] = ['shop', 'cards', 'battle', 'clan'];
+const ALL_SCREENS_WITH_EVOLUTIONS = [...SCREENS, 'evolutions'] as const;
 
 interface HomeNavigatorProps {
   progress: ExtendedPlayerProgress;
@@ -79,6 +81,7 @@ export function HomeNavigator({
   const [currentIndex, setCurrentIndex] = useState(2); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
   const [showTrophyRoad, setShowTrophyRoad] = useState(false);
+  const [showEvolutions, setShowEvolutions] = useState(false);
   
   const { shopState, purchaseItem, getTimeUntilRefresh } = useShop(progress.ownedCardIds);
   
@@ -160,6 +163,7 @@ export function HomeNavigator({
             onSelectTowerTroop={onSelectTowerTroop}
             onUseWildCards={onUseWildCards}
             onUnlockEvolution={onUnlockEvolution}
+            onOpenEvolutions={() => setShowEvolutions(true)}
           />
         </div>
 
@@ -210,6 +214,20 @@ export function HomeNavigator({
             onClaimReward={onClaimTrophyReward}
             onGenerateReward={onGenerateReward}
             claimedRewards={progress.claimedTrophyRewards || []}
+          />
+        </div>
+      )}
+
+      {/* Evolutions Overlay */}
+      {showEvolutions && onUnlockEvolution && (
+        <div className="absolute inset-0 z-50">
+          <EvolutionShardsModal
+            evolutionShards={progress.evolutionShards}
+            ownedCardIds={progress.ownedCardIds}
+            unlockedEvolutions={progress.unlockedEvolutions}
+            cardCopies={progress.cardCopies}
+            onUnlockEvolution={onUnlockEvolution}
+            onClose={() => setShowEvolutions(false)}
           />
         </div>
       )}
