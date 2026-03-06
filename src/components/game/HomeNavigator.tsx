@@ -14,9 +14,10 @@ import { EvolutionShardsModal } from './EvolutionShardsModal';
 import { useShop } from '@/hooks/useShop';
 import { cn } from '@/lib/utils';
 
-type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan';
+type HomeScreen = 'shop' | 'cards' | 'battle' | 'clan' | 'evolutions';
 
 const SCREENS: HomeScreen[] = ['shop', 'cards', 'battle', 'clan'];
+const ALL_SCREENS_WITH_EVOLUTIONS = [...SCREENS, 'evolutions'] as const;
 
 interface HomeNavigatorProps {
   progress: ExtendedPlayerProgress;
