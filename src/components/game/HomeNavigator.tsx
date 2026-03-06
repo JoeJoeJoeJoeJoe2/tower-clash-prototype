@@ -163,6 +163,7 @@ export function HomeNavigator({
             onSelectTowerTroop={onSelectTowerTroop}
             onUseWildCards={onUseWildCards}
             onUnlockEvolution={onUnlockEvolution}
+            onOpenEvolutions={() => setShowEvolutions(true)}
           />
         </div>
 
@@ -213,6 +214,20 @@ export function HomeNavigator({
             onClaimReward={onClaimTrophyReward}
             onGenerateReward={onGenerateReward}
             claimedRewards={progress.claimedTrophyRewards || []}
+          />
+        </div>
+      )}
+
+      {/* Evolutions Overlay */}
+      {showEvolutions && onUnlockEvolution && (
+        <div className="absolute inset-0 z-50">
+          <EvolutionShardsModal
+            evolutionShards={progress.evolutionShards}
+            ownedCardIds={progress.ownedCardIds}
+            unlockedEvolutions={progress.unlockedEvolutions}
+            cardCopies={progress.cardCopies}
+            onUnlockEvolution={onUnlockEvolution}
+            onClose={() => setShowEvolutions(false)}
           />
         </div>
       )}
