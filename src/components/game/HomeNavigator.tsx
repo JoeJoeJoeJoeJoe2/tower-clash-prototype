@@ -81,6 +81,7 @@ export function HomeNavigator({
   const [currentIndex, setCurrentIndex] = useState(2); // Start at battle (center)
   const [isAnimating, setIsAnimating] = useState(false);
   const [showTrophyRoad, setShowTrophyRoad] = useState(false);
+  const [showEvolutions, setShowEvolutions] = useState(false);
   
   const { shopState, purchaseItem, getTimeUntilRefresh } = useShop(progress.ownedCardIds);
   
