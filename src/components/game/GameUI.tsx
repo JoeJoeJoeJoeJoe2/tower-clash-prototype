@@ -243,6 +243,16 @@ export function GameUI({
       // Send card placement to opponent in multiplayer
       if (isMultiplayer && selectedCard && onSendCardPlacement) {
         onSendCardPlacement(selectedCard.id, gameState.selectedCardIndex, position);
+        
+        // Fire-and-forget server validation (don't block gameplay)
+        if (isHost) {
+          validateCardPlacement(
+            selectedCard.id,
+            selectedCard.elixirCost,
+            gameState.playerElixir,
+            position
+          );
+        }
       }
       
       playCard(gameState.selectedCardIndex, position);
