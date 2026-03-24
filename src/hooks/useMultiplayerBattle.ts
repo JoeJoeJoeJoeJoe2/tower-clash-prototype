@@ -187,7 +187,7 @@ export function useMultiplayerBattle(
     });
   }, [user]);
 
-  // Send card placement via broadcast (instant) + database (persistence)
+  // Send card placement via broadcast only (no DB write during active gameplay for performance)
   const sendCardPlacement = useCallback(async (
     cardId: string,
     cardIndex: number,
@@ -203,7 +203,7 @@ export function useMultiplayerBattle(
       isPlayer1: battleState.isPlayer1
     };
 
-    // Send via broadcast for instant delivery
+    // Send via broadcast for instant delivery — no DB round-trip
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
         type: 'broadcast',
@@ -211,26 +211,6 @@ export function useMultiplayerBattle(
         payload: placement
       });
     }
-
-    // Also persist to database for reconnection scenarios
-    const { data: battleData } = await supabase
-      .from('active_battles')
-      .select('game_state')
-      .eq('id', battleState.battleId)
-      .single();
-
-    if (!battleData) return;
-
-    const gameState = battleData.game_state as unknown as MultiplayerGameState;
-    const updatedState: MultiplayerGameState = {
-      ...gameState,
-      placements: [...(gameState.placements || []), placement]
-    };
-
-    await supabase
-      .from('active_battles')
-      .update({ game_state: updatedState as unknown as Record<string, never> })
-      .eq('id', battleState.battleId);
   }, [battleState, user]);
 
   // Sync game state via broadcast only (no database write for speed)
