@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import { getCurrentArena } from '@/data/arenas';
 import { MultiplayerBattleState, CardPlacement, SyncedGameState, GameStateDelta } from '@/hooks/useMultiplayerBattle';
 import { getCardById } from '@/data/cards';
-import { useHostDeltaSync } from '@/hooks/useMultiplayerSync';
+import { useHostDeltaSync, SYNC_TICK_RATE } from '@/hooks/useMultiplayerSync';
+import { useBattleValidation } from '@/hooks/useBattleValidation';
 
 interface GameUIProps {
   playerDeck: string[];
