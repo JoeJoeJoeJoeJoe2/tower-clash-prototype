@@ -236,6 +236,21 @@ export function GameUI({
     onConsumeDelta?.();
   }, [isMultiplayer, isHost, pendingDeltas, applyHostDelta, onConsumeDelta]);
 
+  // HOST: Validate game end via server when game status changes
+  const gameEndValidatedRef = useRef(false);
+  useEffect(() => {
+    if (!isMultiplayer || !isHost || gameState.gameStatus === 'playing' || gameEndValidatedRef.current) return;
+    gameEndValidatedRef.current = true;
+    validateGameEnd(
+      null,
+      gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+      gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+      gameState.timeRemaining
+    ).then(result => {
+      if (!result.valid) console.warn('Game end validation:', result.reason);
+    });
+  }, [isMultiplayer, isHost, gameState.gameStatus, validateGameEnd, gameState.playerTowers, gameState.enemyTowers, gameState.timeRemaining]);
+
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
       const selectedCard = gameState.playerHand[gameState.selectedCardIndex];
