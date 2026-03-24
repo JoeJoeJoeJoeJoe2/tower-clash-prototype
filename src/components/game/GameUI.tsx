@@ -95,9 +95,14 @@ export function GameUI({
   // Delta sync hook for host
   const { computeDelta } = useHostDeltaSync();
   
+  // Server-side validation for critical events in multiplayer
+  const { validateCardPlacement, validateGameEnd } = useBattleValidation(
+    isMultiplayer && battleState ? battleState.battleId : null
+  );
+  
   // Ref to track last sync time for delta broadcasting
   const lastDeltaSyncRef = useRef<number>(0);
-  const DELTA_SYNC_INTERVAL = 100; // Send deltas every 100ms
+  const DELTA_SYNC_INTERVAL = SYNC_TICK_RATE; // Use fixed tick rate from sync module
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
