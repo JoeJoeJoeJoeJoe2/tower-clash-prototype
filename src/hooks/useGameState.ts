@@ -944,19 +944,23 @@ export function useGameState(
           }
           
           // Reconcile unit positions and health (blend local prediction with host)
+          // Uses distance-adaptive interpolation: snap when far, smooth when close
           const reconcileUnits = (units: Unit[]) => {
             for (const unit of units) {
               const hostData = pending.unitUpdates.get(unit.id);
               if (hostData) {
-                // Smoothly interpolate position towards host position
                 const dx = hostData.position.x - unit.position.x;
                 const dy = hostData.position.y - unit.position.y;
-                unit.position.x += dx * 0.2; // 20% blend per frame
-                unit.position.y += dy * 0.2;
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                // Health is authoritative - lerp towards it
+                // Adaptive blend: snap if >60px drift, otherwise smooth lerp
+                const blendFactor = dist > 60 ? 0.8 : dist > 20 ? 0.15 : 0.08;
+                unit.position.x += dx * blendFactor;
+                unit.position.y += dy * blendFactor;
+                
+                // Health is authoritative - fast lerp
                 const healthDiff = hostData.health - unit.health;
-                unit.health = Math.round(unit.health + healthDiff * 0.3);
+                unit.health = Math.round(unit.health + healthDiff * 0.4);
                 unit.maxHealth = hostData.maxHealth;
               }
             }

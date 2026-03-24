@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import { getCurrentArena } from '@/data/arenas';
 import { MultiplayerBattleState, CardPlacement, SyncedGameState, GameStateDelta } from '@/hooks/useMultiplayerBattle';
 import { getCardById } from '@/data/cards';
-import { useHostDeltaSync } from '@/hooks/useMultiplayerSync';
+import { useHostDeltaSync, SYNC_TICK_RATE } from '@/hooks/useMultiplayerSync';
+import { useBattleValidation } from '@/hooks/useBattleValidation';
 
 interface GameUIProps {
   playerDeck: string[];
@@ -94,9 +95,14 @@ export function GameUI({
   // Delta sync hook for host
   const { computeDelta } = useHostDeltaSync();
   
+  // Server-side validation for critical events in multiplayer
+  const { validateCardPlacement, validateGameEnd } = useBattleValidation(
+    isMultiplayer && battleState ? battleState.battleId : null
+  );
+  
   // Ref to track last sync time for delta broadcasting
   const lastDeltaSyncRef = useRef<number>(0);
-  const DELTA_SYNC_INTERVAL = 100; // Send deltas every 100ms
+  const DELTA_SYNC_INTERVAL = SYNC_TICK_RATE; // Use fixed tick rate from sync module
   
   // Get current arena theme based on trophies
   const currentArena = getCurrentArena(trophies);
@@ -230,6 +236,21 @@ export function GameUI({
     onConsumeDelta?.();
   }, [isMultiplayer, isHost, pendingDeltas, applyHostDelta, onConsumeDelta]);
 
+  // HOST: Validate game end via server when game status changes
+  const gameEndValidatedRef = useRef(false);
+  useEffect(() => {
+    if (!isMultiplayer || !isHost || gameState.gameStatus === 'playing' || gameEndValidatedRef.current) return;
+    gameEndValidatedRef.current = true;
+    validateGameEnd(
+      null,
+      gameState.playerTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+      gameState.enemyTowers.map(t => ({ id: t.id, health: t.health, maxHealth: t.maxHealth })),
+      gameState.timeRemaining
+    ).then(result => {
+      if (!result.valid) console.warn('Game end validation:', result.reason);
+    });
+  }, [isMultiplayer, isHost, gameState.gameStatus, validateGameEnd, gameState.playerTowers, gameState.enemyTowers, gameState.timeRemaining]);
+
   const handleArenaClick = (position: { x: number; y: number }) => {
     if (gameState.selectedCardIndex !== null) {
       const selectedCard = gameState.playerHand[gameState.selectedCardIndex];
@@ -237,6 +258,16 @@ export function GameUI({
       // Send card placement to opponent in multiplayer
       if (isMultiplayer && selectedCard && onSendCardPlacement) {
         onSendCardPlacement(selectedCard.id, gameState.selectedCardIndex, position);
+        
+        // Fire-and-forget server validation (don't block gameplay)
+        if (isHost) {
+          validateCardPlacement(
+            selectedCard.id,
+            selectedCard.elixirCost,
+            gameState.playerElixir,
+            position
+          );
+        }
       }
       
       playCard(gameState.selectedCardIndex, position);

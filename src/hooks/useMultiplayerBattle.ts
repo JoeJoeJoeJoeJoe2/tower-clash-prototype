@@ -187,7 +187,7 @@ export function useMultiplayerBattle(
     });
   }, [user]);
 
-  // Send card placement via broadcast (instant) + database (persistence)
+  // Send card placement via broadcast only (no DB write during active gameplay for performance)
   const sendCardPlacement = useCallback(async (
     cardId: string,
     cardIndex: number,
@@ -203,7 +203,7 @@ export function useMultiplayerBattle(
       isPlayer1: battleState.isPlayer1
     };
 
-    // Send via broadcast for instant delivery
+    // Send via broadcast for instant delivery — no DB round-trip
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
         type: 'broadcast',
@@ -211,26 +211,6 @@ export function useMultiplayerBattle(
         payload: placement
       });
     }
-
-    // Also persist to database for reconnection scenarios
-    const { data: battleData } = await supabase
-      .from('active_battles')
-      .select('game_state')
-      .eq('id', battleState.battleId)
-      .single();
-
-    if (!battleData) return;
-
-    const gameState = battleData.game_state as unknown as MultiplayerGameState;
-    const updatedState: MultiplayerGameState = {
-      ...gameState,
-      placements: [...(gameState.placements || []), placement]
-    };
-
-    await supabase
-      .from('active_battles')
-      .update({ game_state: updatedState as unknown as Record<string, never> })
-      .eq('id', battleState.battleId);
   }, [battleState, user]);
 
   // Sync game state via broadcast only (no database write for speed)
@@ -437,9 +417,16 @@ export function useMultiplayerBattle(
 
     channelRef.current = dbChannel;
 
-    // CRITICAL: Poll immediately and frequently while waiting for 'active' status
-    // The ready->active transition happens via DB trigger, so we must poll to detect it
+    // Poll for 'active' status transition (DB trigger sets this).
+    // STOP polling once active — broadcast handles all gameplay sync.
     const pollForUpdates = async () => {
+      const currentStatus = battleStateRef.current?.status;
+      
+      // Once active, stop polling — broadcast channel handles everything
+      if (currentStatus === 'active') {
+        return;
+      }
+      
       try {
         const { data } = await supabase
           .from('active_battles')
@@ -454,13 +441,12 @@ export function useMultiplayerBattle(
         console.error('Polling error:', error);
       }
 
-      // Poll faster (200ms) while waiting for 'active', slower (500ms) once active
-      const currentStatus = battleStateRef.current?.status;
-      const pollInterval = currentStatus === 'active' ? 500 : 200;
-      pollTimeoutId = setTimeout(pollForUpdates, pollInterval);
+      // Only continue polling while waiting for 'active'
+      if (battleStateRef.current?.status !== 'active') {
+        pollTimeoutId = setTimeout(pollForUpdates, 200);
+      }
     };
 
-    // Start polling IMMEDIATELY (not after delay) to catch 'active' status quickly
     pollForUpdates();
 
     return () => {
