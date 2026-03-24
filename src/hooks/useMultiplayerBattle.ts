@@ -437,9 +437,16 @@ export function useMultiplayerBattle(
 
     channelRef.current = dbChannel;
 
-    // CRITICAL: Poll immediately and frequently while waiting for 'active' status
-    // The ready->active transition happens via DB trigger, so we must poll to detect it
+    // Poll for 'active' status transition (DB trigger sets this).
+    // STOP polling once active — broadcast handles all gameplay sync.
     const pollForUpdates = async () => {
+      const currentStatus = battleStateRef.current?.status;
+      
+      // Once active, stop polling — broadcast channel handles everything
+      if (currentStatus === 'active') {
+        return;
+      }
+      
       try {
         const { data } = await supabase
           .from('active_battles')
@@ -454,13 +461,12 @@ export function useMultiplayerBattle(
         console.error('Polling error:', error);
       }
 
-      // Poll faster (200ms) while waiting for 'active', slower (500ms) once active
-      const currentStatus = battleStateRef.current?.status;
-      const pollInterval = currentStatus === 'active' ? 500 : 200;
-      pollTimeoutId = setTimeout(pollForUpdates, pollInterval);
+      // Only continue polling while waiting for 'active'
+      if (battleStateRef.current?.status !== 'active') {
+        pollTimeoutId = setTimeout(pollForUpdates, 200);
+      }
     };
 
-    // Start polling IMMEDIATELY (not after delay) to catch 'active' status quickly
     pollForUpdates();
 
     return () => {
