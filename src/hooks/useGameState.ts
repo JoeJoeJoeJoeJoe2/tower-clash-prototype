@@ -497,6 +497,8 @@ export function useGameState(
       abilityState,
       // Evolution state
       isEvolved,
+      // Parent tracking (for Witch evo)
+      parentId: undefined,
       // Pancake buff counter (Royal Chef)
       pancakeBuffs: 0
     };
