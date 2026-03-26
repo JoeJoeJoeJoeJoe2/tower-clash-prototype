@@ -1657,6 +1657,21 @@ export function useGameState(
                   const evoEffect = applyEvolutionOnAttack(unit, { id: currentTarget.id, position: currentTarget.position, isFlying: 'isFlying' in currentTarget ? (currentTarget as Unit).isFlying : false }, evolutionStateRef.current, now);
                   if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
                   if (evoEffect.healthHeal) unit.health = Math.min(unit.maxHealth * 2, unit.health + evoEffect.healthHeal);
+                  if (evoEffect.statusEffectsToApply && 'statusEffects' in currentTarget) {
+                    evoEffect.statusEffectsToApply.forEach(sa => { if (sa.targetId === currentTarget!.id) (currentTarget as Unit).statusEffects.push(sa.effect); });
+                  }
+                  if (evoEffect.unitsToSpawn) {
+                    evoEffect.unitsToSpawn.forEach(spawn => {
+                      const spawnCard = getCardById(spawn.cardId);
+                      if (spawnCard) {
+                        for (let i = 0; i < spawn.count; i++) {
+                          const spawnedUnit = spawnUnit(spawnCard, spawn.position, spawn.owner, unit.level, false);
+                          if (spawn.owner === 'enemy') state.enemyUnits.push(spawnedUnit);
+                          else state.playerUnits.push(spawnedUnit);
+                        }
+                      }
+                    });
+                  }
                 }
                 
                 // Handle splash damage (including buildings)
