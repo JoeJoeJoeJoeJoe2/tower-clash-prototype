@@ -1689,6 +1689,11 @@ export function useGameState(
                     }
                   });
                 } else {
+                  // Apply evo damage reduction for player units being attacked by enemies
+                  if ('isEvolved' in currentTarget && (currentTarget as Unit).isEvolved) {
+                    const reduction = getEvolutionDamageReduction(currentTarget as Unit, evolutionStateRef.current);
+                    if (reduction > 0) damage = Math.round(damage * (1 - reduction));
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                 }
