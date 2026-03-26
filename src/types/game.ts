@@ -127,6 +127,9 @@ export interface Unit {
   // Evolution state - true if this unit is evolved (has cycled and player unlocked evolution)
   isEvolved?: boolean;
   
+  // Parent unit ID - tracks which unit spawned this one (e.g., Witch's Skeletons)
+  parentId?: string;
+  
   // Pancake buff from Royal Chef - stacks multiplicatively
   pancakeBuffs: number; // Number of pancake buffs received (each adds 15% to damage/health)
 }
