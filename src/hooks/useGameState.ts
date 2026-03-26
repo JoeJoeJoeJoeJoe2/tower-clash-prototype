@@ -1815,6 +1815,8 @@ export function useGameState(
                   const offsetX = (i - (spawnCount - 1) / 2) * 12;
                   // Spawned units inherit the parent unit's level
                   const newUnit = spawnUnit(spawnCard, { x: unit.position.x + offsetX, y: spawnY }, owner, unit.level);
+                  // Track parent for Witch evo healing
+                  newUnit.parentId = unit.id;
                   if (owner === 'player') {
                     state.playerUnits.push(newUnit);
                   } else {
