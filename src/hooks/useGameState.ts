@@ -2486,12 +2486,25 @@ export function useGameState(
                   }
                 });
               }
-
-              // P.E.K.K.A evo: spawns healing butterfly when killing units
-              if (unit.cardId === 'pekka') {
-                // Find the PEKKA that killed this unit and heal it
-                // (simplified: heal nearest friendly PEKKA)
-              }
+            }
+            
+            // P.E.K.K.A evo: when ANY enemy dies near an evolved PEKKA, heal the PEKKA
+            if (unit.health <= 0) {
+              const enemyUnits = owner === 'player' ? state.enemyUnits : state.playerUnits;
+              enemyUnits.forEach(enemy => {
+                if (enemy.isEvolved && enemy.cardId === 'pekka' && enemy.health > 0) {
+                  const dist = Math.sqrt(
+                    Math.pow(enemy.position.x - unit.position.x, 2) + 
+                    Math.pow(enemy.position.y - unit.position.y, 2)
+                  );
+                  if (dist <= 160) { // 4 tile radius
+                    const healAmount = Math.floor(enemy.maxHealth * 0.15);
+                    enemy.health = Math.min(enemy.maxHealth * 1.66, enemy.health + healAmount);
+                    addDamageNumber(enemy.position, -healAmount, false);
+                    addSpawnEffect(unit.position, enemy.owner, '🦋');
+                  }
+                }
+              });
             }
           });
         };
