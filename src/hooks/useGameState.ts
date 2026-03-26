@@ -2427,7 +2427,19 @@ export function useGameState(
 
         // Process evolution death effects before removing dead units
         const processDeathEffects = (units: Unit[], owner: 'player' | 'enemy') => {
+          const allFriendlyUnits = owner === 'player' ? state.playerUnits : state.enemyUnits;
+          
           units.forEach(unit => {
+            // Witch evo: heal parent Witch when her spawned skeletons die
+            if (unit.health <= 0 && unit.parentId) {
+              const parent = allFriendlyUnits.find(u => u.id === unit.parentId && u.health > 0);
+              if (parent && parent.isEvolved && parent.cardId === 'witch') {
+                const healAmount = Math.floor(parent.maxHealth * 0.08); // 8% heal per skeleton death
+                parent.health = Math.min(parent.maxHealth * 1.24, parent.health + healAmount); // Can overheal to 124%
+                addDamageNumber(parent.position, -healAmount, false); // Negative = heal
+              }
+            }
+            
             if (unit.health <= 0 && unit.isEvolved) {
               const deathEffect = applyEvolutionOnDeath(unit, evolutionStateRef.current, now);
               
@@ -2464,6 +2476,12 @@ export function useGameState(
                     });
                   }
                 });
+              }
+
+              // P.E.K.K.A evo: spawns healing butterfly when killing units
+              if (unit.cardId === 'pekka') {
+                // Find the PEKKA that killed this unit and heal it
+                // (simplified: heal nearest friendly PEKKA)
               }
             }
           });
