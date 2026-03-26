@@ -1423,7 +1423,11 @@ export function useGameState(
                     }
                   });
                 } else {
-                  // Single target damage
+                  // Single target damage - apply evo damage reduction (Knight/Wizard shield)
+                  if ('isEvolved' in currentTarget && (currentTarget as Unit).isEvolved) {
+                    const reduction = getEvolutionDamageReduction(currentTarget as Unit, evolutionStateRef.current);
+                    if (reduction > 0) damage = Math.round(damage * (1 - reduction));
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                   // Track damage for balance system (player units only)
