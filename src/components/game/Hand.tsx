@@ -42,12 +42,16 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, car
         const evoReady = hasEvo && playCount >= cyclesRequired;
         const cycleProgress = hasEvo ? Math.min(playCount, cyclesRequired) : 0;
         
-        return (
+          return (
           <div key={`${card.id}-${index}`} className="relative">
             <div className={cn(
-              'rounded-lg transition-all duration-300',
-              evoReady && 'ring-2 ring-purple-500 shadow-lg shadow-purple-500/50'
-            )}>
+              'rounded-lg transition-all duration-300 relative',
+              evoReady && 'ring-2 ring-purple-400 shadow-[0_0_12px_3px_rgba(168,85,247,0.6)]'
+            )}
+            style={evoReady ? {
+              animation: 'evo-glow-pulse 1.5s ease-in-out infinite'
+            } : undefined}
+            >
               <GameCard
                 card={card}
                 isSelected={selectedIndex === index}
@@ -81,8 +85,10 @@ export function Hand({ cards, elixir, selectedIndex, onCardSelect, nextCard, car
             {/* EVO READY flash text */}
             {evoReady && (
               <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20">
-                <span className="text-[6px] font-black text-purple-300 uppercase tracking-wider animate-pulse">
-                  EVO
+                <span className="text-[7px] font-black text-purple-300 uppercase tracking-wider animate-pulse"
+                  style={{ textShadow: '0 0 6px rgba(168,85,247,0.8)' }}
+                >
+                  EVO READY
                 </span>
               </div>
             )}
