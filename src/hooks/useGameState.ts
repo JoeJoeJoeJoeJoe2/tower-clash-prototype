@@ -497,6 +497,8 @@ export function useGameState(
       abilityState,
       // Evolution state
       isEvolved,
+      // Parent tracking (for Witch evo)
+      parentId: undefined,
       // Pancake buff counter (Royal Chef)
       pancakeBuffs: 0
     };
@@ -1421,7 +1423,11 @@ export function useGameState(
                     }
                   });
                 } else {
-                  // Single target damage
+                  // Single target damage - apply evo damage reduction (Knight/Wizard shield)
+                  if ('isEvolved' in currentTarget && (currentTarget as Unit).isEvolved) {
+                    const reduction = getEvolutionDamageReduction(currentTarget as Unit, evolutionStateRef.current);
+                    if (reduction > 0) damage = Math.round(damage * (1 - reduction));
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                   // Track damage for balance system (player units only)
@@ -1655,6 +1661,21 @@ export function useGameState(
                   const evoEffect = applyEvolutionOnAttack(unit, { id: currentTarget.id, position: currentTarget.position, isFlying: 'isFlying' in currentTarget ? (currentTarget as Unit).isFlying : false }, evolutionStateRef.current, now);
                   if (evoEffect.damageMultiplier) damage = Math.round(damage * evoEffect.damageMultiplier);
                   if (evoEffect.healthHeal) unit.health = Math.min(unit.maxHealth * 2, unit.health + evoEffect.healthHeal);
+                  if (evoEffect.statusEffectsToApply && 'statusEffects' in currentTarget) {
+                    evoEffect.statusEffectsToApply.forEach(sa => { if (sa.targetId === currentTarget!.id) (currentTarget as Unit).statusEffects.push(sa.effect); });
+                  }
+                  if (evoEffect.unitsToSpawn) {
+                    evoEffect.unitsToSpawn.forEach(spawn => {
+                      const spawnCard = getCardById(spawn.cardId);
+                      if (spawnCard) {
+                        for (let i = 0; i < spawn.count; i++) {
+                          const spawnedUnit = spawnUnit(spawnCard, spawn.position, spawn.owner, unit.level, false);
+                          if (spawn.owner === 'enemy') state.enemyUnits.push(spawnedUnit);
+                          else state.playerUnits.push(spawnedUnit);
+                        }
+                      }
+                    });
+                  }
                 }
                 
                 // Handle splash damage (including buildings)
@@ -1668,6 +1689,11 @@ export function useGameState(
                     }
                   });
                 } else {
+                  // Apply evo damage reduction for player units being attacked by enemies
+                  if ('isEvolved' in currentTarget && (currentTarget as Unit).isEvolved) {
+                    const reduction = getEvolutionDamageReduction(currentTarget as Unit, evolutionStateRef.current);
+                    if (reduction > 0) damage = Math.round(damage * (1 - reduction));
+                  }
                   currentTarget.health -= damage;
                   addDamageNumber(currentTarget.position, damage, damage > 200);
                 }
@@ -1813,6 +1839,8 @@ export function useGameState(
                   const offsetX = (i - (spawnCount - 1) / 2) * 12;
                   // Spawned units inherit the parent unit's level
                   const newUnit = spawnUnit(spawnCard, { x: unit.position.x + offsetX, y: spawnY }, owner, unit.level);
+                  // Track parent for Witch evo healing
+                  newUnit.parentId = unit.id;
                   if (owner === 'player') {
                     state.playerUnits.push(newUnit);
                   } else {
@@ -2408,7 +2436,19 @@ export function useGameState(
 
         // Process evolution death effects before removing dead units
         const processDeathEffects = (units: Unit[], owner: 'player' | 'enemy') => {
+          const allFriendlyUnits = owner === 'player' ? state.playerUnits : state.enemyUnits;
+          
           units.forEach(unit => {
+            // Witch evo: heal parent Witch when her spawned skeletons die
+            if (unit.health <= 0 && unit.parentId) {
+              const parent = allFriendlyUnits.find(u => u.id === unit.parentId && u.health > 0);
+              if (parent && parent.isEvolved && parent.cardId === 'witch') {
+                const healAmount = Math.floor(parent.maxHealth * 0.08); // 8% heal per skeleton death
+                parent.health = Math.min(parent.maxHealth * 1.24, parent.health + healAmount); // Can overheal to 124%
+                addDamageNumber(parent.position, -healAmount, false); // Negative = heal
+              }
+            }
+            
             if (unit.health <= 0 && unit.isEvolved) {
               const deathEffect = applyEvolutionOnDeath(unit, evolutionStateRef.current, now);
               
@@ -2446,6 +2486,25 @@ export function useGameState(
                   }
                 });
               }
+            }
+            
+            // P.E.K.K.A evo: when ANY enemy dies near an evolved PEKKA, heal the PEKKA
+            if (unit.health <= 0) {
+              const enemyUnits = owner === 'player' ? state.enemyUnits : state.playerUnits;
+              enemyUnits.forEach(enemy => {
+                if (enemy.isEvolved && enemy.cardId === 'pekka' && enemy.health > 0) {
+                  const dist = Math.sqrt(
+                    Math.pow(enemy.position.x - unit.position.x, 2) + 
+                    Math.pow(enemy.position.y - unit.position.y, 2)
+                  );
+                  if (dist <= 160) { // 4 tile radius
+                    const healAmount = Math.floor(enemy.maxHealth * 0.15);
+                    enemy.health = Math.min(enemy.maxHealth * 1.66, enemy.health + healAmount);
+                    addDamageNumber(enemy.position, -healAmount, false);
+                    addSpawnEffect(unit.position, enemy.owner, '🦋');
+                  }
+                }
+              });
             }
           });
         };
