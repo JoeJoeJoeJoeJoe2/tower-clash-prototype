@@ -55,7 +55,7 @@ export function CardCollection({
   const cardsByRarity = rarityOrder.map((rarity) => ({
     rarity,
     config: rarityConfig[rarity],
-    cards: collectibleCards.filter((c) => c.rarity === rarity)
+    cards: collectibleCards.filter((c) => c.rarity === rarity).sort((a, b) => a.name.localeCompare(b.name))
   })).filter(group => group.cards.length > 0);
 
   return (
