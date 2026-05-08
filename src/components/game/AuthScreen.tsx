@@ -17,13 +17,21 @@ export function AuthScreen({ onSuccess }: AuthScreenProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!playerName.trim()) {
+    const trimmed = playerName.trim();
+    if (!trimmed) {
       toast.error('Please enter a player name');
       return;
     }
-    
-    if (playerName.trim().length < 3) {
+    if (trimmed.length < 3) {
       toast.error('Name must be at least 3 characters');
+      return;
+    }
+    if (trimmed.length > 20) {
+      toast.error('Name must be at most 20 characters');
+      return;
+    }
+    if (!/^[A-Za-z0-9 _.\-]+$/.test(trimmed)) {
+      toast.error('Name can only contain letters, numbers, spaces, _ . -');
       return;
     }
     
